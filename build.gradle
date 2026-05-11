@@ -1,7 +1,8 @@
 plugins {
+	id 'eclipse'
 	id 'java'
 	id 'war'
-	id 'org.springframework.boot' version '4.0.6'
+	id 'org.springframework.boot' version '3.5.13'
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
@@ -19,21 +20,55 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
-	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:4.0.1'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.5'
 	compileOnly 'org.projectlombok:lombok'
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
-	runtimeOnly 'com.oracle.database.jdbc:ojdbc11'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
-	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat-runtime'
-	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
-	testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:4.0.1'
+	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testImplementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter-test:3.0.5'
 	testCompileOnly 'org.projectlombok:lombok'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	testAnnotationProcessor 'org.projectlombok:lombok'
+	
+	implementation 'org.apache.tomcat.embed:tomcat-embed-jasper'
+    implementation 'jakarta.servlet.jsp.jstl:jakarta.servlet.jsp.jstl-api'
+    runtimeOnly 'org.glassfish.web:jakarta.servlet.jsp.jstl'
+    
+	implementation("org.springframework.boot:spring-boot-starter-aop")
+
+	implementation("org.springframework.boot:spring-boot-starter-validation")
+	
+	implementation("org.springframework.boot:spring-boot-starter-security")
+	
+	implementation("org.springframework.security:spring-security-taglibs")
+
+	implementation("org.springframework.boot:spring-boot-starter-webflux")
 }
+
+eclipse {
+    wtp {
+        facet {
+            facet name: 'jst.web', version: '6.0'
+        }
+    }
+}
+
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+sourceSets {
+    main {
+        resources {
+           
+            srcDirs = ['src/main/resources', 'src/main/java']
+            
+           
+            include '**/*.xml'
+        }
+    }
 }

@@ -68,7 +68,7 @@ sourceSets {
             srcDirs = ['src/main/resources', 'src/main/java']
             
            
-            include '**/*.xml'
+            include '**/*'
         }
     }
 }

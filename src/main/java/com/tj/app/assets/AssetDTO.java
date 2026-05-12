@@ -1,5 +1,5 @@
 package com.tj.app.assets;
 
-public class a {
+public class AssetDTO {
 	
 }

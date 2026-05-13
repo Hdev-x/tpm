@@ -3,26 +3,45 @@
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-  <mapper namespace="com.tj.app.member.MemberMapper">
-  
-   <insert id="create">
-   INSERT INTO "MEMBER"
-   VALUES (#{username}, #{name}, #{password}, #{cash})
-   </insert>
-   
-   <select id="read">
-   	SELECT * FROM "MEMBER"
-   	WHERE "USERNAME" = #{username}
-   </select>
-  
-  <update id="update">
-  	UPDATE "MEMBER" SET ("NAME", "CASH")
-  	VALUES (#{name}, #{cash})
-  </update> 
-  
-  <delete id="delete">
-  	DELETE FROM MEMBER
-  	WHERE "USERNAME" = #{username}
-  </delete>
-  
-  </mapper>
+<mapper namespace="com.tj.app.member.MemberMapper">
+
+	<insert id="create">
+		INSERT INTO "MEMBER" ("USERNAME", "NAME", "PASSWORD", "CASH")
+		VALUES  (#{username}, #{name}, #{password}, 200000000)
+	</insert>
+
+	<select id="read" resultType="MemberDTO">
+		SELECT * FROM "MEMBER"
+		WHERE "USERNAME" = #{username}
+	</select>
+
+	<update id="update">
+		UPDATE "MEMBER"
+		SET
+			"NAME" = #{name},
+			"CASH" = #{cash}
+		WHERE "USERNAME" = #{username}
+	</update>
+
+	<delete id="delete">
+		DELETE FROM "MEMBER"
+		WHERE "USERNAME" = #{username}
+	</delete>
+	
+	<resultMap type="MemberDTO" id="memberResult">
+    <id column="USERNAME" property="username" />
+    <result column="NAME" property="name" />
+    <result column="CASH" property="cash" />
+    <result column="ROLE_NAME" property="roleName" />
+    <result column="ROLE_NO" property="roleNo" />
+</resultMap>
+
+<select id="login" resultMap="memberResult">
+    SELECT *
+    FROM "MEMBER" M
+    LEFT JOIN "ROLE" R 
+    USING ("ROLE_NO")
+    WHERE M."USERNAME" = #{username}
+</select>
+
+</mapper>

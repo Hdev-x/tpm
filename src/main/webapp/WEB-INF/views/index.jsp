@@ -9,6 +9,11 @@
 <body>
 
     <h2>메인 페이지</h2>
+    
+    <div>
+    <a href="/board/list"><button>게시글</button></a>
+    <a href="/notice/list"><button>공지사항</button></a>
+    </div>
 
     <div class="nav-bar">
         <c:if test="${empty member}">

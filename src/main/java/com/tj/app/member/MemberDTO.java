@@ -1,5 +1,7 @@
 package com.tj.app.member;
 
+import java.util.List;
+
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -12,4 +14,6 @@ public class MemberDTO {
 	private String name;
 	private String password;
 	private Long cash;
+	
+	private List<RoleDTO> roles;
 }

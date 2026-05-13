@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tj.app.board.BoardMapper">
+
+	<resultMap type="BoardDTO" id="detailResult">
+		<id column="BOARD_NO" property="boardNo" />
+		<result column="BOARD_TITLE" property="boardTitle" />
+		<result column="BOARD_WRITER" property="boardWriter" />
+		<result column="BOARD_CONTENT" property="boardContent" />
+		<result column="BOARD_DATE" property="boardDate" />
+		<result column="BOARD_VIEW" property="boardView" />
+		<collection property="list" javaType="java.util.List"
+			ofType="FileDTO">
+			<id column="FILE_NO" property="fileNo" />
+			<result column="FILE_NAME" property="fileName" />
+			<result column="ORI_NAME" property="oriName" />
+		</collection>
+	</resultMap>
+
+
+	<insert id="create">
+		INSERT INTO "BOARD"
+		VALUES (DEFAULT, #{boardTitle},
+		#{boardWriter}, #{boardContent}, #{boardDate}, 0)
+	</insert>
+
+	<select id="list" resultType="BoardDTO">
+		SELECT * FROM "BOARD"
+	</select>
+
+	<select id="detail" resultMap="detailResult">
+		SELECT *
+		FROM "BOARD" B
+		LEFT JOIN
+		"BOARDFILE" BF
+		USING ("BOARD_NO")
+		WHERE "BOARD_NO" = #{boardNo}
+	</select>
+
+	<update id="update">
+		UPDATE "BOARD"
+		SET
+		"BOARD_TITLE"=#{boardTitle},
+		"BOARD_CONTENT"=#{boardContent}
+		WHERE
+		"BOARD_NO"=#{boardNo}
+	</update>
+
+	<delete id="delete">
+		DELETE FROM "BOARD"
+		WHERE "BOARD_NO"=#{boardNo}
+	</delete>
+
+	<insert id="createFfile">
+		INSERT INTO "BOARDFILE" ("FILE_NAME", "FILE_ORI")
+		VALUES (DEFAULT, #{fileName}, #{fileOri})
+	</insert>
+
+	<select id="detailFile" resultType="FileDTO"
+		parameterType="BoardDTO">
+		SELECT * FROM "BOARDFILE"
+		WHERE "BOARD_NO" = #{boardNo}
+	</select>
+
+</mapper>

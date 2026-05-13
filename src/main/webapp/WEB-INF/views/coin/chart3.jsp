@@ -6,7 +6,9 @@
 <head>
     <meta charset="UTF-8">
     <title>TradeBot · 차트</title>
-    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script
+        src="https://unpkg.com/lwc-plugin-countdown-to-close@2.0.0/dist/lwc-plugin-countdown-to-close.umd.cjs"></script>
     <style>
 * {
 	margin: 0;
@@ -590,6 +592,71 @@ nav {
 	height: 150px;
 	display: none;
 }
+
+.settings-wrap {
+    position: relative;
+    margin-left: auto;
+}
+
+.settings-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    background: #1c2128;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 8px 0;
+    min-width: 220px;
+    z-index: 100;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.settings-menu.open {
+    display: block;
+}
+
+.settings-title {
+    font-size: 12px;
+    color: #8b949e;
+    padding: 4px 16px 8px;
+    border-bottom: 1px solid #30363d;
+    margin-bottom: 4px;
+}
+
+.settings-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    cursor: pointer;
+    gap: 12px;
+}
+
+.settings-item:hover {
+    background: #2d333b;
+}
+
+.settings-label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+    color: #e6edf3;
+}
+
+.settings-label small {
+    font-size: 11px;
+    color: #8b949e;
+}
+
+.settings-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #1f6feb;
+    cursor: pointer;
+    flex-shrink: 0;
+}
 </style>
 </head>
 
@@ -640,11 +707,35 @@ nav {
             <button class="ind-btn" id="ind-bb" onclick="toggleInd('bb')">BB</button>
             <button class="ind-btn" id="ind-ichimoku" onclick="toggleInd('ichimoku')">일목</button>
             <button class="ind-btn" id="ind-rsi" onclick="toggleInd('rsi')">RSI</button>
-            <div class="tb-right">
-                <button class="btn-long" onclick="orderSide='buy'; submitOrder('buy')">매수</button>
-                <button class="btn-short" onclick="orderSide='sell'; submitOrder('sell')"
-                    style="margin-top: 6px">매도</button>
+
+            <div class="tb-divider"></div>
+            <div class="settings-wrap">
+                <button class="ind-btn" onclick="toggleSettingsMenu()">⚙ 설정</button>
+                <div class="settings-menu" id="settings-menu">
+                    <div class="settings-title">차트 설정</div>
+                    <label class="settings-item">
+                        <span class="settings-label">
+                            <span>최고 최저 가격</span>
+                        </span>
+                        <input type="checkbox" id="set-highlow" onchange="toggleHighLow(this.checked)" checked>
+                    </label>
+                    <label class="settings-item">
+                        <span class="settings-label">
+                            <span>로그 스케일</span>
+                            <small>변화율 기준으로 차트 보기</small>
+                        </span>
+                        <input type="checkbox" id="set-log" onchange="toggleLog()">
+                    </label>
+                    <label class="settings-item">
+                        <span class="settings-label">
+                            <span>봉 카운트다운</span>
+                            <small>다음 봉까지 남은 시간 표시</small>
+                        </span>
+                        <input type="checkbox" id="set-countdown" onchange="toggleCountdown(this.checked)" checked>
+                    </label>
+                </div>
             </div>
+
         </div>
 
         <div class="body">
@@ -652,6 +743,24 @@ nav {
             <div class="chart-area">
                 <div id="chart-wrapper">
                     <div id="chart-container">
+                        <!-- 최고가 라벨 (캔들 위) -->
+                        <!-- 최고가 -->
+                        <div id="hl-high"
+                            style="position:absolute; display:none; flex-direction:column; align-items:center; pointer-events:none; z-index:10; transform:translateX(-50%);">
+                            <span id="hl-high-val"
+                                style="font-size:11px; color:#ff3b30; white-space:nowrap; background:rgba(13,17,23,0.8); padding:1px 4px; border-radius:3px;"></span>
+                            <span
+                                style="color:#ff3b30; font-size:12px; display:block; transform:rotate(90deg); line-height:1;">⇒</span>
+                        </div>
+
+                        <!-- 최저가 라벨 (캔들 아래) -->
+                        <div id="hl-low"
+                            style="position:absolute; display:none; flex-direction:column; align-items:center; pointer-events:none; z-index:10; transform:translateX(-50%);">
+                            <span
+                                style="color:#007aff; font-size:12px; display:block; transform:rotate(-90deg); line-height:1;">⇒</span>
+                            <span id="hl-low-val"
+                                style="font-size:11px; color:#007aff; white-space:nowrap; background:rgba(13,17,23,0.8); padding:1px 4px; border-radius:3px;"></span>
+                        </div>
                         <div id="ohlc-bar">
                             <span>O: <b id="val-o">-</b></span>&nbsp; <span>H: <b id="val-h"
                                     style="color: #ff3b30">-</b></span>&nbsp; <span>L: <b id="val-l"
@@ -749,6 +858,115 @@ nav {
     </div>
 
     <script>
+
+        let showHighLow = true;
+
+        function updateHighLow() {
+            if (!showHighLow) return;
+            const lr = chart.timeScale().getVisibleLogicalRange();
+            if (!lr || allData.length === 0) return;
+
+            const from = Math.max(0, Math.floor(lr.from));
+            const to = Math.min(allData.length - 1, Math.ceil(lr.to));
+            const visible = allData.slice(from, to + 1);
+            if (visible.length === 0) return;
+
+            let highVal = -Infinity, lowVal = Infinity;
+            let highCandle, lowCandle;
+
+            visible.forEach(d => {
+                if (d.high > highVal) { highVal = d.high; highCandle = d; }
+                if (d.low < lowVal) { lowVal = d.low; lowCandle = d; }
+            });
+
+            const highX = chart.timeScale().timeToCoordinate(highCandle.time);
+            const highY = candleSeries.priceToCoordinate(highVal);
+            const lowX = chart.timeScale().timeToCoordinate(lowCandle.time);
+            const lowY = candleSeries.priceToCoordinate(lowVal);
+
+            const highEl = document.getElementById('hl-high');
+            const lowEl = document.getElementById('hl-low');
+
+            if (highX != null && highY != null) {
+                highEl.style.display = 'flex';
+                highEl.style.left = highX + 'px';
+                // 최고가
+                highEl.style.top = (highY - 48) + 'px';  // 기존 -22 → -48 (더 위로)
+                document.getElementById('hl-high-val').textContent = highVal.toLocaleString() + ' USDT';
+            }
+            if (lowX != null && lowY != null) {
+                lowEl.style.display = 'flex';
+                lowEl.style.left = lowX + 'px';
+                // 최저가
+                lowEl.style.top = (lowY + 10) + 'px';  // 기존 +6 → +10 (더 아래로)
+                document.getElementById('hl-low-val').textContent = lowVal.toLocaleString() + ' USDT';
+            }
+        }
+
+        function toggleHighLow(enabled) {
+            showHighLow = enabled;
+            document.getElementById('hl-high').style.display = enabled ? 'flex' : 'none';
+            document.getElementById('hl-low').style.display = enabled ? 'flex' : 'none';
+            if (enabled) updateHighLow();
+        }
+
+        // 설정 메뉴 토글
+        function toggleSettingsMenu() {
+            document.getElementById('settings-menu').classList.toggle('open');
+        }
+
+        // 외부 클릭시 닫기
+        document.addEventListener('click', function (e) {
+            if (!e.target.closest('.settings-wrap')) {
+                document.getElementById('settings-menu').classList.remove('open');
+            }
+        });
+
+
+
+
+        let countdownPrimitive = null;
+        // 봉 카운트다운 on/off
+        function startCountdown() {
+            if (!countdownPrimitive) {
+                countdownPrimitive = new CountdownToClose.CountdownToClose({
+                    customLastPriceLine: true,
+                    timeframeInSeconds: currentTfSeconds,
+                    timeLabelFormatter: (ttcc) => {
+                        // 총 남은 초 계산
+                        const totalSecs = ttcc.days * 86400 + ttcc.hours * 3600 + ttcc.minutes * 60 + ttcc.seconds;
+                        const h = Math.floor(totalSecs / 3600);
+                        const m = Math.floor((totalSecs % 3600) / 60);
+                        const s = totalSecs % 60;
+
+                        // 12H, 1D - 항상 HH:MM:SS
+                        if (currentTfSeconds >= 43200) {
+                            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                        }
+
+                        // 1분 ~ 6H - 남은시간 기준
+                        if (h > 0) {
+                            return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                        }
+                        return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                    }
+                });
+                candleSeries.applyOptions({ lastValueVisible: false, priceLineVisible: false });
+                candleSeries.attachPrimitive(countdownPrimitive);
+            }
+        }
+
+        function toggleCountdown(enabled) {
+            showCountdown = enabled;
+            if (enabled) {
+                startCountdown();
+                countdownPrimitive.applyOptions({ showLabels: true });
+            } else {
+                if (countdownPrimitive) countdownPrimitive.applyOptions({ showLabels: false });
+                candleSeries.applyOptions({ lastValueVisible: true, priceLineVisible: true });
+            }
+        }
+
         // --- 패널 드래그 리사이즈 ---
         let isDragging = false, dragStartY = 0, dragStartRsiHeight = 0;
         document.getElementById('pane-divider').addEventListener('mousedown', (e) => {
@@ -779,21 +997,24 @@ nav {
         let walletBalance = 0;
         let allData = [];
         let isLoadingMore = false;
+        let isLog = false;
+        let currentTfSeconds = 60;
+        let showCountdown = true;
 
         const TF_MAP = {
-            '1min': { channel: 'candle1m', restGran: '1min', label: '1분' },
-            '3min': { channel: 'candle3m', restGran: '3min', label: '3분' },
-            '5min': { channel: 'candle5m', restGran: '5min', label: '5분' },
-            '15min': { channel: 'candle15m', restGran: '15min', label: '15분' },
-            '30min': { channel: 'candle30m', restGran: '30min', label: '30분' },
-            '1h': { channel: 'candle1H', restGran: '1h', label: '1H' },
-            '4h': { channel: 'candle4H', restGran: '4h', label: '4H' },
-            '6h': { channel: 'candle6H', restGran: '6h', label: '6H' },
-            '12h': { channel: 'candle12H', restGran: '12h', label: '12H' },
-            '1day': { channel: 'candle1D', restGran: '1day', label: '1D' },
-            '3day': { channel: 'candle3D', restGran: '3day', label: '3D' },
-            '1week': { channel: 'candle1W', restGran: '1week', label: '1W' },
-            '1month': { channel: 'candle1M', restGran: '1M', label: '1M' },
+            '1min': { channel: 'candle1m', restGran: '1min', label: '1분', seconds: 60 },
+            '3min': { channel: 'candle3m', restGran: '3min', label: '3분', seconds: 180 },
+            '5min': { channel: 'candle5m', restGran: '5min', label: '5분', seconds: 300 },
+            '15min': { channel: 'candle15m', restGran: '15min', label: '15분', seconds: 900 },
+            '30min': { channel: 'candle30m', restGran: '30min', label: '30분', seconds: 1800 },
+            '1h': { channel: 'candle1H', restGran: '1h', label: '1H', seconds: 3600 },
+            '4h': { channel: 'candle4H', restGran: '4h', label: '4H', seconds: 14400 },
+            '6h': { channel: 'candle6H', restGran: '6h', label: '6H', seconds: 21600 },
+            '12h': { channel: 'candle12H', restGran: '12h', label: '12H', seconds: 43200 },
+            '1day': { channel: 'candle1D', restGran: '1day', label: '1D', seconds: 86400 },
+            '3day': { channel: 'candle3D', restGran: '3day', label: '3D', seconds: 259200 },
+            '1week': { channel: 'candle1W', restGran: '1week', label: '1W', seconds: 604800 },
+            '1month': { channel: 'candle1M', restGran: '1M', label: '1M', seconds: 2592000 },
         };
 
         // --- 차트 생성 ---
@@ -804,34 +1025,34 @@ nav {
             grid: { vertLines: { color: '#1c2128' }, horzLines: { color: '#1c2128' } },
             timeScale: { timeVisible: true, secondsVisible: false, borderColor: '#1c2128' },
             rightPriceScale: { borderColor: '#1c2128' },
-            crosshair: { vertLine: { color: '#484f58' }, horzLine: { color: '#484f58' } },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal, vertLine: { color: '#484f58' }, horzLine: { color: '#484f58' } },
         });
 
         // 캔들 (한국식: 상승=빨강, 하락=파랑)
-        const candleSeries = chart.addCandlestickSeries({
+        const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
             upColor: '#ff3b30', downColor: '#007aff',
             borderUpColor: '#ff3b30', borderDownColor: '#007aff',
             wickUpColor: '#ff3b30', wickDownColor: '#007aff',
         });
 
         // 이동평균선
-        const ma5Series = chart.addLineSeries({ color: '#FF9800', lineWidth: 1, title: 'MA5', visible: false, priceLineVisible: false });
-        const ma20Series = chart.addLineSeries({ color: '#58a6ff', lineWidth: 1, title: 'MA20', visible: false, priceLineVisible: false });
-        const ma60Series = chart.addLineSeries({ color: '#9C27B0', lineWidth: 1, title: 'MA60', visible: false, priceLineVisible: false });
+        const ma5Series = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF9800', lineWidth: 1, title: 'MA5', visible: false, priceLineVisible: false });
+        const ma20Series = chart.addSeries(LightweightCharts.LineSeries, { color: '#58a6ff', lineWidth: 1, title: 'MA20', visible: false, priceLineVisible: false });
+        const ma60Series = chart.addSeries(LightweightCharts.LineSeries, { color: '#9C27B0', lineWidth: 1, title: 'MA60', visible: false, priceLineVisible: false });
 
         // 볼린저밴드
-        const bbUpperSeries = chart.addLineSeries({ color: '#FF5722', lineWidth: 1, lineStyle: 2, title: 'BB↑', visible: false, priceLineVisible: false });
-        const bbMiddleSeries = chart.addLineSeries({ color: '#FF572288', lineWidth: 1, title: 'BB', visible: false, priceLineVisible: false });
-        const bbLowerSeries = chart.addLineSeries({ color: '#FF5722', lineWidth: 1, lineStyle: 2, title: 'BB↓', visible: false, priceLineVisible: false });
+        const bbUpperSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF5722', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'BB↑', visible: false, priceLineVisible: false });
+        const bbMiddleSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF572288', lineWidth: 1, title: 'BB', visible: false, priceLineVisible: false });
+        const bbLowerSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF5722', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'BB↓', visible: false, priceLineVisible: false });
 
         // 일목균형표
-        const ichiTenkanSeries = chart.addLineSeries({ color: '#E91E63', lineWidth: 1, title: '전환', visible: false, priceLineVisible: false });
-        const ichiKijunSeries = chart.addLineSeries({ color: '#58a6ff', lineWidth: 1, title: '기준', visible: false, priceLineVisible: false });
-        const ichiSpanASeries = chart.addLineSeries({ color: '#4CAF50', lineWidth: 1, title: '선행A', visible: false, priceLineVisible: false });
-        const ichiSpanBSeries = chart.addLineSeries({ color: '#FF9800', lineWidth: 1, title: '선행B', visible: false, priceLineVisible: false });
-        const ichiChikouSeries = chart.addLineSeries({ color: '#9E9E9E', lineWidth: 1, title: '후행', visible: false, priceLineVisible: false });
+        const ichiTenkanSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#E91E63', lineWidth: 1, title: '전환', visible: false, priceLineVisible: false });
+        const ichiKijunSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#58a6ff', lineWidth: 1, title: '기준', visible: false, priceLineVisible: false });
+        const ichiSpanASeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#4CAF50', lineWidth: 1, title: '선행A', visible: false, priceLineVisible: false });
+        const ichiSpanBSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF9800', lineWidth: 1, title: '선행B', visible: false, priceLineVisible: false });
+        const ichiChikouSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#9E9E9E', lineWidth: 1, title: '후행', visible: false, priceLineVisible: false });
         // 거래량
-        const volumeSeries = chart.addHistogramSeries({
+        const volumeSeries = chart.addSeries(LightweightCharts.HistogramSeries, {
             priceFormat: { type: 'volume' }, priceScaleId: 'volume', priceLineVisible: false,
         });
         chart.priceScale('volume').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } });
@@ -842,13 +1063,21 @@ nav {
             autoSize: true,
             layout: { background: { color: '#0d1117' }, textColor: '#8b949e' },
             grid: { vertLines: { color: '#1c2128' }, horzLines: { color: '#1c2128' } },
-            timeScale: { visible: false, borderColor: '#1c2128' },
+            timeScale: {
+                timeVisible: true,
+                secondsVisible: false,
+                borderColor: '#1c2128',
+                tickMarkFormatter: (time) => {
+                    const d = new Date((time) * 1000);
+                    return d.toISOString().slice(11, 16);
+                }
+            },
             rightPriceScale: { borderColor: '#1c2128', scaleMargins: { top: 0.1, bottom: 0.1 } },
-            crosshair: { vertLine: { color: '#484f58' }, horzLine: { color: '#484f58' } },
+            crosshair: { mode: LightweightCharts.CrosshairMode.Normal, vertLine: { color: '#484f58' }, horzLine: { color: '#484f58' } },
         });
-        const rsiSeries = rsiChart.addLineSeries({ color: '#9C27B0', lineWidth: 1, title: 'RSI', priceLineVisible: false });
-        const rsiOverbought = rsiChart.addLineSeries({ color: '#ff3b3066', lineWidth: 1, lineStyle: 2, priceLineVisible: false });
-        const rsiOversold = rsiChart.addLineSeries({ color: '#007aff66', lineWidth: 1, lineStyle: 2, priceLineVisible: false });
+        const rsiSeries = rsiChart.addSeries(LightweightCharts.LineSeries, { color: '#9C27B0', lineWidth: 1, title: 'RSI', priceLineVisible: false });
+        const rsiOverbought = rsiChart.addSeries(LightweightCharts.LineSeries, { color: '#ff3b3066', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceLineVisible: false });
+        const rsiOversold = rsiChart.addSeries(LightweightCharts.LineSeries, { color: '#007aff66', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceLineVisible: false });
 
         // --- 인디케이터 상태 ---
         const indState = { ma5: false, ma20: false, ma60: false, bb: false, ichimoku: false, rsi: false };
@@ -961,11 +1190,11 @@ nav {
             if (res.code !== '00000') return;
 
             allData = res.data.map(item => ({
-                time: Math.floor(item[0] / 1000) + 32400,
+                time: Math.floor(item[0] / 1000),
                 open: parseFloat(item[1]), high: parseFloat(item[2]),
                 low: parseFloat(item[3]), close: parseFloat(item[4]),
                 volume: parseFloat(item[5])
-            }));
+            })).sort((a, b) => a.time - b.time);
             updateAllSeries(allData);
         }
 
@@ -978,14 +1207,14 @@ nav {
                 isLoadingMore = true;
                 try {
                     const oldestTime = allData[0].time;
-                    const endTimeMs = (oldestTime - 32400) * 1000 - 1;
+                    const endTimeMs = (oldestTime) * 1000 - 1;
                     const res = await fetch(
                         'https://api.bitget.com/api/v2/spot/market/candles?symbol=BTCUSDT&granularity=' + currentGranularity + '&limit=200&endTime=' + endTimeMs
                     ).then(r => r.json());
 
                     if (res.code === '00000' && res.data && res.data.length > 0) {
                         const older = res.data.map(item => ({
-                            time: Math.floor(item[0] / 1000) + 32400,
+                            time: Math.floor(item[0] / 1000),
                             open: parseFloat(item[1]), high: parseFloat(item[2]),
                             low: parseFloat(item[3]), close: parseFloat(item[4]),
                             volume: parseFloat(item[5])
@@ -1018,8 +1247,41 @@ nav {
 
             currentGranularity = TF_MAP[gran].restGran;
             currentChannel = TF_MAP[gran].channel;
+            currentTfSeconds = TF_MAP[gran].seconds;
+            if (countdownPrimitive) {
+                countdownPrimitive.applyOptions({
+                    timeframeInSeconds: currentTfSeconds,
+                    timeLabelFormatter: currentTfSeconds >= 259200
+                        ? (ttcc) => {
+                            if (ttcc.days > 0) return ttcc.days + 'd ' + ttcc.hours + 'h';
+                            if (ttcc.hours > 0) return ttcc.hours + 'h ' + ttcc.minutes + 'm';
+                            if (ttcc.minutes > 0) return ttcc.minutes + 'm ' + ttcc.seconds + 's';
+                            return ttcc.seconds + 's';
+                        }
+                        : (ttcc) => {
+                            const totalSecs = ttcc.days * 86400 + ttcc.hours * 3600 + ttcc.minutes * 60 + ttcc.seconds;
+                            const h = Math.floor(totalSecs / 3600);
+                            const m = Math.floor((totalSecs % 3600) / 60);
+                            const s = totalSecs % 60;
+                            if (currentTfSeconds >= 43200) {
+                                return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                            }
+                            if (h > 0) {
+                                return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                            }
+                            return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                        }
+                });
+            }
             allData = [];
-            if (currentWs) currentWs.close();
+            // 교체
+            if (currentWs) {
+                currentWs.onclose = null;  // 재연결 방지
+                if (currentWs.readyState === WebSocket.OPEN || currentWs.readyState === WebSocket.CONNECTING) {
+                    currentWs.close();
+                }
+                currentWs = null;
+            }
 
             loadData().then(() => {
                 const nb = window.currentDataLength || 200;
@@ -1029,11 +1291,10 @@ nav {
         }
 
         // --- 로그 차트 ---
-        let isLog = false;
         function toggleLog() {
             isLog = !isLog;
             chart.priceScale('right').applyOptions({ mode: isLog ? 1 : 0 });
-            document.getElementById('log-btn').style.color = isLog ? '#58a6ff' : '';
+            document.getElementById('set-log').checked = isLog;
         }
 
         // --- 인디케이터 토글 ---
@@ -1085,7 +1346,7 @@ nav {
 
                 const item = msg.data[0];
                 const bar = {
-                    time: Math.floor(item[0] / 1000) + 32400,
+                    time: Math.floor(item[0] / 1000),
                     open: parseFloat(item[1]),
                     high: parseFloat(item[2]),
                     low: parseFloat(item[3]),
@@ -1161,9 +1422,13 @@ nav {
             if (!candle) return;
             updateOhlc(candle.open, candle.high, candle.low, candle.close);
         });
+        const chartWrapper = document.getElementById('chart-wrapper');
+        chartWrapper.addEventListener('mousemove', updateHighLow);
+        chartWrapper.addEventListener('mouseup', updateHighLow);
 
         // --- RSI 동기 + 과거 데이터 lazy load ---
         chart.timeScale().subscribeVisibleLogicalRangeChange((lr) => {
+            updateHighLow();
             if (lr) {
                 try { rsiChart.timeScale().setVisibleLogicalRange(lr); } catch (e) { }
                 if (lr.from < 10) loadMoreData();
@@ -1293,6 +1558,7 @@ nav {
         loadData().then(() => {
             connectWebSocket();
             loadHoldings();  // loadData 끝난 후 실행 → lastPrice 설정된 이후
+            startCountdown();
         });
     </script>
 </body>

@@ -36,19 +36,19 @@ let showCountdown = true;    // 봉 카운트다운 표시 여부
    각 타임프레임별로 WebSocket 채널명, REST API 파라미터, 초 단위를 정의
    ==================================================== */
 const TF_MAP = {
-    '1min':  { channel: 'candle1m',  restGran: '1min',  seconds: 60 },
-    '3min':  { channel: 'candle3m',  restGran: '3min',  seconds: 180 },
-    '5min':  { channel: 'candle5m',  restGran: '5min',  seconds: 300 },
+    '1min': { channel: 'candle1m', restGran: '1min', seconds: 60 },
+    '3min': { channel: 'candle3m', restGran: '3min', seconds: 180 },
+    '5min': { channel: 'candle5m', restGran: '5min', seconds: 300 },
     '15min': { channel: 'candle15m', restGran: '15min', seconds: 900 },
     '30min': { channel: 'candle30m', restGran: '30min', seconds: 1800 },
-    '1h':    { channel: 'candle1H',  restGran: '1h',    seconds: 3600 },
-    '4h':    { channel: 'candle4H',  restGran: '4h',    seconds: 14400 },
-    '6h':    { channel: 'candle6H',  restGran: '6h',    seconds: 21600 },
-    '12h':   { channel: 'candle12H', restGran: '12h',   seconds: 43200 },
-    '1day':  { channel: 'candle1D',  restGran: '1day',  seconds: 86400 },
-    '3day':  { channel: 'candle3D',  restGran: '3day',  seconds: 259200 },
-    '1week': { channel: 'candle1W',  restGran: '1week', seconds: 604800 },
-    '1month':{ channel: 'candle1M',  restGran: '1M',    seconds: 2592000 },
+    '1h': { channel: 'candle1H', restGran: '1h', seconds: 3600 },
+    '4h': { channel: 'candle4H', restGran: '4h', seconds: 14400 },
+    '6h': { channel: 'candle6H', restGran: '6h', seconds: 21600 },
+    '12h': { channel: 'candle12H', restGran: '12h', seconds: 43200 },
+    '1day': { channel: 'candle1D', restGran: '1day', seconds: 86400 },
+    '3day': { channel: 'candle3D', restGran: '3day', seconds: 259200 },
+    '1week': { channel: 'candle1W', restGran: '1week', seconds: 604800 },
+    '1month': { channel: 'candle1M', restGran: '1M', seconds: 2592000 },
 };
 
 
@@ -80,20 +80,20 @@ const candleSeries = chart.addSeries(LightweightCharts.CandlestickSeries, {
 });
 
 /* 이동평균선 시리즈 (MA5, MA20, MA60) - 초기에는 숨김 */
-const ma5Series  = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF9800', lineWidth: 1, title: 'MA5',  visible: false, priceLineVisible: false });
+const ma5Series = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF9800', lineWidth: 1, title: 'MA5', visible: false, priceLineVisible: false });
 const ma20Series = chart.addSeries(LightweightCharts.LineSeries, { color: '#3182F6', lineWidth: 1, title: 'MA20', visible: false, priceLineVisible: false });
 const ma60Series = chart.addSeries(LightweightCharts.LineSeries, { color: '#9C27B0', lineWidth: 1, title: 'MA60', visible: false, priceLineVisible: false });
 
 /* 볼린저 밴드 시리즈 (상단·중간·하단) - 초기에는 숨김 */
-const bbUpperSeries  = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF5722', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'BB↑', visible: false, priceLineVisible: false });
+const bbUpperSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF5722', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'BB↑', visible: false, priceLineVisible: false });
 const bbMiddleSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF572288', lineWidth: 1, title: 'BB', visible: false, priceLineVisible: false });
-const bbLowerSeries  = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF5722', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'BB↓', visible: false, priceLineVisible: false });
+const bbLowerSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF5722', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, title: 'BB↓', visible: false, priceLineVisible: false });
 
 /* 일목균형표 시리즈 (전환선·기준선·선행A·선행B·후행) - 초기에는 숨김 */
 const ichiTenkanSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#E91E63', lineWidth: 1, title: '전환', visible: false, priceLineVisible: false });
-const ichiKijunSeries  = chart.addSeries(LightweightCharts.LineSeries, { color: '#3182F6', lineWidth: 1, title: '기준', visible: false, priceLineVisible: false });
-const ichiSpanASeries  = chart.addSeries(LightweightCharts.LineSeries, { color: '#4CAF50', lineWidth: 1, title: '선행A', visible: false, priceLineVisible: false });
-const ichiSpanBSeries  = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF9800', lineWidth: 1, title: '선행B', visible: false, priceLineVisible: false });
+const ichiKijunSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#3182F6', lineWidth: 1, title: '기준', visible: false, priceLineVisible: false });
+const ichiSpanASeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#4CAF50', lineWidth: 1, title: '선행A', visible: false, priceLineVisible: false });
+const ichiSpanBSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#FF9800', lineWidth: 1, title: '선행B', visible: false, priceLineVisible: false });
 const ichiChikouSeries = chart.addSeries(LightweightCharts.LineSeries, { color: '#9E9E9E', lineWidth: 1, title: '후행', visible: false, priceLineVisible: false });
 
 /* 거래량 히스토그램 시리즈
@@ -120,9 +120,9 @@ const rsiChart = LightweightCharts.createChart(rsiContainer, {
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
 });
 
-const rsiSeries     = rsiChart.addSeries(LightweightCharts.LineSeries, { color: '#9C27B0', lineWidth: 1, title: 'RSI', priceLineVisible: false });
+const rsiSeries = rsiChart.addSeries(LightweightCharts.LineSeries, { color: '#9C27B0', lineWidth: 1, title: 'RSI', priceLineVisible: false });
 const rsiOverbought = rsiChart.addSeries(LightweightCharts.LineSeries, { color: '#F0445266', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceLineVisible: false }); // 과매수선 (70)
-const rsiOversold   = rsiChart.addSeries(LightweightCharts.LineSeries, { color: '#2563EB66', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceLineVisible: false }); // 과매도선 (30)
+const rsiOversold = rsiChart.addSeries(LightweightCharts.LineSeries, { color: '#2563EB66', lineWidth: 1, lineStyle: LightweightCharts.LineStyle.Dashed, priceLineVisible: false }); // 과매도선 (30)
 
 
 /* ====================================================
@@ -178,9 +178,9 @@ function updateAllSeries(data) {
        slice(i-5, i): i-5 ~ i-1 인덱스 5개 */
     const ma5D = [], ma20D = [], ma60D = [];
     data.forEach((d, i) => {
-        if (i >= 5)  ma5D.push({ time: d.time, value: data.slice(i-5, i).reduce((s,c) => s+c.close, 0) / 5 });
-        if (i >= 20) ma20D.push({ time: d.time, value: data.slice(i-20, i).reduce((s,c) => s+c.close, 0) / 20 });
-        if (i >= 60) ma60D.push({ time: d.time, value: data.slice(i-60, i).reduce((s,c) => s+c.close, 0) / 60 });
+        if (i >= 5) ma5D.push({ time: d.time, value: data.slice(i - 5, i).reduce((s, c) => s + c.close, 0) / 5 });
+        if (i >= 20) ma20D.push({ time: d.time, value: data.slice(i - 20, i).reduce((s, c) => s + c.close, 0) / 20 });
+        if (i >= 60) ma60D.push({ time: d.time, value: data.slice(i - 60, i).reduce((s, c) => s + c.close, 0) / 60 });
     });
     ma5Series.setData(ma5D);
     ma20Series.setData(ma20D);
@@ -192,12 +192,12 @@ function updateAllSeries(data) {
     const bbU = [], bbM = [], bbL = [];
     data.forEach((d, i) => {
         if (i < 20) return;
-        const sl = data.slice(i-20, i);
-        const avg = sl.reduce((s,c) => s+c.close, 0) / 20;
-        const std = Math.sqrt(sl.reduce((s,c) => s + Math.pow(c.close - avg, 2), 0) / 20);
-        bbU.push({ time: d.time, value: avg + 2*std });
+        const sl = data.slice(i - 20, i);
+        const avg = sl.reduce((s, c) => s + c.close, 0) / 20;
+        const std = Math.sqrt(sl.reduce((s, c) => s + Math.pow(c.close - avg, 2), 0) / 20);
+        bbU.push({ time: d.time, value: avg + 2 * std });
         bbM.push({ time: d.time, value: avg });
-        bbL.push({ time: d.time, value: avg - 2*std });
+        bbL.push({ time: d.time, value: avg - 2 * std });
     });
     bbUpperSeries.setData(bbU);
     bbMiddleSeries.setData(bbM);
@@ -207,14 +207,14 @@ function updateAllSeries(data) {
        전환선(9) / 기준선(26) / 선행A=(전환+기준)/2 / 선행B(52) / 후행(26봉 앞에 표시) */
     const tk = [], kj = [], sA = [], sB = [], ck = [];
     data.forEach((d, i) => {
-        if (i >= 8)  tk.push({ time: d.time, value: ichiAvg(data, i, 9) });
+        if (i >= 8) tk.push({ time: d.time, value: ichiAvg(data, i, 9) });
         if (i >= 25) {
             kj.push({ time: d.time, value: ichiAvg(data, i, 26) });
             sA.push({ time: d.time, value: (ichiAvg(data, i, 9) + ichiAvg(data, i, 26)) / 2 });
             sB.push({ time: d.time, value: ichiAvg(data, i, 52) });
         }
         // 후행선: 현재 종가를 26봉 뒤 시간에 표시
-        if (i + 26 < data.length) ck.push({ time: data[i+26].time, value: d.close });
+        if (i + 26 < data.length) ck.push({ time: data[i + 26].time, value: d.close });
     });
     ichiTenkanSeries.setData(tk);
     ichiKijunSeries.setData(kj);
@@ -228,8 +228,8 @@ function updateAllSeries(data) {
     const rsiD = [];
     for (let i = 14; i < data.length; i++) {
         let g = 0, l = 0;
-        for (let j = i-13; j <= i; j++) {
-            const diff = data[j].close - data[j-1].close;
+        for (let j = i - 13; j <= i; j++) {
+            const diff = data[j].close - data[j - 1].close;
             if (diff > 0) g += diff; else l -= diff;
         }
         rsiD.push({ time: data[i].time, value: 100 - 100 / (1 + g / (l || 1)) });
@@ -249,7 +249,7 @@ function updateAllSeries(data) {
     /* RSI 차트 타임스케일을 메인 차트와 동기화 (50ms 딜레이로 렌더링 후 실행) */
     setTimeout(() => {
         const lr = chart.timeScale().getVisibleLogicalRange();
-        if (lr) { try { rsiChart.timeScale().setVisibleLogicalRange(lr); } catch (e) {} }
+        if (lr) { try { rsiChart.timeScale().setVisibleLogicalRange(lr); } catch (e) { } }
     }, 50);
 }
 
@@ -267,11 +267,11 @@ async function loadData() {
     /* API 응답: [타임스탬프(ms), 시가, 고가, 저가, 종가, 거래량]
        타임스탬프를 초 단위로 변환 (LightweightCharts는 Unix 초 단위 사용) */
     allData = res.data.map(item => ({
-        time:   Math.floor(item[0] / 1000),
-        open:   parseFloat(item[1]),
-        high:   parseFloat(item[2]),
-        low:    parseFloat(item[3]),
-        close:  parseFloat(item[4]),
+        time: Math.floor(item[0] / 1000),
+        open: parseFloat(item[1]),
+        high: parseFloat(item[2]),
+        low: parseFloat(item[3]),
+        close: parseFloat(item[4]),
         volume: parseFloat(item[5])
     })).sort((a, b) => a.time - b.time); // 시간 오름차순 정렬
 
@@ -301,14 +301,14 @@ function loadMoreData() {
 
             if (res.code === '00000' && res.data && res.data.length > 0) {
                 const older = res.data.map(item => ({
-                    time:   Math.floor(item[0] / 1000),
-                    open:   parseFloat(item[1]),
-                    high:   parseFloat(item[2]),
-                    low:    parseFloat(item[3]),
-                    close:  parseFloat(item[4]),
+                    time: Math.floor(item[0] / 1000),
+                    open: parseFloat(item[1]),
+                    high: parseFloat(item[2]),
+                    low: parseFloat(item[3]),
+                    close: parseFloat(item[4]),
                     volume: parseFloat(item[5])
                 })).filter(d => d.time > 0 && d.open > 0 && d.close > 0 && d.time < oldestTime)
-                   .sort((a, b) => a.time - b.time);
+                    .sort((a, b) => a.time - b.time);
 
                 if (older.length > 0) {
                     const lr = chart.timeScale().getVisibleLogicalRange();
@@ -317,7 +317,7 @@ function loadMoreData() {
                     /* 데이터가 앞에 추가됐으므로 보이는 범위를 동일하게 유지 */
                     if (lr) chart.timeScale().setVisibleLogicalRange({
                         from: lr.from + older.length,
-                        to:   lr.to  + older.length
+                        to: lr.to + older.length
                     });
                 }
             }
@@ -338,13 +338,13 @@ function changeTimeframe(gran) {
 
     /* 현재 보이는 범위를 기억해서 타임프레임 변경 후에도 비슷한 위치 유지 */
     const lr = chart.timeScale().getVisibleLogicalRange();
-    const totalBars  = window.currentDataLength || 200;
+    const totalBars = window.currentDataLength || 200;
     const rightOffset = lr ? lr.to - totalBars : 10;
-    const barCount    = lr ? lr.to - lr.from   : 50;
+    const barCount = lr ? lr.to - lr.from : 50;
 
     currentGranularity = TF_MAP[gran].restGran;
-    currentChannel     = TF_MAP[gran].channel;
-    currentTfSeconds   = TF_MAP[gran].seconds;
+    currentChannel = TF_MAP[gran].channel;
+    currentTfSeconds = TF_MAP[gran].seconds;
 
     /* 카운트다운 플러그인이 있으면 타임프레임에 맞게 옵션 업데이트 */
     if (countdownPrimitive) {
@@ -353,20 +353,20 @@ function changeTimeframe(gran) {
             timeLabelFormatter: currentTfSeconds >= 259200
                 /* 3D 이상: "Xd Yh" 형식 */
                 ? (ttcc) => {
-                    if (ttcc.days > 0)    return ttcc.days + 'd ' + ttcc.hours + 'h';
-                    if (ttcc.hours > 0)   return ttcc.hours + 'h ' + ttcc.minutes + 'm';
+                    if (ttcc.days > 0) return ttcc.days + 'd ' + ttcc.hours + 'h';
+                    if (ttcc.hours > 0) return ttcc.hours + 'h ' + ttcc.minutes + 'm';
                     if (ttcc.minutes > 0) return ttcc.minutes + 'm ' + ttcc.seconds + 's';
                     return ttcc.seconds + 's';
                 }
                 /* 그 외: "MM:SS" 또는 "HH:MM:SS" 형식 */
                 : (ttcc) => {
-                    const t = ttcc.days*86400 + ttcc.hours*3600 + ttcc.minutes*60 + ttcc.seconds;
+                    const t = ttcc.days * 86400 + ttcc.hours * 3600 + ttcc.minutes * 60 + ttcc.seconds;
                     const h = Math.floor(t / 3600);
                     const m = Math.floor((t % 3600) / 60);
                     const s = t % 60;
                     if (currentTfSeconds >= 43200 || h > 0)
-                        return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-                    return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+                        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
                 }
         });
     }
@@ -425,7 +425,7 @@ function updateHighLow() {
 
     /* 현재 화면에 보이는 데이터 범위 계산 */
     const from = Math.max(0, Math.floor(lr.from));
-    const to   = Math.min(allData.length - 1, Math.ceil(lr.to));
+    const to = Math.min(allData.length - 1, Math.ceil(lr.to));
     const visible = allData.slice(from, to + 1);
     if (!visible.length) return;
 
@@ -433,7 +433,7 @@ function updateHighLow() {
     let hV = -Infinity, lV = Infinity, hC, lC;
     visible.forEach(d => {
         if (d.high > hV) { hV = d.high; hC = d; }
-        if (d.low  < lV) { lV = d.low;  lC = d; }
+        if (d.low < lV) { lV = d.low; lC = d; }
     });
 
     /* 차트 좌표 계산 (시간 → X픽셀, 가격 → Y픽셀) */
@@ -453,14 +453,14 @@ function updateHighLow() {
     if (hX != null && hY != null) {
         hEl.style.display = 'flex';
         hEl.style.left = hX + 'px';
-        hEl.style.top  = (hY - 48) + 'px'; // 봉 위쪽에 표시 (-48px)
+        hEl.style.top = (hY - 48) + 'px'; // 봉 위쪽에 표시 (-48px)
         document.getElementById('hl-high-val').textContent =
             hV.toLocaleString() + ' USDT (전일마감기준 ' + (hPct >= 0 ? '+' : '') + hPct.toFixed(2) + '%)';
     }
     if (lX != null && lY != null) {
         lEl.style.display = 'flex';
         lEl.style.left = lX + 'px';
-        lEl.style.top  = (lY + 10) + 'px'; // 봉 아래쪽에 표시 (+10px)
+        lEl.style.top = (lY + 10) + 'px'; // 봉 아래쪽에 표시 (+10px)
         document.getElementById('hl-low-val').textContent =
             lV.toLocaleString() + ' USDT (전일마감기준 ' + (lPct >= 0 ? '+' : '') + lPct.toFixed(2) + '%)';
     }
@@ -470,7 +470,7 @@ function updateHighLow() {
 function toggleHighLow(enabled) {
     showHighLow = enabled;
     document.getElementById('hl-high').style.display = enabled ? 'flex' : 'none';
-    document.getElementById('hl-low').style.display  = enabled ? 'flex' : 'none';
+    document.getElementById('hl-low').style.display = enabled ? 'flex' : 'none';
     if (enabled) updateHighLow();
 }
 
@@ -485,13 +485,13 @@ function startCountdown() {
             customLastPriceLine: true,
             timeframeInSeconds: currentTfSeconds,
             timeLabelFormatter: (ttcc) => {
-                const t = ttcc.days*86400 + ttcc.hours*3600 + ttcc.minutes*60 + ttcc.seconds;
+                const t = ttcc.days * 86400 + ttcc.hours * 3600 + ttcc.minutes * 60 + ttcc.seconds;
                 const h = Math.floor(t / 3600);
                 const m = Math.floor((t % 3600) / 60);
                 const s = t % 60;
                 if (currentTfSeconds >= 43200 || h > 0)
-                    return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
-                return String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+                    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
             }
         });
         /* 카운트다운 플러그인이 마지막 가격선을 커스텀으로 그리므로 기본 가격선 숨김 */
@@ -521,7 +521,7 @@ function toggleInd(name) {
     const on = indState[name];
     setIndBtnStyle(name, on);
 
-    if (name === 'ma5')  ma5Series.applyOptions({ visible: on });
+    if (name === 'ma5') ma5Series.applyOptions({ visible: on });
     else if (name === 'ma20') ma20Series.applyOptions({ visible: on });
     else if (name === 'ma60') ma60Series.applyOptions({ visible: on });
     else if (name === 'bb') {
@@ -541,7 +541,7 @@ function toggleInd(name) {
             /* RSI 차트 표시 후 타임스케일 동기화 */
             setTimeout(() => {
                 const lr = chart.timeScale().getVisibleLogicalRange();
-                if (lr) { try { rsiChart.timeScale().setVisibleLogicalRange(lr); } catch (e) {} }
+                if (lr) { try { rsiChart.timeScale().setVisibleLogicalRange(lr); } catch (e) { } }
             }, 50);
         }
     }
@@ -559,7 +559,10 @@ function connectWebSocket() {
         /* 연결 후 구독 메시지 전송 */
         ws.send(JSON.stringify({
             op: 'subscribe',
-            args: [{ instType: 'SPOT', channel: currentChannel, instId: 'BTCUSDT' }]
+            args: [
+                { instType: 'SPOT', channel: currentChannel, instId: 'BTCUSDT' },
+                { instType: 'SPOT', channel: 'books15', instId: 'BTCUSDT' }
+            ]
         }));
         /* 20초마다 ping 전송 (연결 유지) */
         setInterval(() => ws.readyState === 1 && ws.send('ping'), 20000);
@@ -571,12 +574,19 @@ function connectWebSocket() {
         const msg = JSON.parse(event.data);
         if (!msg.data) return;
 
+        /* 호가 채널 */
+        if (msg.arg && (msg.arg.channel === 'books5' || msg.arg.channel === 'books15')) {
+            updateHoga(msg.data[0]);
+            return;
+        }
+
+        /* 캔들 채널 (기존 코드) */
         const item = msg.data[0];
         const bar = {
-            time:  Math.floor(item[0] / 1000),
-            open:  parseFloat(item[1]),
-            high:  parseFloat(item[2]),
-            low:   parseFloat(item[3]),
+            time: Math.floor(item[0] / 1000),
+            open: parseFloat(item[1]),
+            high: parseFloat(item[2]),
+            low: parseFloat(item[3]),
             close: parseFloat(item[4])
         };
 
@@ -594,6 +604,41 @@ function connectWebSocket() {
     ws.onclose = () => {
         if (ws === currentWs) setTimeout(connectWebSocket, 3000);
     };
+}
+
+function updateHoga(data) {
+    /* 각 절반 영역 높이 기준으로 표시 행 수 계산 (행 높이 24px) */
+    const topEl = document.querySelector('.hoga-top');
+    const rowCount = topEl ? Math.max(5, Math.floor(topEl.clientHeight / 24)) : 15;
+
+    /* asks: API는 오름차순(낮은 가격 먼저) → 역순으로 최대 rowCount개 → 내림차순(높은 가격 위) */
+    const asks = [...data.asks].slice(0, rowCount).reverse();
+    const bids = data.bids.slice(0, rowCount);
+
+    /* 누적 합계 계산 */
+    let askTotal = 0, bidTotal = 0;
+    const asksWithTotal = asks.map(([p, q]) => { askTotal += parseFloat(q); return [p, q, askTotal]; });
+    const bidsWithTotal = bids.map(([p, q]) => { bidTotal += parseFloat(q); return [p, q, bidTotal]; });
+
+    const maxTotal = Math.max(askTotal, bidTotal);
+
+    document.getElementById('hoga-asks').innerHTML = asksWithTotal.map(([price, qty, total]) => {
+        const pct = (total / maxTotal * 100).toFixed(1);
+        return `<tr style="background:linear-gradient(to left, rgba(37,99,235,0.12) ${pct}%, transparent ${pct}%)">
+            <td class="hoga-ask">${parseFloat(price).toLocaleString()}</td>
+            <td>${parseFloat(qty).toFixed(4)}</td>
+            <td>${total.toFixed(4)}</td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('hoga-bids').innerHTML = bidsWithTotal.map(([price, qty, total]) => {
+        const pct = (total / maxTotal * 100).toFixed(1);
+        return `<tr style="background:linear-gradient(to left, rgba(240,68,82,0.12) ${pct}%, transparent ${pct}%)">
+            <td class="hoga-bid">${parseFloat(price).toLocaleString()}</td>
+            <td>${parseFloat(qty).toFixed(4)}</td>
+            <td>${total.toFixed(4)}</td>
+        </tr>`;
+    }).join('');
 }
 
 
@@ -642,8 +687,8 @@ async function loadTicker() {
         const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers?symbol=BTCUSDT').then(r => r.json());
         if (res.code === '00000' && res.data && res.data[0]) {
             const d = res.data[0];
-            const price   = parseFloat(d.lastPr);
-            const chgPct  = parseFloat(d.change24h) * 100; // 소수 → 퍼센트 변환
+            const price = parseFloat(d.lastPr);
+            const chgPct = parseFloat(d.change24h) * 100; // 소수 → 퍼센트 변환
 
             /* 전일 마감가 계산: price = prevClose × (1 + change24h)
                → prevClose = price / (1 + change24h) */
@@ -667,10 +712,10 @@ async function loadTicker() {
             cEl.className = 'ph-change ' + (chgPct >= 0 ? 'up' : 'down');
 
             document.getElementById('ph-high').textContent = parseFloat(d.high24h).toLocaleString();
-            document.getElementById('ph-low').textContent  = parseFloat(d.low24h).toLocaleString();
-            document.getElementById('ph-vol').textContent  = parseFloat(d.baseVolume).toFixed(0) + ' BTC';
+            document.getElementById('ph-low').textContent = parseFloat(d.low24h).toLocaleString();
+            document.getElementById('ph-vol').textContent = parseFloat(d.baseVolume).toFixed(0) + ' BTC';
         }
-    } catch (e) {}
+    } catch (e) { }
 }
 
 
@@ -694,7 +739,7 @@ chartWrapper.addEventListener('mouseup', updateHighLow);
 chart.timeScale().subscribeVisibleLogicalRangeChange(lr => {
     updateHighLow();
     if (lr) {
-        try { rsiChart.timeScale().setVisibleLogicalRange(lr); } catch (e) {}
+        try { rsiChart.timeScale().setVisibleLogicalRange(lr); } catch (e) { }
         if (lr.from < 10) loadMoreData(); // 왼쪽 끝 근처면 과거 데이터 추가 로드
     }
 });
@@ -731,7 +776,7 @@ document.addEventListener('mouseup', () => {
 /* 가로 리사이즈: 핸들을 드래그해서 오른쪽 패널 너비 조절
    startX - e.clientX: 왼쪽으로 드래그 시 패널이 넓어지는 방향 */
 function makeHResizer(handleId, rightPanelId, minW = 200, maxW = 600) {
-    const h  = document.getElementById(handleId);
+    const h = document.getElementById(handleId);
     const rp = document.getElementById(rightPanelId);
     let drag = false, startX = 0, startW = 0;
 
@@ -758,7 +803,7 @@ function makeHResizer(handleId, rightPanelId, minW = 200, maxW = 600) {
 
 /* 세로 리사이즈: 핸들을 드래그해서 위/아래 패널 높이 조절 */
 function makeVResizer(handleId, topId, botId) {
-    const h  = document.getElementById(handleId);
+    const h = document.getElementById(handleId);
     const tp = document.getElementById(topId);
     const bp = document.getElementById(botId);
     let drag = false, startY = 0, startTH = 0, startBH = 0;
@@ -776,7 +821,7 @@ function makeVResizer(handleId, topId, botId) {
         const d = e.clientY - startY;
         tp.style.flex = 'none';
         tp.style.height = Math.max(150, startTH + d) + 'px'; // 주문창 최소 150px
-        bp.style.height = Math.max(80,  startBH - d) + 'px'; // 호가창 최소 80px
+        bp.style.height = Math.max(80, startBH - d) + 'px'; // 호가창 최소 80px
     });
     document.addEventListener('mouseup', () => {
         if (!drag) return;
@@ -788,7 +833,7 @@ function makeVResizer(handleId, topId, botId) {
 }
 
 makeHResizer('rh-1', 'panel-middle', 340, 340); // 주문/호가 패널: 340px 고정
-makeHResizer('rh-2', 'panel-chat',   270, 380); // 댓글 패널: 270~380px
+makeHResizer('rh-2', 'panel-chat', 270, 380); // 댓글 패널: 270~380px
 makeVResizer('rh-v', 'panel-order-wrap', 'panel-hoga');
 
 
@@ -803,7 +848,7 @@ function switchOrderTab(side) {
     document.getElementById('tab-buy').classList.toggle('active', isBuy);
     document.getElementById('tab-sell').classList.toggle('active', !isBuy);
     document.getElementById('order-submit-btn').textContent = isBuy ? '매수 주문' : '매도 주문';
-    document.getElementById('order-submit-btn').className   = isBuy ? 'btn-buy' : 'btn-sell';
+    document.getElementById('order-submit-btn').className = isBuy ? 'btn-buy' : 'btn-sell';
 
     const av = document.querySelector('.order-avail span');
     if (isBuy) {
@@ -851,60 +896,27 @@ function submitOrder(side) {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-            username:   'testuser',
-            coinCode:   'BTCUSDT',
+            username: 'testuser',
+            coinCode: 'BTCUSDT',
             orderPrice: lastPrice,
             orderCount: qty
         })
     })
-    .then(r => r.text())
-    .then(result => {
-        if (result === 'success') {
-            alert((side === 'buy' ? '매수' : '매도') + ' 주문 완료!');
-            loadWallet();
-            loadHoldings();
-        } else {
-            alert('주문 실패: ' + result);
-        }
-    })
-    .catch(err => alert('오류: ' + err));
+        .then(r => r.text())
+        .then(result => {
+            if (result === 'success') {
+                alert((side === 'buy' ? '매수' : '매도') + ' 주문 완료!');
+                loadWallet();
+                loadHoldings();
+            } else {
+                alert('주문 실패: ' + result);
+            }
+        })
+        .catch(err => alert('오류: ' + err));
 }
 
 
-/* ====================================================
-   사이드바 슬라이드 토글
-   ==================================================== */
-const SIDEBAR_TITLES = { invest: '내 투자현황', interest: '관심 종목', recent: '최근 본', live: '실시간' };
-let sidebarActiveTab = null;
-
-/* 같은 탭 클릭 시 닫기, 다른 탭 클릭 시 열고 제목 변경 */
-function toggleSidebar(tab) {
-    const panel = document.getElementById('sidebar-panel');
-    if (sidebarActiveTab === tab) { closeSidebar(); return; }
-    sidebarActiveTab = tab;
-    panel.classList.add('open');
-    document.querySelectorAll('.si-btn').forEach(b => b.classList.remove('active'));
-    document.getElementById('si-' + tab).classList.add('active');
-    document.getElementById('sidebar-title').textContent = SIDEBAR_TITLES[tab] || tab;
-}
-
-function closeSidebar() {
-    sidebarActiveTab = null;
-    document.getElementById('sidebar-panel').classList.remove('open');
-    document.querySelectorAll('.si-btn').forEach(b => b.classList.remove('active'));
-}
-
-
-/* ====================================================
-   사이드바 탭 전환 (포지션 / 오더 / 기록)
-   ==================================================== */
-function switchBpTab(el, tab) {
-    document.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('active'));
-    el.classList.add('active');
-    document.getElementById('tab-positions').style.display = tab === 'positions' ? 'flex' : 'none';
-    document.getElementById('tab-orders').style.display   = tab === 'orders'    ? 'flex' : 'none';
-    document.getElementById('tab-history').style.display  = tab === 'history'   ? 'flex' : 'none';
-}
+/* 사이드바 관련 함수는 common.js 참고 */
 
 
 /* ====================================================
@@ -932,7 +944,7 @@ async function loadHoldings() {
         let rows = '';
         res.forEach(h => {
             const pnl = (lastPrice - h.avgPrice) * h.coinCount;
-            const pc  = pnl >= 0 ? 'var(--up)' : 'var(--down)';
+            const pc = pnl >= 0 ? 'var(--up)' : 'var(--down)';
             rows += '<tr>'
                 + '<td>' + h.coinCode + '</td>'
                 + '<td>' + h.coinCount.toFixed(6) + '</td>'
@@ -953,11 +965,11 @@ async function loadHoldings() {
    실시간 댓글 (로컬 전용, 서버 미연동)
    ==================================================== */
 function sendChat() {
-    const inp  = document.getElementById('chat-input');
+    const inp = document.getElementById('chat-input');
     const text = inp.value.trim();
     if (!text) return;
 
-    const msgs  = document.getElementById('chat-messages');
+    const msgs = document.getElementById('chat-messages');
     const empty = msgs.querySelector('.chat-empty');
     if (empty) empty.remove(); // 빈 상태 메시지 제거
 
@@ -987,3 +999,97 @@ loadData().then(() => {
     loadHoldings();     // 보유 내역 로드 (lastPrice 설정 이후에 실행)
     startCountdown();   // 봉 카운트다운 시작
 });
+
+/* 창 크기 변경 시 인라인 스타일 초기화
+   드래그로 설정된 고정 높이/너비가 미디어쿼리를 막는 문제 해결 */
+window.addEventListener('resize', () => {
+    const mid = document.getElementById('panel-middle');
+    const order = document.getElementById('panel-order-wrap');
+    const hoga = document.getElementById('panel-hoga');
+    const chart = document.getElementById('panel-chart');
+
+    if (window.innerWidth <= 1100) {
+        mid.style.width = '';
+        order.style.height = '';
+        hoga.style.height = '';
+        chart.style.height = '';
+    }
+});
+
+
+/* ====================================================
+   하단 티커 바 - 15초마다 종목 가격 갱신
+   ==================================================== */
+const TICKER_SYMBOLS = ['BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'SOLUSDT', 'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT'];
+
+async function loadTickerBar() {
+    const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers')
+        .then(r => r.json()).catch(() => null);
+    if (!res || !res.data) return;
+
+    const filtered = res.data.filter(d => TICKER_SYMBOLS.includes(d.symbol));
+    const track = document.getElementById('ticker-track');
+
+    /* 최초 1회: HTML 구조 생성 (무한 스크롤용 2세트)
+       이후 갱신 시에는 텍스트만 교체해서 끊김 방지 */
+    if (!track.children.length) {
+        const items = filtered.map(d => {
+            const change = parseFloat(d.change24h) * 100;
+            const cls = change >= 0 ? 'up' : 'down';
+            const sign = change >= 0 ? '+' : '';
+            return `<div class="ticker-item">
+                <span class="ticker-name">${d.symbol.replace('USDT', '')}</span>
+                <span class="ticker-price">${parseFloat(d.lastPr).toLocaleString()}</span>
+                <span class="ticker-change ${cls}">${sign}${change.toFixed(2)}%</span>
+            </div>`;
+        }).join('');
+        track.innerHTML = items + items + items + items;
+        /* 두 번째 세트 첫 아이템의 offsetLeft = 정확한 첫 세트 너비 */
+        setTimeout(() => {
+            const secondSet = track.children[filtered.length];
+            tickerHalfWidth = track.scrollWidth / 2;
+            tickerTrackEl = track;
+        }, 500);
+        return;
+    }
+
+    /* 이후 갱신: 가격·변동률 텍스트만 교체 (애니메이션 유지) */
+    const allItems = track.querySelectorAll('.ticker-item');
+    filtered.forEach((d, i) => {
+        const change = parseFloat(d.change24h) * 100;
+        const cls = change >= 0 ? 'up' : 'down';
+        const sign = change >= 0 ? '+' : '';
+        [allItems[i], allItems[i + filtered.length]].forEach(el => {
+            if (!el) return;
+            el.querySelector('.ticker-price').textContent = parseFloat(d.lastPr).toLocaleString();
+            const changeEl = el.querySelector('.ticker-change');
+            changeEl.textContent = `${sign}${change.toFixed(2)}%`;
+            changeEl.className = `ticker-change ${cls}`;
+        });
+    });
+}
+
+/* CSS 애니메이션 대신 JS로 스크롤 제어 */
+let tickerX = 0;
+let tickerPaused = false;
+let tickerHalfWidth = 0;
+let tickerTrackEl = null;
+
+function animateTicker() {
+    if (!tickerPaused && tickerHalfWidth > 0 && tickerTrackEl) {
+        tickerX -= 0.6;
+        console.log(tickerHalfWidth, document.getElementById('ticker-track').scrollWidth)
+        if (Math.abs(tickerX) >= tickerHalfWidth) tickerX += tickerHalfWidth;
+        tickerTrackEl.style.transform = `translateX(${tickerX}px)`;
+    }
+    requestAnimationFrame(animateTicker);
+}
+
+const _tickerEl = document.getElementById('ticker-track');
+_tickerEl.addEventListener('mouseenter', () => tickerPaused = true);
+_tickerEl.addEventListener('mouseleave', () => tickerPaused = false);
+
+animateTicker();
+
+loadTickerBar();
+setInterval(loadTickerBar, 15000);

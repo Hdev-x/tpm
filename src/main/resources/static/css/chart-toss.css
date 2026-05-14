@@ -1,157 +1,8 @@
 /* =====================================================
    chart-toss.css
    차트 페이지 전용 스타일시트
-   코인/주식 차트 공통으로 사용
+   공통 스타일은 common.css 참고
    ===================================================== */
-
-
-/* ── 전역 초기화 ──
-   모든 요소의 기본 margin/padding 제거,
-   box-sizing: border-box → width/height 계산에 padding/border 포함 */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-
-/* ── CSS 변수 (디자인 토큰) ──
-   :root에 정의하면 var(--변수명)으로 어디서든 재사용 가능
-   색상·간격 등을 한 곳에서 관리할 수 있어 유지보수가 편함 */
-:root {
-    --bg:        #0C0C0F;               /* 최외곽 배경 (가장 어두운 검정) */
-    --surface:   #16161A;               /* 카드·패널 배경 */
-    --surface2:  #1C1C22;               /* 카드 안쪽 강조 배경 */
-    --border:    rgba(255,255,255,0.07); /* 기본 테두리 (연한 흰색 7%) */
-    --border2:   rgba(255,255,255,0.12); /* 강조 테두리 (연한 흰색 12%) */
-    --text:      #FFFFFF;               /* 기본 텍스트 (흰색) */
-    --text2:     rgba(255,255,255,0.55); /* 보조 텍스트 (55% 흰색) */
-    --text3:     rgba(255,255,255,0.3);  /* 약한 텍스트·라벨 (30% 흰색) */
-    --blue:      #3182F6;               /* 강조색 (파랑) - 버튼·활성 상태 */
-    --up:        #F04452;               /* 상승 색 (빨강) - 한국 주식 관례 */
-    --down:      #2563EB;               /* 하락 색 (파랑) - 한국 주식 관례 */
-    --radius:    12px;                  /* 카드 모서리 둥글기 */
-    --gap:       15px;                  /* 패널 간 간격 */
-}
-
-
-/* ── body 기본 스타일 ──
-   font-variant-numeric: tabular-nums → 숫자 너비를 고정폭으로 맞춰
-   가격 숫자가 업데이트될 때 레이아웃이 흔들리지 않게 함
-   overflow: hidden → 스크롤바 숨김 (내부에서 각 영역별로 스크롤 처리) */
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    font-size: 13px;
-    height: 100vh;
-    overflow: hidden;
-    font-variant-numeric: tabular-nums;
-}
-
-
-/* ====================================================
-   NAV - 상단 네비게이션 바
-   ==================================================== */
-nav {
-    height: 56px;
-    background: var(--bg);
-    border-bottom: 1px solid var(--bg); /* 배경과 같은 색 → 테두리 없는 효과 */
-    display: flex;
-    align-items: center;
-    padding: 0 50px;
-    flex-shrink: 0; /* flex 컨테이너 안에서 nav 높이가 줄어들지 않도록 고정 */
-    gap: 4px;
-}
-
-.logo {
-    font-size: 17px;
-    font-weight: 800;
-    color: var(--text);
-    margin-right: 24px;
-    letter-spacing: -0.3px;
-}
-
-/* 로고 안 span → "Bot" 부분만 파란색으로 강조 */
-.logo span {
-    color: var(--blue);
-}
-
-.nav-item {
-    color: var(--text2);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 6px 14px;
-    border-radius: 8px;
-    text-decoration: none;
-    transition: background 0.15s, color 0.15s; /* 호버 시 부드러운 전환 */
-}
-
-.nav-item:hover {
-    background: rgba(255,255,255,0.06);
-    color: var(--text);
-}
-
-/* 현재 페이지 메뉴 강조 */
-.nav-item.active {
-    color: var(--text);
-    background: rgba(255,255,255,0.06);
-}
-
-/* 오른쪽 영역 (검색·로그인) - margin-left: auto로 오른쪽 끝에 붙임 */
-.nav-right {
-    margin-left: auto;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.nav-search {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 10px;
-    padding: 7px 14px;
-    cursor: pointer;
-    color: var(--text3);
-    font-size: 13px;
-    width: 200px;
-    transition: border-color 0.15s;
-}
-
-.nav-search:hover {
-    border-color: var(--blue);
-}
-
-/* 검색 아이콘 SVG - stroke로만 그린 아이콘 */
-.nav-search svg {
-    width: 14px;
-    height: 14px;
-    stroke: currentColor; /* 부모의 color 값을 그대로 사용 */
-    fill: none;
-    stroke-width: 2;
-    flex-shrink: 0;
-}
-
-.nav-login-btn {
-    padding: 8px 18px;
-    background: var(--blue);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-size: 14px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.15s;
-    white-space: nowrap;
-}
-
-.nav-login-btn:hover {
-    opacity: 0.88;
-}
 
 
 /* ====================================================
@@ -167,7 +18,6 @@ nav {
     flex-shrink: 0;
 }
 
-/* 왼쪽: 종목명·현재가·전일대비 */
 .ph-left {
     display: flex;
     flex-direction: column;
@@ -176,7 +26,6 @@ nav {
     flex-shrink: 0;
 }
 
-/* 종목명 행 (Bitcoin + BTCUSDT 뱃지) */
 .ph-name-row {
     display: flex;
     align-items: center;
@@ -189,7 +38,6 @@ nav {
     color: var(--text);
 }
 
-/* 종목코드 뱃지 (예: BTCUSDT) */
 .ph-ticker {
     font-size: 12px;
     font-weight: 500;
@@ -199,53 +47,44 @@ nav {
     border-radius: 5px;
 }
 
-/* 가격·전일대비 한 줄 행
-   align-items: center → 폰트 크기가 달라도 세로 가운데 정렬 */
 .ph-price-row {
     display: flex;
     align-items: center;
     gap: 6px;
 }
 
-/* 현재가 숫자 - 가장 큰 폰트, 항상 흰색 고정 */
 .ph-price {
     font-size: 26px;
     font-weight: 800;
     letter-spacing: -0.8px;
     color: var(--text);
-    line-height: 1; /* 폰트 크기 차이로 생기는 세로 어긋남 방지 */
+    line-height: 1;
 }
 
-/* 전일대비 변화금액·변화율 공통 스타일
-   실제 색상(up/down)은 JS에서 className으로 동적으로 부여 */
 .ph-change {
     font-size: 15px;
     font-weight: 600;
     line-height: 1;
 }
 
-/* 오른쪽: 통계 그룹 영역 - margin-left: auto로 오른쪽 끝에 붙임 */
 .ph-right {
     display: flex;
     align-items: center;
     margin-left: auto;
 }
 
-/* 통계 그룹 (고가/저가, 거래량 등 묶음) */
 .ph-group {
     display: flex;
     gap: 20px;
     padding: 0 20px;
 }
 
-/* 개별 통계 항목 (라벨 + 값 세로 배치) */
 .ph-item {
     display: flex;
     flex-direction: column;
     gap: 3px;
 }
 
-/* 통계 라벨 (24h 고가, 24h 저가 등) */
 .ph-label {
     font-size: 11px;
     color: var(--text3);
@@ -253,7 +92,6 @@ nav {
     white-space: nowrap;
 }
 
-/* 통계 값 */
 .ph-value {
     font-size: 13px;
     color: var(--text2);
@@ -261,7 +99,6 @@ nav {
     white-space: nowrap;
 }
 
-/* 통계 그룹 사이 세로 구분선 */
 .ph-vdivider {
     width: 1px;
     height: 30px;
@@ -270,7 +107,6 @@ nav {
     align-self: center;
 }
 
-/* 관심 버튼 영역 */
 .ph-actions {
     display: flex;
     align-items: center;
@@ -297,7 +133,7 @@ nav {
 .ph-like-btn:hover {
     border-color: var(--up);
     color: var(--up);
-    background: rgba(240,68,82,0.08);
+    background: rgba(240, 68, 82, 0.08);
 }
 
 .ph-like-btn svg {
@@ -308,40 +144,15 @@ nav {
     stroke-width: 2;
 }
 
-/* 상승/하락 색상 유틸리티 클래스
-   JS에서 className으로 동적으로 붙여서 색상 변경 */
-.up   { color: var(--up); }
-.down { color: var(--down); }
-
 
 /* ====================================================
-   전체 레이아웃 구조
-   app-wrapper → page + sidebar-panel + sidebar-icons
+   전체 레이아웃 구조 (차트 페이지 전용)
    ==================================================== */
-
-/* 최상위 flex 컨테이너 - 가로 배치 */
-.app-wrapper {
-    display: flex;
-    height: 100vh;
-    overflow: hidden;
-}
-
-/* 메인 콘텐츠 영역 (nav + price-header + main-layout) */
-.page {
-    flex: 1;       /* 남은 공간을 전부 차지 */
-    min-width: 0;  /* flex 아이템의 overflow 방지를 위해 필요 */
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-/* 차트·주문·댓글 패널이 가로로 나란히 배치되는 영역
-   padding-bottom: 120px → 하단 여백 */
 .main-layout {
     display: flex;
     flex: 1;
     min-height: 0;
-    padding: var(--gap) 50px 120px;
+    padding: var(--gap) 50px 70px;
     gap: 0;
     background: var(--bg);
 }
@@ -363,8 +174,6 @@ nav {
 /* ====================================================
    RESIZE HANDLES - 패널 간 드래그 리사이즈 핸들
    ==================================================== */
-
-/* 가로 리사이즈 핸들 (← → 드래그로 패널 너비 조절) */
 .resize-h {
     width: var(--gap);
     flex-shrink: 0;
@@ -374,8 +183,6 @@ nav {
     z-index: 10;
 }
 
-/* ::after 가상요소로 핸들 중앙에 얇은 막대 표시
-   평소엔 투명, hover/드래그 시 파란색으로 변경 */
 .resize-h::after {
     content: '';
     position: absolute;
@@ -394,7 +201,6 @@ nav {
     background: var(--blue);
 }
 
-/* 세로 리사이즈 핸들 (↑ ↓ 드래그로 패널 높이 조절) */
 .resize-v {
     height: var(--gap);
     flex-shrink: 0;
@@ -425,8 +231,6 @@ nav {
 /* ====================================================
    CHART PANEL - 차트 영역
    ==================================================== */
-
-/* 차트 패널: flex: 1 → 가로 공간을 최대한 차지 */
 .panel-chart {
     flex: 1;
     min-width: 200px;
@@ -434,7 +238,6 @@ nav {
     flex-direction: column;
 }
 
-/* 차트 상단 툴바 (타임프레임·지표·설정 버튼들) */
 .chart-toolbar {
     display: flex;
     align-items: center;
@@ -446,7 +249,6 @@ nav {
     background: var(--surface);
 }
 
-/* 타임프레임 버튼 (1분, 5분, 1H ...) */
 .tf-btn {
     padding: 4px 8px;
     border-radius: 6px;
@@ -460,17 +262,15 @@ nav {
 }
 
 .tf-btn:hover {
-    background: rgba(255,255,255,0.07);
+    background: rgba(255, 255, 255, 0.07);
     color: var(--text);
 }
 
-/* 현재 선택된 타임프레임 - 파란 배경으로 강조 */
 .tf-btn.active {
     background: var(--blue);
     color: #fff;
 }
 
-/* 툴바 내 세로 구분선 */
 .tb-divider {
     width: 1px;
     height: 16px;
@@ -479,8 +279,6 @@ nav {
     flex-shrink: 0;
 }
 
-/* 지표 버튼 (MA5, MA20, BB, RSI ...)
-   활성화 시 JS에서 border/color/background를 지표 색상으로 변경 */
 .ind-btn {
     padding: 4px 8px;
     border-radius: 6px;
@@ -488,35 +286,33 @@ nav {
     font-weight: 500;
     color: var(--text2);
     cursor: pointer;
-    border: 1px solid transparent; /* 활성화 시 테두리 색이 바뀜 */
+    border: 1px solid transparent;
     background: none;
     transition: background 0.12s, color 0.12s;
 }
 
 .ind-btn:hover {
-    background: rgba(255,255,255,0.07);
+    background: rgba(255, 255, 255, 0.07);
     color: var(--text);
 }
 
-/* 설정 메뉴 래퍼 - position: relative로 드롭다운 기준점 역할 */
 .settings-wrap {
     position: relative;
-    margin-left: auto; /* 툴바 오른쪽 끝에 붙임 */
+    margin-left: auto;
 }
 
-/* 설정 드롭다운 메뉴 - 기본 숨김, .open 클래스 추가 시 표시 */
 .settings-menu {
     display: none;
     position: absolute;
-    top: calc(100% + 8px); /* 버튼 바로 아래에 위치 */
+    top: calc(100% + 8px);
     right: 0;
     background: var(--surface2);
     border: 1px solid var(--border2);
     border-radius: 12px;
     padding: 8px 0;
     min-width: 230px;
-    z-index: 200; /* 차트보다 앞에 표시 */
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    z-index: 200;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
 }
 
 .settings-menu.open {
@@ -534,7 +330,6 @@ nav {
     text-transform: uppercase;
 }
 
-/* 설정 항목 행 (라벨 + 체크박스) */
 .settings-item {
     display: flex;
     align-items: center;
@@ -545,7 +340,7 @@ nav {
 }
 
 .settings-item:hover {
-    background: rgba(255,255,255,0.04);
+    background: rgba(255, 255, 255, 0.04);
 }
 
 .settings-label {
@@ -561,7 +356,6 @@ nav {
     color: var(--text3);
 }
 
-/* accent-color: 체크박스 색상을 --blue로 변경 */
 .settings-item input[type="checkbox"] {
     width: 16px;
     height: 16px;
@@ -570,8 +364,6 @@ nav {
     flex-shrink: 0;
 }
 
-/* 차트+RSI를 감싸는 래퍼
-   position: relative → 최고/최저가 마커(hl-high, hl-low)의 기준점 */
 #chart-wrapper {
     flex: 1;
     display: flex;
@@ -580,22 +372,19 @@ nav {
     position: relative;
 }
 
-/* 실제 캔들 차트가 렌더링되는 컨테이너 */
 #chart-container {
     flex: 1;
     position: relative;
     min-height: 0;
 }
 
-/* 시고저종 표시 바 - 차트 좌상단에 절대위치로 고정
-   pointer-events: none → 마우스 이벤트를 차트로 통과시킴 */
 #ohlc-bar {
     position: absolute;
     top: 10px;
     left: 12px;
     z-index: 10;
     font-size: 11px;
-    background: rgba(22,22,26,0.88);
+    background: rgba(22, 22, 26, 0.88);
     padding: 4px 10px;
     border-radius: 6px;
     color: var(--text2);
@@ -608,8 +397,6 @@ nav {
     color: var(--text);
 }
 
-/* 메인 차트와 RSI 차트 사이 드래그 구분선
-   RSI 활성화 시 JS에서 display: block으로 변경 */
 #pane-divider {
     height: 4px;
     background: var(--border);
@@ -622,7 +409,6 @@ nav {
     background: var(--blue);
 }
 
-/* RSI 차트 컨테이너 - 기본 숨김 */
 #rsi-container {
     height: 150px;
     display: none;
@@ -632,8 +418,6 @@ nav {
 /* ====================================================
    MIDDLE PANEL - 주문창 + 호가창
    ==================================================== */
-
-/* 중간 패널: 너비 340px 고정 (리사이즈 핸들로 변경 가능) */
 .panel-middle {
     flex: 0 0 340px;
     min-width: 340px;
@@ -642,7 +426,6 @@ nav {
     flex-direction: column;
 }
 
-/* 주문창 래퍼 */
 .panel-order-wrap {
     flex: 0 0 auto;
     display: flex;
@@ -650,7 +433,6 @@ nav {
     overflow: hidden;
 }
 
-/* 매수/매도 탭 */
 .order-tabs {
     display: flex;
     border-bottom: 1px solid var(--border);
@@ -669,13 +451,11 @@ nav {
     transition: color 0.15s;
 }
 
-/* 매수 탭 활성화 → 빨간색 (상승색) */
 .order-tab.buy.active {
     color: var(--up);
     border-bottom-color: var(--up);
 }
 
-/* 매도 탭 활성화 → 파란색 (하락색) */
 .order-tab.sell.active {
     color: var(--down);
     border-bottom-color: var(--down);
@@ -685,14 +465,12 @@ nav {
     color: var(--text);
 }
 
-/* 주문 입력 영역 - 스크롤 가능 */
 .order-panel {
     padding: 16px;
     overflow-y: auto;
     flex: 1;
 }
 
-/* 지정가/시장가 선택 버튼 행 */
 .order-type-row {
     display: flex;
     gap: 6px;
@@ -713,14 +491,12 @@ nav {
     transition: all 0.12s;
 }
 
-/* 선택된 주문 유형 버튼 - 파란색 강조 */
 .order-type-btn.sel {
-    background: rgba(49,130,246,0.12);
+    background: rgba(49, 130, 246, 0.12);
     color: var(--blue);
-    border-color: rgba(49,130,246,0.3);
+    border-color: rgba(49, 130, 246, 0.3);
 }
 
-/* 입력 필드 위 섹션 라벨 (가격, 수량 등) */
 .order-section-label {
     font-size: 11px;
     color: var(--text3);
@@ -752,7 +528,6 @@ nav {
     border-color: var(--blue);
 }
 
-/* 단위 표시 (USDT, BTC) */
 .order-input-unit {
     background: var(--surface2);
     border: 1px solid var(--border2);
@@ -764,7 +539,6 @@ nav {
     white-space: nowrap;
 }
 
-/* 25% / 50% / 75% / 최대 버튼 행 */
 .pct-row {
     display: flex;
     gap: 4px;
@@ -788,10 +562,9 @@ nav {
 .pct-btn:hover {
     border-color: var(--blue);
     color: var(--blue);
-    background: rgba(49,130,246,0.08);
+    background: rgba(49, 130, 246, 0.08);
 }
 
-/* 가용 잔고 표시 */
 .order-avail {
     font-size: 12px;
     color: var(--text3);
@@ -803,7 +576,6 @@ nav {
     font-weight: 600;
 }
 
-/* 매수 버튼 - 빨간색 */
 .btn-buy {
     width: 100%;
     padding: 11px;
@@ -822,7 +594,6 @@ nav {
     opacity: 0.88;
 }
 
-/* 매도 버튼 - 파란색 */
 .btn-sell {
     width: 100%;
     padding: 11px;
@@ -846,7 +617,8 @@ nav {
    ==================================================== */
 .panel-hoga {
     flex: 1;
-    min-height: 80px;
+    height: 100%;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -864,12 +636,27 @@ nav {
     flex-shrink: 0;
 }
 
-/* 호가 바디 - 스크롤 가능 */
 .hoga-body {
     flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.hoga-top {
+    flex: 1;
+    min-height: 0;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    justify-content: flex-end;
+}
+
+.hoga-bot {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
 }
 
 .hoga-table {
@@ -888,13 +675,16 @@ nav {
     font-weight: 600;
 }
 
-/* 호가 수량 막대 셀 */
+.hoga-table td:last-child {
+    color: var(--text3);
+    font-size: 11px;
+}
+
 .hoga-bar-cell {
     width: 40px;
     padding: 3px 8px 3px 0;
 }
 
-/* 호가 막대 그래프 - opacity 0.2로 반투명 배경 효과 */
 .hoga-bar {
     height: 100%;
     min-height: 10px;
@@ -902,17 +692,26 @@ nav {
     opacity: 0.2;
 }
 
-.ask-bar { background: var(--down); } /* 매도 호가 막대 - 파란색 */
-.bid-bar { background: var(--up); }   /* 매수 호가 막대 - 빨간색 */
+.ask-bar {
+    background: var(--down);
+}
 
-/* 로딩 전 스켈레톤 상태 - 텍스트를 배경색으로 숨김 */
-.hoga-skel td { color: var(--surface2); }
+.bid-bar {
+    background: var(--up);
+}
 
-/* !important: 다른 스타일보다 우선 적용 */
-.hoga-ask { color: var(--down) !important; } /* 매도 호가 - 파란색 */
-.hoga-bid { color: var(--up)   !important; } /* 매수 호가 - 빨간색 */
+.hoga-skel td {
+    color: var(--surface2);
+}
 
-/* 현재가 표시 중간 행 */
+.hoga-ask {
+    color: var(--down) !important;
+}
+
+.hoga-bid {
+    color: var(--up) !important;
+}
+
 .hoga-mid {
     display: flex;
     align-items: center;
@@ -938,8 +737,6 @@ nav {
 /* ====================================================
    CHAT PANEL - 실시간 댓글
    ==================================================== */
-
-/* 댓글 패널: flex로 너비 범위 제한, 초기값 360px */
 .panel-chat {
     flex: 0 1 360px;
     min-width: 180px;
@@ -957,7 +754,6 @@ nav {
     flex-shrink: 0;
 }
 
-/* 메시지 목록 - 스크롤 가능, 새 메시지는 아래에 추가됨 */
 .chat-messages {
     flex: 1;
     overflow-y: auto;
@@ -967,7 +763,6 @@ nav {
     gap: 10px;
 }
 
-/* 댓글 없을 때 빈 상태 표시 */
 .chat-empty {
     flex: 1;
     display: flex;
@@ -999,7 +794,6 @@ nav {
     color: var(--text);
 }
 
-/* 댓글 입력창 */
 .chat-input-wrap {
     display: flex;
     gap: 6px;
@@ -1042,224 +836,127 @@ nav {
 
 
 /* ====================================================
-   SIDEBAR PANEL - 우측 슬라이드 사이드바 (내 투자 등)
-   width: 0 → open 시 380px로 슬라이드 애니메이션
+   RESPONSIVE - 창 너비 1800px 이하일 때 세로 스택
    ==================================================== */
-.sidebar-panel {
-    width: 0;
-    min-width: 0;
+@media (max-width: 1800px) {
+
+    body {
+        overflow: auto;
+    }
+
+    nav {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        padding: 0 16px;
+    }
+
+    .page {
+        padding-top: 56px;
+    }
+
+    .price-header {
+        padding: 10px 16px;
+        overflow-x: auto;
+    }
+
+    .main-layout {
+        flex-direction: column;
+        padding: 15px 16px 40px;
+        overflow-y: auto;
+        gap: var(--gap);
+    }
+
+    .panel-chart {
+        height: 45vh;
+        flex: none;
+    }
+
+    .resize-h {
+        display: none;
+    }
+
+    .panel-middle {
+        flex: none;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        height: 500px;
+        flex-direction: row;
+    }
+
+    .panel-order-wrap {
+        flex: 0 0 340px;
+    }
+
+    .resize-v {
+        width: var(--gap);
+        height: auto;
+        cursor: col-resize;
+    }
+
+    .panel-hoga {
+        flex: 1;
+    }
+
+    .panel-chat {
+        flex: none;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        height: 700px;
+    }
+
+    .sidebar-panel,
+    .sidebar-icons {
+        margin-top: 56px;
+        height: calc(100vh - 56px);
+    }
+}
+
+/* ====================================================
+   TICKER BAR - 하단 종목 슬라이딩 바
+   ==================================================== */
+.ticker-bar {
+    height: 36px;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
     overflow: hidden;
-    transition: width 0.22s ease; /* 부드러운 슬라이드 효과 */
-    flex-shrink: 0;
-    background: var(--surface);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-}
-
-/* JS에서 toggleSidebar() 호출 시 open 클래스 추가 → 패널 열림 */
-.sidebar-panel.open {
-    width: 380px;
-}
-
-
-/* ====================================================
-   SIDEBAR ICONS - 사이드바 왼쪽 아이콘 스트립 (항상 표시)
-   ==================================================== */
-.sidebar-icons {
-    width: 56px;
-    background: var(--surface);
-    border-left: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 12px 0;
-    gap: 2px;
-    flex-shrink: 0;
-}
-
-/* 아이콘 버튼 - 아이콘 + 텍스트 세로 배치 */
-.si-btn {
-    width: 48px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 4px;
-    padding: 12px 0;
-    border-radius: 10px;
-    cursor: pointer;
-    color: var(--text3);
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.1px;
-    border: none;
-    background: none;
-    transition: background 0.14s, color 0.14s;
-    user-select: none; /* 클릭 시 텍스트 선택 방지 */
-}
-
-.si-btn:hover {
-    background: rgba(255,255,255,0.06);
-    color: var(--text2);
-}
-
-/* 현재 열린 사이드바에 해당하는 아이콘 강조 */
-.si-btn.active {
-    color: var(--blue);
-    background: rgba(49,130,246,0.12);
-}
-
-.si-btn svg {
-    width: 20px;
-    height: 20px;
-    stroke: currentColor;
-    fill: none;
-    stroke-width: 1.7;
-    stroke-linecap: round;
-    stroke-linejoin: round;
-}
-
-/* 아이콘 사이 구분선 */
-.si-divider {
-    width: 28px;
-    height: 1px;
-    background: var(--border);
-    margin: 6px 0;
-    flex-shrink: 0;
-}
-
-/* 사이드바 헤더 (제목 + 접기 버튼) */
-.sidebar-header {
-    padding: 14px 12px 14px 16px;
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.ticker-track {
+    display: flex;
+    gap: 40px;
     white-space: nowrap;
 }
 
-.sidebar-header-btns {
+
+
+.ticker-item {
     display: flex;
     align-items: center;
-    gap: 4px;
-}
-
-.sb-fold-btn,
-.sb-expand-btn {
-    height: 26px;
-    padding: 0 8px;
-    border-radius: 6px;
-    border: 1px solid var(--border2);
-    background: transparent;
-    color: var(--text2);
-    font-size: 11px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background 0.14s, color 0.14s;
-    white-space: nowrap;
-}
-
-.sb-fold-btn:hover,
-.sb-expand-btn:hover {
-    background: rgba(255,255,255,0.08);
-    color: var(--text);
-}
-
-
-/* ====================================================
-   SIDEBAR TABS - 포지션 / 오더 / 기록 탭
-   ==================================================== */
-.sb-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-}
-
-.sb-tab {
-    flex: 1;
-    padding: 11px 0;
-    text-align: center;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text3);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    transition: color 0.12s;
-}
-
-/* 활성 탭 - 흰색 텍스트 + 파란 밑줄 */
-.sb-tab.active {
-    color: var(--text);
-    border-bottom-color: var(--blue);
-}
-
-.sb-tab:hover {
-    color: var(--text2);
-}
-
-
-/* ====================================================
-   SIDEBAR TABLE - 보유 종목·오더·기록 테이블
-   ==================================================== */
-.sb-content {
-    flex: 1;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-}
-
-/* 데이터 없을 때 빈 상태 */
-.sb-empty {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: var(--text3);
-    font-size: 13px;
     gap: 8px;
-    padding: 20px;
+    font-size: 12px;
+    cursor: pointer;
+    flex-shrink: 0;
 }
 
-.sb-empty-icon {
-    font-size: 30px;
-    opacity: 0.35;
+.ticker-name {
+    color: var(--text2);
+    font-weight: 600;
 }
 
-.sb-table {
-    width: 100%;
-    border-collapse: collapse;
+.ticker-price {
+    color: var(--text);
+    font-weight: 700;
 }
 
-/* 테이블 헤더 - position: sticky로 스크롤해도 상단에 고정 */
-.sb-table th {
-    padding: 8px 14px;
+.ticker-change {
     font-size: 11px;
     font-weight: 600;
-    color: var(--text3);
-    text-align: left;
-    position: sticky;
-    top: 0;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-}
-
-.sb-table td {
-    padding: 10px 14px;
-    font-size: 12px;
-    font-weight: 500;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-    white-space: nowrap;
-    color: var(--text);
-}
-
-/* 행 호버 시 약한 배경 강조 */
-.sb-table tr:hover td {
-    background: rgba(255,255,255,0.03);
 }

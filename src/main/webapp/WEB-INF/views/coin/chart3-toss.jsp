@@ -34,6 +34,7 @@
          - Spring Boot는 static/ 하위 파일을 자동으로 정적 리소스로 서빙함
          - <link rel="stylesheet"> : CSS 파일을 스타일시트로 불러오는 표준 방법
     -->
+    <link rel="stylesheet" href="/css/common.css">
     <link rel="stylesheet" href="/css/chart-toss.css">
 </head>
 
@@ -52,42 +53,7 @@
              flex-direction:column 으로 세로로 쌓임 -->
         <div class="page">
 
-            <!-- ────────────────────────────────────────────────────────
-                 NAV (상단 내비게이션 바)
-                 - <nav> 태그는 HTML5 시맨틱 태그: "이 영역은 탐색 링크"임을 명시
-                 - display:flex; align-items:center 로 로고/메뉴/검색이 한 줄로 배치
-            ──────────────────────────────────────────────────────── -->
-            <nav>
-                <!-- 로고: "Trade"는 일반 텍스트, "Bot"은 <span>으로 감싸 색상을 다르게 적용 -->
-                <span class="logo">Trade<span>Bot</span></span>
-
-                <!-- 메뉴 아이템들
-                     - <a href>  : 실제 페이지 이동 링크 (대시보드만 구현됨)
-                     - <span>    : 아직 미구현된 메뉴는 클릭 불가 텍스트로만 표시
-                     - .active   : 현재 페이지임을 표시 (CSS에서 색상/밑줄 강조)
-                -->
-                <a href="/dashboard" class="nav-item">대시보드</a>
-                <span class="nav-item active">차트</span>
-                <span class="nav-item">백테스트</span>
-                <span class="nav-item">자동매매</span>
-                <span class="nav-item">로그</span>
-                <span class="nav-item">설정</span>
-
-                <!-- 오른쪽 영역: margin-left:auto 로 오른쪽 끝에 밀려남 -->
-                <div class="nav-right">
-                    <!-- 검색 버튼: SVG 돋보기 아이콘 + "검색" 텍스트
-                         SVG: circle(원)=렌즈, path(선)=손잡이 -->
-                    <div class="nav-search">
-                        <svg viewBox="0 0 24 24">
-                            <circle cx="11" cy="11" r="8" />
-                            <path d="M21 21l-4.35-4.35" />
-                        </svg>
-                        <span>검색</span>
-                    </div>
-                    <button class="nav-login-btn">로그인</button>
-                </div>
-            </nav>
-
+            <%@ include file="../common/nav.jsp" %>
             <!-- ────────────────────────────────────────────────────────
                  PRICE HEADER (종목 정보 헤더)
                  - NAV 바로 아래, 종목명·현재가·24h 통계를 한눈에 보여주는 영역
@@ -344,8 +310,8 @@
                                         <span>봉 카운트다운</span>
                                         <small>다음 봉까지 남은 시간 표시</small>
                                     </span>
-                                    <input type="checkbox" id="set-countdown"
-                                        onchange="toggleCountdown(this.checked)" checked>
+                                    <input type="checkbox" id="set-countdown" onchange="toggleCountdown(this.checked)"
+                                        checked>
                                 </label>
                             </div>
                         </div>
@@ -528,8 +494,8 @@
                                  - .btn-buy : 빨간색 배경 (매수 상태)
                                  - submitOrder(orderSide) : orderSide 전역변수('buy'/'sell')로 처리
                             -->
-                            <button id="order-submit-btn" class="btn-buy"
-                                onclick="submitOrder(orderSide)">매수 주문</button>
+                            <button id="order-submit-btn" class="btn-buy" onclick="submitOrder(orderSide)">매수
+                                주문</button>
                         </div>
                     </div><!-- /.panel-order-wrap -->
 
@@ -548,110 +514,41 @@
                         <div class="hoga-header-row">
                             <span>호가</span>
                             <span>수량(BTC)</span>
+                            <span>총량</span>
                         </div>
                         <div class="hoga-body">
 
-                            <!-- 매도 호가 테이블 (asks)
-                                 - id="hoga-asks" : JS에서 innerHTML로 실제 호가 데이터 주입
-                                 - .hoga-skel : 데이터 로드 전 보여주는 스켈레톤 UI (가짜 데이터)
-                                 - 각 행: [가격(빨강)] [수량] [수량 시각화 바]
-                                 - .hoga-bar.ask-bar : 빨간 배경의 바, width:%로 수량 비율 표시
-                            -->
-                            <table class="hoga-table">
-                                <tbody id="hoga-asks">
-                                    <!-- 스켈레톤 행들: 실제 데이터 오기 전 레이아웃 유지용 -->
-                                    <tr class="hoga-skel">
-                                        <td class="hoga-ask">--,---.--</td>
-                                        <td>-.------</td>
-                                        <td class="hoga-bar-cell">
-                                            <div class="hoga-bar ask-bar" style="width:55%"></div>
-                                        </td>
-                                    </tr>
-                                    <tr class="hoga-skel">
-                                        <td class="hoga-ask">--,---.--</td>
-                                        <td>-.------</td>
-                                        <td class="hoga-bar-cell">
-                                            <div class="hoga-bar ask-bar" style="width:40%"></div>
-                                        </td>
-                                    </tr>
-                                    <tr class="hoga-skel">
-                                        <td class="hoga-ask">--,---.--</td>
-                                        <td>-.------</td>
-                                        <td class="hoga-bar-cell">
-                                            <div class="hoga-bar ask-bar" style="width:75%"></div>
-                                        </td>
-                                    </tr>
-                                    <tr class="hoga-skel">
-                                        <td class="hoga-ask">--,---.--</td>
-                                        <td>-.------</td>
-                                        <td class="hoga-bar-cell">
-                                            <div class="hoga-bar ask-bar" style="width:30%"></div>
-                                        </td>
-                                    </tr>
-                                    <tr class="hoga-skel">
-                                        <td class="hoga-ask">--,---.--</td>
-                                        <td>-.------</td>
-                                        <td class="hoga-bar-cell">
-                                            <div class="hoga-bar ask-bar" style="width:60%"></div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <!-- 매도 호가 영역 (위 절반) - flex:1로 항상 50% 차지, 테이블이 아래 붙음 -->
+                            <div class="hoga-top">
+                                <table class="hoga-table">
+                                    <tbody id="hoga-asks">
+                                        <tr class="hoga-skel"><td class="hoga-ask">--,---.--</td><td>-.------</td><td>-.------</td></tr>
+                                        <tr class="hoga-skel"><td class="hoga-ask">--,---.--</td><td>-.------</td><td>-.------</td></tr>
+                                        <tr class="hoga-skel"><td class="hoga-ask">--,---.--</td><td>-.------</td><td>-.------</td></tr>
+                                        <tr class="hoga-skel"><td class="hoga-ask">--,---.--</td><td>-.------</td><td>-.------</td></tr>
+                                        <tr class="hoga-skel"><td class="hoga-ask">--,---.--</td><td>-.------</td><td>-.------</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
 
-                            <!-- 현재가 중간 표시줄
-                                 - id="hoga-cur-price" : WebSocket으로 실시간 체결가 표시
-                                 - id="hoga-cur-change" : 전일 대비 등락률 표시
-                                 - 상승이면 빨강, 하락이면 파랑으로 색상 변경 (JS에서 클래스 교체)
-                            -->
+                            <!-- 현재가 중간 표시줄 (항상 패널 중앙 고정) -->
                             <div class="hoga-mid" id="hoga-mid">
                                 <span id="hoga-cur-price">-</span>
                                 <span class="hoga-mid-change" id="hoga-cur-change"></span>
                             </div>
 
-                            <!-- 매수 호가 테이블 (bids)
-                                 - id="hoga-bids" : JS에서 innerHTML로 실제 호가 데이터 주입
-                                 - .hoga-bid : 파란색 텍스트
-                                 - .bid-bar  : 파란 배경 수량 바
-                            -->
-                            <table class="hoga-table">
-                                <tbody id="hoga-bids">
-                                    <tr class="hoga-skel">
-                                        <td class="hoga-bid">--,---.--</td>
-                                        <td>-.------</td>
-                                        <td class="hoga-bar-cell">
-                                            <div class="hoga-bar bid-bar" style="width:65%"></div>
-                                        </td>
-                                    </tr>
-                                    <tr class="hoga-skel">
-                                        <td class="hoga-bid">--,---.--</td>
-                                        <td>-.------</td>
-                                        <td class="hoga-bar-cell">
-                                            <div class="hoga-bar bid-bar" style="width:45%"></div>
-                                        </td>
-                                    </tr>
-                                    <tr class="hoga-skel">
-                                        <td class="hoga-bid">--,---.--</td>
-                                        <td>-.------</td>
-                                        <td class="hoga-bar-cell">
-                                            <div class="hoga-bar bid-bar" style="width:90%"></div>
-                                        </td>
-                                    </tr>
-                                    <tr class="hoga-skel">
-                                        <td class="hoga-bid">--,---.--</td>
-                                        <td>-.------</td>
-                                        <td class="hoga-bar-cell">
-                                            <div class="hoga-bar bid-bar" style="width:35%"></div>
-                                        </td>
-                                    </tr>
-                                    <tr class="hoga-skel">
-                                        <td class="hoga-bid">--,---.--</td>
-                                        <td>-.------</td>
-                                        <td class="hoga-bar-cell">
-                                            <div class="hoga-bar bid-bar" style="width:55%"></div>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <!-- 매수 호가 영역 (아래 절반) - flex:1로 항상 50% 차지 -->
+                            <div class="hoga-bot">
+                                <table class="hoga-table">
+                                    <tbody id="hoga-bids">
+                                        <tr class="hoga-skel"><td class="hoga-bid">--,---.--</td><td>-.------</td><td>-.------</td></tr>
+                                        <tr class="hoga-skel"><td class="hoga-bid">--,---.--</td><td>-.------</td><td>-.------</td></tr>
+                                        <tr class="hoga-skel"><td class="hoga-bid">--,---.--</td><td>-.------</td><td>-.------</td></tr>
+                                        <tr class="hoga-skel"><td class="hoga-bid">--,---.--</td><td>-.------</td><td>-.------</td></tr>
+                                        <tr class="hoga-skel"><td class="hoga-bid">--,---.--</td><td>-.------</td><td>-.------</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div><!-- /.panel-hoga -->
 
@@ -696,107 +593,14 @@
                 </div><!-- /.panel-chat -->
 
             </div><!-- /.main-layout -->
+
+            <div class="ticker-bar">
+                <div class="ticker-track" id="ticker-track"></div>
+            </div>
+
         </div><!-- /.page -->
 
-        <!-- ================================================================
-             ④ 내 투자 사이드바 (.sidebar-panel)
-             - .app-wrapper 의 직계 자식으로 .page 오른쪽에 위치
-             - 기본: width:0; overflow:hidden → 숨겨진 상태
-             - toggleSidebar() 호출 시 width가 펼쳐지며 슬라이드 인
-             - 탭: 포지션 / 오더 / 기록
-        ================================================================ -->
-        <div class="sidebar-panel" id="sidebar-panel">
-
-            <!-- 사이드바 헤더: 제목 + 접기/확장 버튼 -->
-            <div class="sidebar-header">
-                <!-- id="sidebar-title" : 어떤 탭이 열렸는지에 따라 JS에서 텍스트 변경 가능 -->
-                <span id="sidebar-title">내 투자</span>
-                <div class="sidebar-header-btns">
-                    <!-- closeSidebar() : 사이드바를 다시 width:0으로 닫음 -->
-                    <button class="sb-fold-btn" onclick="closeSidebar()">접기</button>
-                    <button class="sb-expand-btn">&gt;&gt;</button>
-                </div>
-            </div>
-
-            <!-- 탭 버튼
-                 - switchBpTab(this, 'positions') : 클릭한 탭에 .active, 해당 콘텐츠 표시
-                 - 각 탭에 대응하는 #tab-포지션/orders/history div가 아래에 있음
-            -->
-            <div class="sb-tabs">
-                <div class="sb-tab active" onclick="switchBpTab(this,'positions')">포지션</div>
-                <div class="sb-tab" onclick="switchBpTab(this,'orders')">오더</div>
-                <div class="sb-tab" onclick="switchBpTab(this,'history')">기록</div>
-            </div>
-
-            <!-- 포지션 탭 콘텐츠
-                 - 보유 중인 포지션 없을 때: .sb-empty (아이콘 + 메시지)
-                 - 보유 포지션 있을 때: #bp-holdings-table 테이블 표시 (display:none → block)
-            -->
-            <div class="sb-content" id="tab-positions">
-                <div class="sb-empty" id="bp-empty">
-                    <span class="sb-empty-icon">📊</span>
-                    <span>포지션이 없습니다.</span>
-                </div>
-                <!-- 포지션 테이블: JS에서 포지션 데이터가 있을 때 display:'table'로 변경
-                     thead: 고정 헤더, tbody: JS로 행 추가 -->
-                <table class="sb-table" id="bp-holdings-table" style="display:none">
-                    <thead>
-                        <tr>
-                            <th>코인</th>
-                            <th>수량</th>
-                            <th>평균단가</th>
-                            <th>현재가</th>
-                            <th>손익</th>
-                        </tr>
-                    </thead>
-                    <tbody id="bp-holdings-body"></tbody>
-                </table>
-            </div>
-
-            <!-- 오더 탭 콘텐츠 (기본: 숨김)
-                 - 현재 미체결 주문 목록 표시
-            -->
-            <div class="sb-content" id="tab-orders" style="display:none">
-                <div class="sb-empty">
-                    <span class="sb-empty-icon">📋</span>
-                    <span>오픈 오더가 없습니다.</span>
-                </div>
-                <table class="sb-table" id="orders-table" style="display:none">
-                    <thead>
-                        <tr>
-                            <th>코인</th>
-                            <th>유형</th>
-                            <th>가격</th>
-                            <th>수량</th>
-                            <th>취소</th>
-                        </tr>
-                    </thead>
-                    <tbody id="orders-body"></tbody>
-                </table>
-            </div>
-
-            <!-- 기록 탭 콘텐츠 (기본: 숨김)
-                 - 체결된 거래 내역 표시
-            -->
-            <div class="sb-content" id="tab-history" style="display:none">
-                <div class="sb-empty">
-                    <span class="sb-empty-icon">🕐</span>
-                    <span>거래 기록이 없습니다.</span>
-                </div>
-                <table class="sb-table" id="history-table" style="display:none">
-                    <thead>
-                        <tr>
-                            <th>일시</th>
-                            <th>유형</th>
-                            <th>가격</th>
-                            <th>수량</th>
-                            <th>금액</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-body"></tbody>
-                </table>
-            </div>
-        </div><!-- /.sidebar-panel -->
+        <%@ include file="../common/sidebar.jsp" %>
 
         <!-- ================================================================
              아이콘 스트립 (.sidebar-icons)
@@ -862,6 +666,7 @@
          - /js/chart-toss.js → src/main/resources/static/js/chart-toss.js
          - 이 파일이 로드되면 즉시 init() 함수가 실행되어 차트·WebSocket 초기화
     -->
+    <script src="/js/common.js"></script>
     <script src="/js/chart-toss.js"></script>
 </body>
 

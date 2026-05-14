@@ -1,0 +1,381 @@
+/* =====================================================
+   common.css
+   모든 페이지에서 공통으로 사용하는 스타일
+   nav, sidebar, 전역 변수, body 등
+   ===================================================== */
+
+
+/* ── 전역 초기화 ── */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+/* ── CSS 변수 (디자인 토큰) ── */
+:root {
+    --bg:        #0C0C0F;
+    --surface:   #16161A;
+    --surface2:  #1C1C22;
+    --border:    rgba(255, 255, 255, 0.07);
+    --border2:   rgba(255, 255, 255, 0.12);
+    --text:      #FFFFFF;
+    --text2:     rgba(255, 255, 255, 0.55);
+    --text3:     rgba(255, 255, 255, 0.3);
+    --blue:      #3182F6;
+    --up:        #F04452;
+    --down:      #2563EB;
+    --radius:    12px;
+    --gap:       15px;
+}
+
+
+/* ── body 기본 스타일 ── */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    height: 100vh;
+    overflow: hidden;
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* ====================================================
+   NAV - 상단 네비게이션 바
+   ==================================================== */
+nav {
+    height: 56px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--bg);
+    display: flex;
+    align-items: center;
+    padding: 0 50px;
+    flex-shrink: 0;
+    gap: 4px;
+}
+
+.logo {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+    margin-right: 24px;
+    letter-spacing: -0.3px;
+}
+
+.logo span {
+    color: var(--blue);
+}
+
+.nav-item {
+    color: var(--text2);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 6px 14px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: background 0.15s, color 0.15s;
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text);
+}
+
+.nav-item.active {
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.nav-right {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    padding: 7px 14px;
+    cursor: pointer;
+    color: var(--text3);
+    font-size: 13px;
+    width: 200px;
+    transition: border-color 0.15s;
+}
+
+.nav-search:hover {
+    border-color: var(--blue);
+}
+
+.nav-search svg {
+    width: 14px;
+    height: 14px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 2;
+    flex-shrink: 0;
+}
+
+.nav-login-btn {
+    padding: 8px 18px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+}
+
+.nav-login-btn:hover {
+    opacity: 0.88;
+}
+
+
+/* ── 상승/하락 색상 유틸리티 클래스 ── */
+.up   { color: var(--up); }
+.down { color: var(--down); }
+
+
+/* ====================================================
+   전체 레이아웃 구조
+   app-wrapper → page + sidebar-panel + sidebar-icons
+   ==================================================== */
+.app-wrapper {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.page {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+
+/* ====================================================
+   SIDEBAR PANEL - 우측 슬라이드 사이드바
+   ==================================================== */
+.sidebar-panel {
+    width: 0;
+    min-width: 0;
+    overflow: hidden;
+    transition: width 0.22s ease;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-panel.open {
+    width: 380px;
+}
+
+
+/* ====================================================
+   SIDEBAR ICONS - 아이콘 스트립 (항상 표시)
+   ==================================================== */
+.sidebar-icons {
+    width: 56px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 12px 0;
+    gap: 2px;
+    flex-shrink: 0;
+}
+
+.si-btn {
+    width: 48px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 0;
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--text3);
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1px;
+    border: none;
+    background: none;
+    transition: background 0.14s, color 0.14s;
+    user-select: none;
+}
+
+.si-btn:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text2);
+}
+
+.si-btn.active {
+    color: var(--blue);
+    background: rgba(49, 130, 246, 0.12);
+}
+
+.si-btn svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    fill: none;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+}
+
+.si-divider {
+    width: 28px;
+    height: 1px;
+    background: var(--border);
+    margin: 6px 0;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    padding: 14px 12px 14px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    white-space: nowrap;
+}
+
+.sidebar-header-btns {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sb-fold-btn,
+.sb-expand-btn {
+    height: 26px;
+    padding: 0 8px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: transparent;
+    color: var(--text2);
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.14s, color 0.14s;
+    white-space: nowrap;
+}
+
+.sb-fold-btn:hover,
+.sb-expand-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text);
+}
+
+
+/* ====================================================
+   SIDEBAR TABS - 포지션 / 오더 / 기록 탭
+   ==================================================== */
+.sb-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.sb-tab {
+    flex: 1;
+    padding: 11px 0;
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text3);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.12s;
+}
+
+.sb-tab.active {
+    color: var(--text);
+    border-bottom-color: var(--blue);
+}
+
+.sb-tab:hover {
+    color: var(--text2);
+}
+
+
+/* ====================================================
+   SIDEBAR TABLE - 보유 종목·오더·기록 테이블
+   ==================================================== */
+.sb-content {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.sb-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text3);
+    font-size: 13px;
+    gap: 8px;
+    padding: 20px;
+}
+
+.sb-empty-icon {
+    font-size: 30px;
+    opacity: 0.35;
+}
+
+.sb-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.sb-table th {
+    padding: 8px 14px;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    text-align: left;
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+}
+
+.sb-table td {
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 500;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    white-space: nowrap;
+    color: var(--text);
+}
+
+.sb-table tr:hover td {
+    background: rgba(255, 255, 255, 0.03);
+}

@@ -23,17 +23,17 @@ public class FileManager {
 	}
 	
 	public String fileSave(String name, MultipartFile mf)throws Exception{
-		File file = new File(path, name);
-		if(!file.exists()) {
-			file.mkdirs();
-		}
-		
-		String fileName = UUID.randomUUID().toString();
-		fileName = fileName+"_"+mf.getOriginalFilename();
-		file = new File(file, fileName);
-		FileCopyUtils.copy(mf.getBytes(), file);
-		
-		return fileName;
-		
+		File file = new File(name); 
+	    
+	    if(!file.exists()) {
+	        file.mkdirs();
+	    }
+	    
+	    String fileName = UUID.randomUUID().toString();
+	    fileName = fileName + "_" + mf.getOriginalFilename();
+	    file = new File(file, fileName);
+	    FileCopyUtils.copy(mf.getBytes(), file);
+	    
+	    return fileName;
 	}
 }

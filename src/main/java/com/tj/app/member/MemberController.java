@@ -66,7 +66,7 @@ public class MemberController {
     public String login(MemberDTO memberDTO, HttpSession session) throws Exception {
         MemberDTO result = memberService.read(memberDTO);
         
-        if (result != null && result.getUsername().equals(memberDTO.getPassword())) {
+        if (result != null && result.getPassword().equals(memberDTO.getPassword())) {
             session.setAttribute("member", result);
             return "redirect:/";
         } else {

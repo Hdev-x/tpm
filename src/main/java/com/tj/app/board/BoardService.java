@@ -38,7 +38,7 @@ public class BoardService {
 
 			String fileName = fileManager.fileSave(name, f);
 			FileDTO fileDTO = new FileDTO();
-			fileDTO.setFileNo(boardDTO.getBoardNo());
+			fileDTO.setBoardNo(boardDTO.getBoardNo());
 			fileDTO.setOriName(f.getOriginalFilename());
 			fileDTO.setFileName(fileName);
 
@@ -63,7 +63,23 @@ public class BoardService {
 
 	public int update(BoardDTO boardDTO, MultipartFile[] attach) throws Exception {
 		int result = boardMapper.update(boardDTO);
-		return result;
+		
+		if (attach != null) {
+	        for (MultipartFile f : attach) {
+	            if (f.isEmpty()) continue;
+
+	            String fileName = fileManager.fileSave(name, f);
+	            
+	            FileDTO fileDTO = new FileDTO();
+
+	            fileDTO.setBoardNo(boardDTO.getBoardNo()); 
+	            fileDTO.setOriName(f.getOriginalFilename());
+	            fileDTO.setFileName(fileName);
+
+	            boardMapper.createFile(fileDTO);
+	        }
+	    }
+	    return result;
 	}
 
 	public int delete(BoardDTO boardDTO) throws Exception {

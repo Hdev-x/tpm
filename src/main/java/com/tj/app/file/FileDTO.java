@@ -12,4 +12,5 @@ public class FileDTO {
 	private Long fileNo;
 	private String fileName;
 	private String oriName;
+	private Long boardNo;
 }

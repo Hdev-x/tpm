@@ -56,13 +56,13 @@ public class BoardController {
     public String update(BoardDTO boardDTO, Model model) throws Exception {
     	boardDTO = boardService.detail(boardDTO);
     	
-    	model.addAttribute("update", boardDTO);
+    	model.addAttribute("detail", boardDTO);
     	
     	return "board/update";
     }
    
     @PostMapping("update")
-    public ModelAndView update(BoardDTO boardDTO, @RequestParam("attach") MultipartFile [] attach, Model model) throws Exception {
+    public ModelAndView update(BoardDTO boardDTO, @RequestParam(value = "attach", required = false) MultipartFile[] attach, Model model) throws Exception {
 	   int result = boardService.update(boardDTO, attach);
 	
 	   ModelAndView mv = new ModelAndView();

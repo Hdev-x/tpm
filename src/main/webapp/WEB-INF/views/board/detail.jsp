@@ -1,47 +1,70 @@
-<%@ page language="java" contentType="text/html; charset=UTF-8"
-	pageEncoding="UTF-8"%>
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Insert title here</title>
+    <meta charset="UTF-8">
+    <title>${detail.boardTitle} - 커뮤니티</title>
+    <link rel="stylesheet" href="/css/chart-toss.css">
+    <link rel="stylesheet" href="/css/board.css">
 </head>
 <body>
-	<h2>게시글 세부사항 페이지</h2>
-	
-	<div>
-		작성자: <strong>${detail.boardWriter}</strong> 
-		작성일: ${detail.boardDate}
-		조회수: ${detail.boardView}
-	</div>
 
-	<div>${detail.boardContent}</div>
+<main class="main-layout">
+    <div class="card detail-main-card" style="max-width: 900px; margin: 0 auto;">
+        <div class="detail-header">
+            <span class="ph-ticker" style="color: var(--blue); font-size: 14px;">자유게시판</span>
+            <h1 style="font-size: 36px; margin: 15px 0;">${detail.boardTitle}</h1>
+            <div class="detail-info" style="display: flex; gap: 20px; border-bottom: 1px solid var(--border); padding-bottom: 20px;">
+                <span class="ph-label">작성자: <b style="color: var(--text);">${detail.boardWriter}</b></span>
+                <span class="ph-label">날짜: ${detail.boardDate}</span> 
+                <span class="ph-label">조회수: ${detail.boardView}</span>
+            </div>
+        </div>
 
-	<c:if test="${not empty detail.list}">
-		<div>
-			<strong>첨부파일</strong>
-			<c:forEach items="${detail.list}" var="fileDTO">
-				<li><a href="/file/download?fileNo=${fileDTO.fileNo}">
-						${fileDTO.oriName} </a></li>
-			</c:forEach>
-		</div>
-	</c:if>
+        <div class="detail-body" style="padding: 30px 0; min-height: 200px; font-size: 18px; line-height: 1.8;">
+            ${detail.boardContent}
+        </div>
 
-	<div>
-    <a href="./list">목록으로</a>
-    
-    <c:if test="${not empty member}">
-        <c:if test="${(member.username eq detail.boardWriter)}">
-            <a href="./update?boardNo=${detail.boardNo}">수정</a>
+        <div class="detail-images" style="text-align: center; margin-bottom: 40px;">
+            <c:forEach items="${detail.list}" var="file">
+                <div style="display: inline-block; margin-bottom: 20px;">
+                    <img src="/files/${file.fileName}" style="max-width: 70%; height: auto; border-radius: 16px; border: 1px solid var(--border2); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);">
+                </div>
+            </c:forEach>
+        </div>
+
+        <div class="detail-actions" style="display: flex; justify-content: center; gap: 12px; border-top: 1px solid var(--border); padding-top: 30px; margin-bottom: 40px;">
+            <div style="flex: 1;">
+                <button class="order-type-btn" style="width: 100px;" onclick="location.href='./list'">목록으로</button>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="nav-login-btn" style="width: 100px;" onclick="location.href='./update?boardNo=${detail.boardNo}'">수정</button>
+                <form action="./delete" method="post" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                    <input type="hidden" name="boardNo" value="${detail.boardNo}">
+                    <button type="submit" class="btn-sell" style="width: 100px;">삭제</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="comment-section" style="border-top: 1px solid var(--border); padding-top: 40px;">
+            <h3 class="ph-name" style="font-size: 20px; margin-bottom: 24px;">댓글 <span style="color:var(--blue)">0</span></h3>
             
-            <form action="./delete" method="post">
-                <input type="hidden" name="boardNo" value="${detail.boardNo}">
-                <button type="submit" onclick="return confirm('정말 삭제하시겠습니까?')">삭제</button>
-            </form>
-        </c:if>
-    </c:if>
-</div>
+            <div class="comment-write" style="background: var(--surface2); padding: 20px; border-radius: 16px; margin-bottom: 40px;">
+                <textarea placeholder="투자에 대한 따뜻한 의견을 나누어주세요" 
+                    style="width: 100%; background: transparent; border: none; color: var(--text); outline: none; resize: none; height: 80px; font-size: 15px;"></textarea>
+                <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+                    <button class="nav-login-btn" style="width: 100px;">등록</button>
+                </div>
+            </div>
 
+            <div class="comment-list">
+                <div class="ph-label" style="text-align: center; padding: 40px 0;">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/js/common-ui.js"></script>
 </body>
 </html>

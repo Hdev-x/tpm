@@ -6,8 +6,8 @@
 <mapper namespace="com.tj.app.member.MemberMapper">
 
 	<insert id="create">
-		INSERT INTO "MEMBER" ("USERNAME", "NAME", "PASSWORD", "CASH")
-		VALUES  (#{username}, #{name}, #{password}, 200000000)
+		INSERT INTO "MEMBER" ("USERNAME", "NAME", "PASSWORD", "CASH", "EMAIL")
+		VALUES  (#{username}, #{name}, #{password}, 200000000, #{email})
 	</insert>
 
 	<select id="read" resultType="MemberDTO">
@@ -32,6 +32,7 @@
     <id column="USERNAME" property="username" />
     <result column="NAME" property="name" />
     <result column="CASH" property="cash" />
+    <result column="EMAIL" property="email"/>
     <result column="ROLE_NAME" property="roleName" />
     <result column="ROLE_NO" property="roleNo" />
 </resultMap>

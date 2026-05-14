@@ -20,10 +20,10 @@
 	</resultMap>
 
 
-	<insert id="create">
+	<insert id="create" parameterType="BoardDTO" useGeneratedKeys="true" keyProperty="boardNo">
 		INSERT INTO "BOARD"
 		VALUES (DEFAULT, #{boardTitle},
-		#{boardWriter}, #{boardContent}, #{boardDate}, 0)
+		#{boardWriter}, #{boardContent}, CURRENT_TIMESTAMP, #{username}, 0)
 	</insert>
 
 	<select id="list" resultType="BoardDTO">
@@ -53,9 +53,9 @@
 		WHERE "BOARD_NO"=#{boardNo}
 	</delete>
 
-	<insert id="createFfile">
-		INSERT INTO "BOARDFILE" ("FILE_NAME", "FILE_ORI")
-		VALUES (DEFAULT, #{fileName}, #{fileOri})
+	<insert id="createFile">
+		INSERT INTO "BOARDFILE" ("FILE_NAME", "FILE_ORI", "BOARD_NO")
+		VALUES (#{fileName}, #{oriName}, #{boardNo})
 	</insert>
 
 	<select id="detailFile" resultType="FileDTO"

@@ -1,5 +1,6 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
 	pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!DOCTYPE html>
 <html>
 <head>
@@ -33,16 +34,18 @@
 				<th>첨부파일</th>
 				<td><c:choose>
 						<c:when test="${not empty detail.list}">
-							<c:forEach items="${detail.list}" var="file">
 
+							<c:forEach items="${detail.list}" var="file">
+								<img src="/files/${file.fileName}">
 							</c:forEach>
+
 						</c:when>
 						<c:otherwise>
 							<span style="color: #ccc;">첨부된 파일이 없습니다.</span>
 						</c:otherwise>
 					</c:choose></td>
 			</tr>
-			
+
 			<tr>
 				<th>새 파일 추가</th>
 				<td><input type="file" name="attach" multiple></td>

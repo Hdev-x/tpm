@@ -14,6 +14,7 @@ public class MemberDTO {
 	private String name;
 	private String password;
 	private Long cash;
+	private String email;
 	
 	private List<RoleDTO> roles;
 }

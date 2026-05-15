@@ -13,9 +13,7 @@
 <body class="member-layout">
 
 	<div class="card member-card">
-		<div class="member-logo">
-			<span>B</span>조
-		</div>
+		<div class="member-logo" onclick="location.href='/'" style="cursor:pointer;"><span>B</span>조</div>
 
 		<form action="./create" method="post" id="joinForm">
 			<div class="input-group">

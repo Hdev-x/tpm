@@ -233,8 +233,6 @@
 .detail-panel {
     width: 480px;
     flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
     overflow-y: auto;
     background: var(--bg);
 }
@@ -299,6 +297,11 @@
     color: #000;
     font-weight: 400;
     border-radius: 6px;
+}
+
+.filter-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
 }
 
 .risk-hide-btn {
@@ -380,7 +383,7 @@
 }
 
 .th-rank {
-    width: 18%;
+    width: 34%;
     text-align: left;
 }
 
@@ -390,21 +393,21 @@
 }
 
 .th-change {
-    width: 10%;
+    width: 19%;
     text-align: right;
 }
 
-.th-volume {
-    width: 10%;
+.th-quote {
+    width: 19%;
     text-align: right;
 }
 
-.th-ratio {
+.th-high {
     width: 12%;
     text-align: right;
 }
 
-.th-ai {
+.th-low {
     width: 12%;
     text-align: right;
 }
@@ -425,7 +428,7 @@
 
 .stock-table td {
     padding: 13px 12px;
-    font-size: 16px;
+    font-size: 17px;
     color: var(--text);
     vertical-align: middle;
 }
@@ -455,8 +458,7 @@
 .like-btn svg {
     width: 16px;
     height: 16px;
-    stroke: currentColor;
-    fill: none;
+    fill: var(--text3);
     stroke-width: 1.8;
     stroke-linecap: round;
     stroke-linejoin: round;
@@ -465,11 +467,12 @@
 
 .like-btn.liked svg {
     fill: var(--up);
-    stroke: var(--up);
+    stroke: none;
 }
 
 .like-btn:hover svg {
-    stroke: var(--up);
+    fill: var(--up);
+    stroke: none;
 }
 
 .like-btn:hover {
@@ -477,10 +480,10 @@
 }
 
 .rank-num {
-    font-size: 17px;
-    color: var(--text2);
-    width: 18px;
-    text-align: right;
+    font-size: 14px;
+    color: var(--text3);
+    min-width: 28px;
+    text-align: center;
     flex-shrink: 0;
 }
 
@@ -526,13 +529,55 @@
     background: #505060;
 }
 
-.stock-name {
+.coin-logo {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: #fff;
+    overflow: hidden;
+    background: transparent;
+    letter-spacing: -0.5px;
+}
+
+.coin-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+.coin-name-col {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    min-width: 0;
+}
+
+.coin-ticker {
     font-size: 17px;
     font-weight: 400;
     color: var(--text);
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+}
+
+.coin-pair {
+    font-size: 12px;
+    color: var(--text3);
+    white-space: nowrap;
+}
+
+.td-quote,
+.td-high,
+.td-low {
+    text-align: right;
+    font-size: 15px;
+    color: var(--text2);
+    white-space: nowrap;
 }
 
 .td-price {
@@ -544,26 +589,19 @@
 
 .td-change {
     text-align: right;
+    padding-right: 10px;
 }
 
 .badge {
     display: inline-block;
-    padding: 3px 7px;
+    padding: 8px 6px 8px 16px;
     border-radius: 5px;
-    font-size: 12px;
+    font-size: 16px;
     font-weight: 400;
     white-space: nowrap;
 }
 
-.badge.up {
-    background: rgba(240, 68, 82, 0.15);
-    color: var(--up);
-}
 
-.badge.down {
-    background: rgba(37, 99, 235, 0.15);
-    color: var(--down);
-}
 
 .td-volume {
     text-align: right;
@@ -651,16 +689,100 @@
     color: var(--text);
 }
 
-.detail-chart-area {
-    height: 160px;
-    background: var(--surface2);
-    margin: 12px 16px;
-    border-radius: 10px;
+.detail-empty {
+    flex: 1;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
+    justify-content: center;
+    color: var(--text3);
+    font-size: 14px;
+}
+
+.detail-body {
+    display: block;
+    background: var(--bg);
+}
+
+.detail-sticky-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.detail-chart-section {
+    padding: 12px 16px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.detail-community-title {
+    padding: 12px 16px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+}
+
+.detail-card-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.detail-card-logo {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text2);
+    flex-shrink: 0;
+}
+
+.detail-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-card-name {
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.detail-card-price {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    color: var(--text2);
+}
+
+.detail-chart-label {
+    font-size: 12px;
+    color: var(--text3);
+    padding: 0 0 4px;
+}
+
+.detail-chart-area {
+    height: 200px;
+    background: transparent;
     overflow: hidden;
     flex-shrink: 0;
     position: relative;
+    border-radius: 6px;
 }
 
 .detail-chart-area canvas {
@@ -873,4 +995,167 @@
     font-size: 15px;
     color: var(--text2);
     line-height: 1.5;
+}
+
+
+@keyframes flash-up {
+    0% {
+        background: rgba(240, 68, 82, 0.6);
+    }
+
+    100% {
+        background: rgba(240, 68, 82, 0);
+    }
+}
+
+@keyframes flash-down {
+    0% {
+        background: rgba(37, 99, 235, 0.6);
+    }
+
+    100% {
+        background: rgba(37, 99, 235, 0);
+    }
+}
+
+.badge {
+    transition: background 0.5s ease-out;
+}
+
+
+.detail-period-btns {
+    display: flex;
+    gap: 6px;
+    padding: 10px 16px;
+}
+
+.detail-period-btn {
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text2);
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.detail-period-btn.active {
+    background: var(--surface2);
+    color: var(--text);
+}
+
+#detailChartArea {
+    width: 100%;
+    height: 300px;
+}
+
+/* ====================================================
+   커뮤니티 댓글
+   ==================================================== */
+.chat-messages {
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-msg {
+    display: flex;
+    gap: 10px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+}
+
+.cm-avatar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+.cm-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.cm-rank {
+    font-size: 10px;
+    color: var(--text3);
+}
+
+.cm-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.cm-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cm-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.cm-badge {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 4px;
+    background: rgba(37, 99, 235, 0.15);
+    color: var(--blue);
+    font-weight: 600;
+}
+
+.cm-time {
+    font-size: 11px;
+    color: var(--text3);
+    margin-left: auto;
+}
+
+.cm-text {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.55;
+    word-break: break-all;
+}
+
+#detailPanel::-webkit-scrollbar {
+    width: 5px;
+}
+#detailPanel::-webkit-scrollbar-track {
+    background: transparent;
+}
+#detailPanel::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+}
+#detailPanel.scrollbar-visible::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.stock-table-wrap::-webkit-scrollbar {
+    width: 5px;
+}
+.stock-table-wrap::-webkit-scrollbar-track {
+    background: transparent;
+}
+.stock-table-wrap::-webkit-scrollbar-thumb {
+    background: transparent;
+    border-radius: 4px;
+}
+.stock-table-wrap.scrollbar-visible::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.03);
 }

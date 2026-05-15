@@ -11,68 +11,153 @@
 
     <!-- ① 내 투자 섹션 -->
     <div class="sidebar-section" id="sidebar-invest">
-        <div class="sb-tabs">
-            <div class="sb-tab active" onclick="switchBpTab(this,'positions')">포지션</div>
-            <div class="sb-tab" onclick="switchBpTab(this,'orders')">오더</div>
-            <div class="sb-tab" onclick="switchBpTab(this,'history')">기록</div>
+
+        <!-- 상위 탭: 주식 / 코인 -->
+        <div class="si-type-tabs">
+            <div class="si-type-tab active" onclick="switchInvestTab(this,'stock')">주식</div>
+            <div class="si-type-tab" onclick="switchInvestTab(this,'coin')">코인</div>
         </div>
 
-        <div class="sb-content" id="tab-positions">
-            <div class="sb-empty" id="bp-empty">
-                <span class="sb-empty-icon">📊</span>
-                <span>포지션이 없습니다.</span>
+        <!-- 주식 탭 -->
+        <div class="sb-content" id="invest-stock" style="flex-direction:column; flex:1;">
+            <div class="sb-tabs sb-subtabs">
+                <div class="sb-tab active" onclick="switchBpTab(this,'stock-holdings')">보유</div>
+                <div class="sb-tab" onclick="switchBpTab(this,'stock-pending')">미체결</div>
+                <div class="sb-tab" onclick="switchBpTab(this,'stock-history')">거래내역</div>
             </div>
-            <table class="sb-table" id="bp-holdings-table" style="display:none">
-                <thead>
-                    <tr>
-                        <th>코인</th>
-                        <th>수량</th>
-                        <th>평균단가</th>
-                        <th>현재가</th>
-                        <th>손익</th>
-                    </tr>
-                </thead>
-                <tbody id="bp-holdings-body"></tbody>
-            </table>
+            <div class="sb-content" id="tab-stock-holdings">
+                <div class="holding-cards">
+
+                    <div class="holding-card hc-main">
+                        <div class="hc-main-header">
+                            <div class="hc-main-id">
+                                <div class="hc-logo" style="background:#1428A0;">삼</div>
+                                <div class="hc-main-name-col">
+                                    <span class="hc-main-ticker">삼성전자</span>
+                                    <span class="hc-main-sub">005930 | 현금 10주</span>
+                                </div>
+                            </div>
+                            <div class="hc-main-right">
+                                <span class="hc-main-eval">735,000 원</span>
+                                <span class="hc-main-pnl up">▲23,000 (+3.16%)</span>
+                            </div>
+                        </div>
+                        <div class="hc-divider"></div>
+                        <div class="hc-main-grid">
+                            <div class="hc-main-row">
+                                <span class="hc-label">매수금액</span>
+                                <span class="hc-value">712,000 원</span>
+                            </div>
+                            <div class="hc-main-row">
+                                <span class="hc-label">평균단가</span>
+                                <span class="hc-value">71,200 원</span>
+                            </div>
+                            <div class="hc-main-row">
+                                <span class="hc-label">평가금액</span>
+                                <span class="hc-value">735,000 원</span>
+                            </div>
+                            <div class="hc-main-row">
+                                <span class="hc-label">현재가</span>
+                                <span class="hc-value">73,500 원</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="holding-card hc-main">
+                        <div class="hc-main-header">
+                            <div class="hc-main-id">
+                                <div class="hc-logo" style="background:#E8004D;">SK</div>
+                                <div class="hc-main-name-col">
+                                    <span class="hc-main-ticker">SK하이닉스</span>
+                                    <span class="hc-main-sub">000660 | 현금 5주</span>
+                                </div>
+                            </div>
+                            <div class="hc-main-right">
+                                <span class="hc-main-eval">977,500 원</span>
+                                <span class="hc-main-pnl down">▼12,500 (-1.24%)</span>
+                            </div>
+                        </div>
+                        <div class="hc-divider"></div>
+                        <div class="hc-main-grid">
+                            <div class="hc-main-row">
+                                <span class="hc-label">매수금액</span>
+                                <span class="hc-value">990,000 원</span>
+                            </div>
+                            <div class="hc-main-row">
+                                <span class="hc-label">평균단가</span>
+                                <span class="hc-value">198,000 원</span>
+                            </div>
+                            <div class="hc-main-row">
+                                <span class="hc-label">평가금액</span>
+                                <span class="hc-value">977,500 원</span>
+                            </div>
+                            <div class="hc-main-row">
+                                <span class="hc-label">현재가</span>
+                                <span class="hc-value">195,500 원</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="sb-content" id="tab-stock-orders" style="display:none">
+                <div class="sb-empty">
+                    <span class="sb-empty-icon">📋</span>
+                    <span>미체결 주문이 없습니다.</span>
+                </div>
+                <table class="sb-table" style="display:none">
+                    <thead><tr><th>종목</th><th>유형</th><th>가격</th><th>수량</th><th>취소</th></tr></thead>
+                    <tbody id="stock-pending-body"></tbody>
+                </table>
+            </div>
+            <div class="sb-content" id="tab-stock-history" style="display:none">
+                <div class="sb-empty">
+                    <span class="sb-empty-icon">🕐</span>
+                    <span>거래 내역이 없습니다.</span>
+                </div>
+                <table class="sb-table" style="display:none">
+                    <thead><tr><th>일시</th><th>유형</th><th>가격</th><th>수량</th><th>금액</th></tr></thead>
+                    <tbody id="stock-history-body"></tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="sb-content" id="tab-orders" style="display:none">
-            <div class="sb-empty">
-                <span class="sb-empty-icon">📋</span>
-                <span>오픈 오더가 없습니다.</span>
+        <!-- 코인 탭 -->
+        <div class="sb-content" id="invest-coin" style="display:none; flex-direction:column; flex:1; overflow-y:auto;">
+            <div class="sb-tabs sb-subtabs">
+                <div class="sb-tab active" onclick="switchBpTab(this,'coin-holdings')">보유</div>
+                <div class="sb-tab" onclick="switchBpTab(this,'coin-pending')">미체결</div>
+                <div class="sb-tab" onclick="switchBpTab(this,'coin-history')">거래내역</div>
             </div>
-            <table class="sb-table" id="orders-table" style="display:none">
-                <thead>
-                    <tr>
-                        <th>코인</th>
-                        <th>유형</th>
-                        <th>가격</th>
-                        <th>수량</th>
-                        <th>취소</th>
-                    </tr>
-                </thead>
-                <tbody id="orders-body"></tbody>
-            </table>
+            <div class="sb-content" id="tab-coin-holdings">
+                <div class="sb-empty" id="bp-empty">
+                    <span class="sb-empty-icon">📊</span>
+                    <span>보유 코인이 없습니다.</span>
+                </div>
+                <div class="holding-cards" id="bp-holdings-body"></div>
+            </div>
+            <div class="sb-content" id="tab-coin-pending" style="display:none">
+                <div class="sb-empty">
+                    <span class="sb-empty-icon">📋</span>
+                    <span>미체결 주문이 없습니다.</span>
+                </div>
+                <table class="sb-table" id="orders-table" style="display:none">
+                    <thead><tr><th>코인</th><th>유형</th><th>가격</th><th>수량</th><th>취소</th></tr></thead>
+                    <tbody id="orders-body"></tbody>
+                </table>
+            </div>
+            <div class="sb-content" id="tab-coin-history" style="display:none">
+                <div class="sb-empty">
+                    <span class="sb-empty-icon">🕐</span>
+                    <span>거래 내역이 없습니다.</span>
+                </div>
+                <table class="sb-table" id="history-table" style="display:none">
+                    <thead><tr><th>일시</th><th>유형</th><th>가격</th><th>수량</th><th>금액</th></tr></thead>
+                    <tbody id="history-body"></tbody>
+                </table>
+            </div>
         </div>
 
-        <div class="sb-content" id="tab-history" style="display:none">
-            <div class="sb-empty">
-                <span class="sb-empty-icon">🕐</span>
-                <span>거래 기록이 없습니다.</span>
-            </div>
-            <table class="sb-table" id="history-table" style="display:none">
-                <thead>
-                    <tr>
-                        <th>일시</th>
-                        <th>유형</th>
-                        <th>가격</th>
-                        <th>수량</th>
-                        <th>금액</th>
-                    </tr>
-                </thead>
-                <tbody id="history-body"></tbody>
-            </table>
-        </div>
     </div>
 
     <!-- ② 관심 섹션 -->

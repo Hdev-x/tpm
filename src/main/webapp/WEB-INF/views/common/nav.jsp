@@ -13,8 +13,8 @@
                      - <span>    : 아직 미구현된 메뉴는 클릭 불가 텍스트로만 표시
                      - .active   : 현재 페이지임을 표시 (CSS에서 색상/밑줄 강조)
                 -->
-    <a href="/dashboard" class="nav-item">대시보드</a>
-    <span class="nav-item active">차트</span>
+    <a href="/dashboard" class="nav-item">홈</a>
+    <a href="/coin/list" class="nav-item active">마켓</a>
     <span class="nav-item">백테스트</span>
     <span class="nav-item">자동매매</span>
     <span class="nav-item">로그</span>

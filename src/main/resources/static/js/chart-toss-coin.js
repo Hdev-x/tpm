@@ -12,7 +12,7 @@
    전역 상태 변수
    ==================================================== */
 let showHighLow = true;          // 최고/최저가 마커 표시 여부
-let countdownPrimitive = null;   // 봉 카운트다운 플러그인 인스턴스
+let countdownTimer = null;   // 봉 카운트다운 플러그인 인스턴스
 
 let currentGranularity = '1min'; // 현재 타임프레임 (REST API 파라미터)
 let currentChannel = 'candle1m'; // 현재 WebSocket 구독 채널명
@@ -45,25 +45,26 @@ const TF_MAP = {
     '4h': { channel: 'candle4H', restGran: '4h', seconds: 14400 },
     '6h': { channel: 'candle6H', restGran: '6h', seconds: 21600 },
     '12h': { channel: 'candle12H', restGran: '12h', seconds: 43200 },
-    '1day': { channel: 'candle1D', restGran: '1day', seconds: 86400 },
-    '3day': { channel: 'candle3D', restGran: '3day', seconds: 259200 },
-    '1week': { channel: 'candle1W', restGran: '1week', seconds: 604800 },
-    '1month': { channel: 'candle1M', restGran: '1M', seconds: 2592000 },
+    '1day': { channel: 'candle1D', restGran: '1Dutc', seconds: 86400 },
+    '3day': { channel: 'candle3D', restGran: '3Dutc', seconds: 259200 },
+    '1week': { channel: 'candle1W', restGran: '1Wutc', seconds: 604800 },
+    '1month': { channel: 'candle1M', restGran: '1Mutc', seconds: 2592000 },
 };
 
 
 /* ====================================================
    차트 생성 (LightweightCharts)
    ==================================================== */
+const _chartBg = getComputedStyle(document.documentElement).getPropertyValue('--chart-bg').trim() || '#16161A';
 const container = document.getElementById('chart-container');
 const chart = LightweightCharts.createChart(container, {
     autoSize: true, // 컨테이너 크기에 맞게 자동 리사이즈
-    layout: { background: { color: '#16161A' }, textColor: 'rgba(255,255,255,0.5)' },
+    layout: { background: { color: _chartBg }, textColor: 'rgba(255,255,255,0.5)' },
     grid: {
         vertLines: { color: 'rgba(255,255,255,0.04)' },
         horzLines: { color: 'rgba(255,255,255,0.04)' }
     },
-    timeScale: { timeVisible: true, secondsVisible: false, borderColor: 'rgba(255,255,255,0.07)' },
+    timeScale: { timeVisible: true, secondsVisible: false, borderColor: 'rgba(255,255,255,0.07)', rightOffset: 15 },
     rightPriceScale: { borderColor: 'rgba(255,255,255,0.07)' },
     crosshair: {
         mode: LightweightCharts.CrosshairMode.Normal,
@@ -113,7 +114,7 @@ chart.priceScale('volume').applyOptions({ scaleMargins: { top: 0.8, bottom: 0 } 
 const rsiContainer = document.getElementById('rsi-container');
 const rsiChart = LightweightCharts.createChart(rsiContainer, {
     autoSize: true,
-    layout: { background: { color: '#16161A' }, textColor: 'rgba(255,255,255,0.5)' },
+    layout: { background: { color: _chartBg }, textColor: 'rgba(255,255,255,0.5)' },
     grid: { vertLines: { color: 'rgba(255,255,255,0.04)' }, horzLines: { color: 'rgba(255,255,255,0.04)' } },
     timeScale: { timeVisible: true, secondsVisible: false, borderColor: 'rgba(255,255,255,0.07)' },
     rightPriceScale: { borderColor: 'rgba(255,255,255,0.07)', scaleMargins: { top: 0.1, bottom: 0.1 } },
@@ -256,9 +257,18 @@ function updateAllSeries(data) {
 
 /* ====================================================
    캔들 데이터 로드 (Bitget REST API)
-   최근 200개 봉 데이터를 가져와 차트에 표시
+   캐시 데이터가 있으면 먼저 표시 후 API 응답으로 업데이트
    ==================================================== */
 async function loadData() {
+    /* localStorage 캐시가 있으면 즉시 차트 렌더링 */
+    const cacheKey = 'chart_' + currentGranularity;
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+        allData = JSON.parse(cached);
+        updateAllSeries(allData);
+    }
+
+    /* API 호출 */
     const res = await fetch(
         'https://api.bitget.com/api/v2/spot/market/candles?symbol=BTCUSDT&granularity=' + currentGranularity + '&limit=200'
     ).then(r => r.json());
@@ -267,17 +277,18 @@ async function loadData() {
     /* API 응답: [타임스탬프(ms), 시가, 고가, 저가, 종가, 거래량]
        타임스탬프를 초 단위로 변환 (LightweightCharts는 Unix 초 단위 사용) */
     allData = res.data.map(item => ({
-        time: Math.floor(item[0] / 1000),
+        time: Math.floor(item[0] / 1000) + 32400,
         open: parseFloat(item[1]),
         high: parseFloat(item[2]),
         low: parseFloat(item[3]),
         close: parseFloat(item[4]),
         volume: parseFloat(item[5])
-    })).sort((a, b) => a.time - b.time); // 시간 오름차순 정렬
+    })).sort((a, b) => a.time - b.time);
 
+    /* 캐시 저장 후 최신 데이터로 차트 업데이트 */
+    localStorage.setItem(cacheKey, JSON.stringify(allData));
     updateAllSeries(allData);
 }
-
 
 /* ====================================================
    과거 데이터 추가 로드 (무한 스크롤)
@@ -346,30 +357,7 @@ function changeTimeframe(gran) {
     currentChannel = TF_MAP[gran].channel;
     currentTfSeconds = TF_MAP[gran].seconds;
 
-    /* 카운트다운 플러그인이 있으면 타임프레임에 맞게 옵션 업데이트 */
-    if (countdownPrimitive) {
-        countdownPrimitive.applyOptions({
-            timeframeInSeconds: currentTfSeconds,
-            timeLabelFormatter: currentTfSeconds >= 259200
-                /* 3D 이상: "Xd Yh" 형식 */
-                ? (ttcc) => {
-                    if (ttcc.days > 0) return ttcc.days + 'd ' + ttcc.hours + 'h';
-                    if (ttcc.hours > 0) return ttcc.hours + 'h ' + ttcc.minutes + 'm';
-                    if (ttcc.minutes > 0) return ttcc.minutes + 'm ' + ttcc.seconds + 's';
-                    return ttcc.seconds + 's';
-                }
-                /* 그 외: "MM:SS" 또는 "HH:MM:SS" 형식 */
-                : (ttcc) => {
-                    const t = ttcc.days * 86400 + ttcc.hours * 3600 + ttcc.minutes * 60 + ttcc.seconds;
-                    const h = Math.floor(t / 3600);
-                    const m = Math.floor((t % 3600) / 60);
-                    const s = t % 60;
-                    if (currentTfSeconds >= 43200 || h > 0)
-                        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-                    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-                }
-        });
-    }
+    if (showCountdown) startCountdown();
 
     allData = [];
 
@@ -385,8 +373,8 @@ function changeTimeframe(gran) {
     loadData().then(() => {
         const nb = window.currentDataLength || 200;
         chart.timeScale().setVisibleLogicalRange({ from: nb + rightOffset - barCount, to: nb + rightOffset });
-        connectWebSocket();
     });
+    connectWebSocket();
 }
 
 
@@ -477,37 +465,62 @@ function toggleHighLow(enabled) {
 
 /* ====================================================
    봉 카운트다운 (다음 봉까지 남은 시간 표시)
-   lwc-plugin-countdown-to-close 라이브러리 사용
    ==================================================== */
-function startCountdown() {
-    if (!countdownPrimitive) {
-        countdownPrimitive = new CountdownToClose.CountdownToClose({
-            customLastPriceLine: true,
-            timeframeInSeconds: currentTfSeconds,
-            timeLabelFormatter: (ttcc) => {
-                const t = ttcc.days * 86400 + ttcc.hours * 3600 + ttcc.minutes * 60 + ttcc.seconds;
-                const h = Math.floor(t / 3600);
-                const m = Math.floor((t % 3600) / 60);
-                const s = t % 60;
-                if (currentTfSeconds >= 43200 || h > 0)
-                    return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-                return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-            }
-        });
-        /* 카운트다운 플러그인이 마지막 가격선을 커스텀으로 그리므로 기본 가격선 숨김 */
-        candleSeries.applyOptions({ lastValueVisible: false, priceLineVisible: false });
-        candleSeries.attachPrimitive(countdownPrimitive);
+function getNextCloseSeconds() {
+    const now = Math.floor(Date.now() / 1000);
+    if (currentTfSeconds === 604800) {
+        // 주봉: 다음 월요일 00:00 UTC
+        const day = new Date().getUTCDay(); // 0=일, 1=월
+        const toMonday = day === 0 ? 1 : (8 - day) % 7 || 7;
+        const nextMonday = new Date();
+        nextMonday.setUTCDate(nextMonday.getUTCDate() + toMonday);
+        nextMonday.setUTCHours(0, 0, 0, 0);
+        return Math.floor(nextMonday.getTime() / 1000) - now;
     }
+    if (currentTfSeconds === 2592000) {
+        // 월봉: 다음 달 1일 00:00 UTC
+        const d = new Date();
+        const nextMonth = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
+        return Math.floor(nextMonth.getTime() / 1000) - now;
+    }
+    // 분봉/시봉/일봉: epoch 기준 나머지
+    return currentTfSeconds - (now % currentTfSeconds);
+}
+
+function formatCountdown(secs) {
+    const d = Math.floor(secs / 86400);
+    const h = Math.floor((secs % 86400) / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    if (currentTfSeconds >= 259200 && d > 0) return d + 'd ' + h + 'h';
+    if (currentTfSeconds >= 43200 || h > 0)
+        return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+}
+
+function startCountdown() {
+    if (countdownTimer) clearInterval(countdownTimer);
+
+    const tick = () => {
+        if (!showCountdown) return;
+        const remaining = getNextCloseSeconds();
+        candleSeries.applyOptions({
+            lastValueVisible: true,
+            priceLineVisible: true,
+            title: formatCountdown(remaining)
+        });
+    };
+    tick();
+    countdownTimer = setInterval(tick, 1000);
 }
 
 function toggleCountdown(enabled) {
     showCountdown = enabled;
     if (enabled) {
         startCountdown();
-        countdownPrimitive.applyOptions({ showLabels: true });
     } else {
-        if (countdownPrimitive) countdownPrimitive.applyOptions({ showLabels: false });
-        candleSeries.applyOptions({ lastValueVisible: true, priceLineVisible: true });
+        if (countdownTimer) clearInterval(countdownTimer);
+        candleSeries.applyOptions({ title: '', lastValueVisible: true, priceLineVisible: true });
     }
 }
 
@@ -583,7 +596,7 @@ function connectWebSocket() {
         /* 캔들 채널 (기존 코드) */
         const item = msg.data[0];
         const bar = {
-            time: Math.floor(item[0] / 1000),
+            time: Math.floor(item[0] / 1000) + 32400,
             open: parseFloat(item[1]),
             high: parseFloat(item[2]),
             low: parseFloat(item[3]),
@@ -666,15 +679,12 @@ function updatePriceHeader(price) {
 
 /* 보유 종목 손익 실시간 업데이트 */
 function updateHoldingsPnl() {
-    const pEl = document.getElementById('holding-price');
-    const pnlEl = document.getElementById('holding-pnl');
-    if (!pEl || !pnlEl) return;
-    const avg = parseFloat(pEl.closest('tr').children[2].textContent);
-    const cnt = parseFloat(pEl.closest('tr').children[1].textContent);
-    const pnl = (lastPrice - avg) * cnt;
-    pEl.textContent = lastPrice.toFixed(2);
-    pnlEl.textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' USDT';
-    pnlEl.style.color = pnl >= 0 ? 'var(--up)' : 'var(--down)';
+    document.querySelectorAll('#bp-holdings-body tr[data-coin]').forEach(row => {
+        const coinCode = row.dataset.coin;
+        if (typeof updateHoldingPrice === 'function') {
+            updateHoldingPrice(coinCode, lastPrice);
+        }
+    });
 }
 
 
@@ -688,12 +698,14 @@ async function loadTicker() {
         if (res.code === '00000' && res.data && res.data[0]) {
             const d = res.data[0];
             const price = parseFloat(d.lastPr);
-            const chgPct = parseFloat(d.change24h) * 100; // 소수 → 퍼센트 변환
 
             /* 전일 마감가 계산: price = prevClose × (1 + change24h)
                → prevClose = price / (1 + change24h) */
-            const absChange = price * parseFloat(d.change24h) / (1 + parseFloat(d.change24h));
-            prevClose = price / (1 + parseFloat(d.change24h));
+            // 변경 (전날 종가를 일봉 API에서 직접 가져옴)
+            const candleRes = await fetch('https://api.bitget.com/api/v2/spot/market/candles?symbol=BTCUSDT&granularity=1Dutc&limit=2').then(r => r.json());
+            prevClose = parseFloat(candleRes.data[1][4]); // [1]번 캔들(어제)의 close
+            const absChange = price - prevClose;
+            const chgPct = (absChange / prevClose) * 100;
 
             lastPrice = price;
             updatePriceHeader(price);
@@ -932,33 +944,7 @@ async function loadWallet() {
     }
 }
 
-/* 서버에서 보유 코인 목록 가져와 테이블에 렌더링 */
-async function loadHoldings() {
-    const res = await fetch('/coin/holdings?username=testuser').then(r => r.json());
-    const tbody = document.getElementById('bp-holdings-body');
-    tbody.innerHTML = '';
-
-    if (res && res.length > 0) {
-        document.getElementById('bp-empty').style.display = 'none';
-        document.getElementById('bp-holdings-table').style.display = 'table';
-        let rows = '';
-        res.forEach(h => {
-            const pnl = (lastPrice - h.avgPrice) * h.coinCount;
-            const pc = pnl >= 0 ? 'var(--up)' : 'var(--down)';
-            rows += '<tr>'
-                + '<td>' + h.coinCode + '</td>'
-                + '<td>' + h.coinCount.toFixed(6) + '</td>'
-                + '<td>' + h.avgPrice.toFixed(2) + '</td>'
-                + '<td id="holding-price">' + lastPrice.toFixed(2) + '</td>'
-                + '<td id="holding-pnl" style="color:' + pc + '">' + (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' USDT</td>'
-                + '</tr>';
-        });
-        tbody.innerHTML = rows;
-    } else {
-        document.getElementById('bp-empty').style.display = '';
-        document.getElementById('bp-holdings-table').style.display = 'none';
-    }
-}
+/* loadHoldings()는 common.js로 이동 */
 
 
 /* ====================================================
@@ -989,15 +975,12 @@ document.getElementById('chat-input').addEventListener('keydown', e => {
 
 
 /* ====================================================
-   초기 실행
-   페이지 로드 시 순서대로 실행
+   페이지 로드 시 병렬 실행
    ==================================================== */
-loadTicker();  // 현재가·변동률 로드
-loadWallet();  // 지갑 잔고 로드
-loadData().then(() => {
-    connectWebSocket(); // 데이터 로드 완료 후 WebSocket 연결
-    loadHoldings();     // 보유 내역 로드 (lastPrice 설정 이후에 실행)
-    startCountdown();   // 봉 카운트다운 시작
+Promise.all([loadTicker(), loadWallet(), loadData()]).then(() => {
+    connectWebSocket();
+    loadHoldings();
+    startCountdown();
 });
 
 /* 창 크기 변경 시 인라인 스타일 초기화

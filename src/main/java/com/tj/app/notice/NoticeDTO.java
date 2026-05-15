@@ -1,6 +1,6 @@
 package com.tj.app.notice;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.tj.app.file.FileDTO;
@@ -18,7 +18,7 @@ public class NoticeDTO {
 	private String noticeTitle;
 	private String noticeWriter;
 	private String noticeContent;
-	private LocalDate noticeDate;
+	private LocalDateTime noticeDate;
 	private Long noticeView;
 	private String username;
 	

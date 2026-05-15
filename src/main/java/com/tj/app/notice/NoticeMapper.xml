@@ -20,7 +20,7 @@
 	</resultMap>
 
 
-	<insert id="create" parameterType="NoticeDTO"
+	<insert id="create" parameterType="noticeDTO"
 		useGeneratedKeys="true" keyProperty="NoticeNo">
 		INSERT INTO "NOTICE"
 		VALUES

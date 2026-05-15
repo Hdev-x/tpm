@@ -1,6 +1,6 @@
 package com.tj.app.board;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import com.tj.app.file.FileDTO;
@@ -18,7 +18,7 @@ public class BoardDTO {
 	private String boardTitle;
 	private String boardWriter;
 	private String boardContent;
-	private LocalDate boardDate;
+	private LocalDateTime boardDate;
 	private Long boardView;
 	private String username;
 	

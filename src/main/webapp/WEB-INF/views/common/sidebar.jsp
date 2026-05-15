@@ -1,100 +1,290 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
-<!-- ================================================================
-             ④ 내 투자 사이드바 (.sidebar-panel)
-             - .app-wrapper 의 직계 자식으로 .page 오른쪽에 위치
-             - 기본: width:0; overflow:hidden → 숨겨진 상태
-             - toggleSidebar() 호출 시 width가 펼쳐지며 슬라이드 인
-             - 탭: 포지션 / 오더 / 기록
-        ================================================================ -->
 <div class="sidebar-panel" id="sidebar-panel">
 
-    <!-- 사이드바 헤더: 제목 + 접기/확장 버튼 -->
     <div class="sidebar-header">
-        <!-- id="sidebar-title" : 어떤 탭이 열렸는지에 따라 JS에서 텍스트 변경 가능 -->
         <span id="sidebar-title">내 투자</span>
         <div class="sidebar-header-btns">
-            <!-- closeSidebar() : 사이드바를 다시 width:0으로 닫음 -->
             <button class="sb-fold-btn" onclick="closeSidebar()">접기</button>
             <button class="sb-expand-btn">&gt;&gt;</button>
         </div>
     </div>
 
-    <!-- 탭 버튼
-                 - switchBpTab(this, 'positions') : 클릭한 탭에 .active, 해당 콘텐츠 표시
-                 - 각 탭에 대응하는 #tab-포지션/orders/history div가 아래에 있음
-            -->
-    <div class="sb-tabs">
-        <div class="sb-tab active" onclick="switchBpTab(this,'positions')">포지션</div>
-        <div class="sb-tab" onclick="switchBpTab(this,'orders')">오더</div>
-        <div class="sb-tab" onclick="switchBpTab(this,'history')">기록</div>
-    </div>
-
-    <!-- 포지션 탭 콘텐츠
-                 - 보유 중인 포지션 없을 때: .sb-empty (아이콘 + 메시지)
-                 - 보유 포지션 있을 때: #bp-holdings-table 테이블 표시 (display:none → block)
-            -->
-    <div class="sb-content" id="tab-positions">
-        <div class="sb-empty" id="bp-empty">
-            <span class="sb-empty-icon">📊</span>
-            <span>포지션이 없습니다.</span>
+    <!-- ① 내 투자 섹션 -->
+    <div class="sidebar-section" id="sidebar-invest">
+        <div class="sb-tabs">
+            <div class="sb-tab active" onclick="switchBpTab(this,'positions')">포지션</div>
+            <div class="sb-tab" onclick="switchBpTab(this,'orders')">오더</div>
+            <div class="sb-tab" onclick="switchBpTab(this,'history')">기록</div>
         </div>
-        <!-- 포지션 테이블: JS에서 포지션 데이터가 있을 때 display:'table'로 변경
-                     thead: 고정 헤더, tbody: JS로 행 추가 -->
-        <table class="sb-table" id="bp-holdings-table" style="display:none">
-            <thead>
-                <tr>
-                    <th>코인</th>
-                    <th>수량</th>
-                    <th>평균단가</th>
-                    <th>현재가</th>
-                    <th>손익</th>
-                </tr>
-            </thead>
-            <tbody id="bp-holdings-body"></tbody>
-        </table>
-    </div>
 
-    <!-- 오더 탭 콘텐츠 (기본: 숨김)
-                 - 현재 미체결 주문 목록 표시
-            -->
-    <div class="sb-content" id="tab-orders" style="display:none">
-        <div class="sb-empty">
-            <span class="sb-empty-icon">📋</span>
-            <span>오픈 오더가 없습니다.</span>
+        <div class="sb-content" id="tab-positions">
+            <div class="sb-empty" id="bp-empty">
+                <span class="sb-empty-icon">📊</span>
+                <span>포지션이 없습니다.</span>
+            </div>
+            <table class="sb-table" id="bp-holdings-table" style="display:none">
+                <thead>
+                    <tr>
+                        <th>코인</th>
+                        <th>수량</th>
+                        <th>평균단가</th>
+                        <th>현재가</th>
+                        <th>손익</th>
+                    </tr>
+                </thead>
+                <tbody id="bp-holdings-body"></tbody>
+            </table>
         </div>
-        <table class="sb-table" id="orders-table" style="display:none">
-            <thead>
-                <tr>
-                    <th>코인</th>
-                    <th>유형</th>
-                    <th>가격</th>
-                    <th>수량</th>
-                    <th>취소</th>
-                </tr>
-            </thead>
-            <tbody id="orders-body"></tbody>
-        </table>
+
+        <div class="sb-content" id="tab-orders" style="display:none">
+            <div class="sb-empty">
+                <span class="sb-empty-icon">📋</span>
+                <span>오픈 오더가 없습니다.</span>
+            </div>
+            <table class="sb-table" id="orders-table" style="display:none">
+                <thead>
+                    <tr>
+                        <th>코인</th>
+                        <th>유형</th>
+                        <th>가격</th>
+                        <th>수량</th>
+                        <th>취소</th>
+                    </tr>
+                </thead>
+                <tbody id="orders-body"></tbody>
+            </table>
+        </div>
+
+        <div class="sb-content" id="tab-history" style="display:none">
+            <div class="sb-empty">
+                <span class="sb-empty-icon">🕐</span>
+                <span>거래 기록이 없습니다.</span>
+            </div>
+            <table class="sb-table" id="history-table" style="display:none">
+                <thead>
+                    <tr>
+                        <th>일시</th>
+                        <th>유형</th>
+                        <th>가격</th>
+                        <th>수량</th>
+                        <th>금액</th>
+                    </tr>
+                </thead>
+                <tbody id="history-body"></tbody>
+            </table>
+        </div>
     </div>
 
-    <!-- 기록 탭 콘텐츠 (기본: 숨김)
-                 - 체결된 거래 내역 표시
-            -->
-    <div class="sb-content" id="tab-history" style="display:none">
+    <!-- ② 관심 섹션 -->
+    <div class="sidebar-section" id="sidebar-interest" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+
+        <!-- 통화 토글 -->
+        <div class="si-currency-bar">
+            <button class="si-cur-btn active">$</button>
+            <button class="si-cur-btn">원</button>
+        </div>
+
+        <!-- AI 배너 -->
+        <div class="si-ai-banner">
+            <div class="si-ai-inner">
+                <span class="si-ai-label">✦ 토스증권 AI</span>
+                <p class="si-ai-text">엔비디아 H200 칩 판매 승인으로 2.5% 상승</p>
+            </div>
+            <span class="si-ai-arrow">›</span>
+        </div>
+
+        <!-- 전체 / 주식 / 코인 탭 -->
+        <div class="si-type-tabs">
+            <div class="si-type-tab active" onclick="switchInterestTab(this,'all')">전체</div>
+            <div class="si-type-tab" onclick="switchInterestTab(this,'stock')">주식</div>
+            <div class="si-type-tab" onclick="switchInterestTab(this,'coin')">코인</div>
+        </div>
+
+        <!-- 전체 탭 -->
+        <div class="si-tab-content" id="interest-all">
+            <div class="si-all-header">
+                <button class="si-swap-btn" onclick="swapInterestGroups()" title="순서 변경">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    순서 변경
+                </button>
+            </div>
+            <div class="si-all-container" id="si-all-container">
+
+                <!-- 주식 그룹 -->
+                <div class="si-all-group" id="si-group-stock">
+                    <div class="si-group-title">
+                        <div class="si-group-left">
+                            <span class="si-group-main">주식</span>
+                        </div>
+                    </div>
+                    <div class="si-stock-list">
+                        <div class="si-stock-item">
+                            <div class="si-logo" style="background:#1428A0;">삼</div>
+                            <span class="si-stock-name">삼성전자</span>
+                            <div class="si-stock-price">
+                                <span class="si-price">293,000원</span>
+                                <span class="si-change up">+9,000원 (3.16%)</span>
+                            </div>
+                            <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+                        </div>
+                        <div class="si-stock-item">
+                            <div class="si-logo" style="background:#A50034;">G</div>
+                            <span class="si-stock-name">LG전자</span>
+                            <div class="si-stock-price">
+                                <span class="si-price">219,000원</span>
+                                <span class="si-change up">+27,600원 (14.42%)</span>
+                            </div>
+                            <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+                        </div>
+                        <div class="si-stock-item">
+                            <div class="si-logo" style="background:#E8001C;">SK</div>
+                            <span class="si-stock-name">SK하이닉스</span>
+                            <div class="si-stock-price">
+                                <span class="si-price">1,971,000원</span>
+                                <span class="si-change down">-5,000원 (0.25%)</span>
+                            </div>
+                            <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+                        </div>
+                        <div class="si-stock-item">
+                            <div class="si-logo" style="background:#76B900;">N</div>
+                            <span class="si-stock-name">엔비디아</span>
+                            <div class="si-stock-price">
+                                <span class="si-price">343,977원</span>
+                                <span class="si-change up">+6,339원 (1.87%)</span>
+                            </div>
+                            <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 코인 그룹 -->
+                <div class="si-all-group" id="si-group-coin">
+                    <div class="si-group-title">
+                        <div class="si-group-left">
+                            <span class="si-group-main">코인</span>
+                        </div>
+                    </div>
+                    <div class="si-stock-list">
+                        <div class="si-stock-item">
+                            <div class="si-logo" style="background:#F7931A;">₿</div>
+                            <span class="si-stock-name">비트코인</span>
+                            <div class="si-stock-price">
+                                <span class="si-price">135,420,000원</span>
+                                <span class="si-change up">+2,100,000원 (1.57%)</span>
+                            </div>
+                            <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+                        </div>
+                        <div class="si-stock-item">
+                            <div class="si-logo" style="background:#627EEA;">E</div>
+                            <span class="si-stock-name">이더리움</span>
+                            <div class="si-stock-price">
+                                <span class="si-price">3,812,000원</span>
+                                <span class="si-change down">-45,000원 (1.17%)</span>
+                            </div>
+                            <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 주식 탭 -->
+        <div class="si-tab-content" id="interest-stock" style="display:none">
+            <div class="si-group-title">
+                <span class="si-group-main">관심 주식</span>
+            </div>
+            <div class="si-stock-list">
+                <div class="si-stock-item">
+                    <div class="si-logo" style="background:#1428A0;">삼</div>
+                    <span class="si-stock-name">삼성전자</span>
+                    <div class="si-stock-price">
+                        <span class="si-price">293,000원</span>
+                        <span class="si-change up">+9,000원 (3.16%)</span>
+                    </div>
+                    <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+                </div>
+                <div class="si-stock-item">
+                    <div class="si-logo" style="background:#A50034;">G</div>
+                    <span class="si-stock-name">LG전자</span>
+                    <div class="si-stock-price">
+                        <span class="si-price">219,000원</span>
+                        <span class="si-change up">+27,600원 (14.42%)</span>
+                    </div>
+                    <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+                </div>
+                <div class="si-stock-item">
+                    <div class="si-logo" style="background:#E8001C;">SK</div>
+                    <span class="si-stock-name">SK하이닉스</span>
+                    <div class="si-stock-price">
+                        <span class="si-price">1,971,000원</span>
+                        <span class="si-change down">-5,000원 (0.25%)</span>
+                    </div>
+                    <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+                </div>
+                <div class="si-stock-item">
+                    <div class="si-logo" style="background:#76B900;">N</div>
+                    <span class="si-stock-name">엔비디아</span>
+                    <div class="si-stock-price">
+                        <span class="si-price">343,977원</span>
+                        <span class="si-change up">+6,339원 (1.87%)</span>
+                    </div>
+                    <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+                </div>
+                <div class="si-stock-item si-add-btn">
+                    <div class="si-logo si-add-logo">+</div>
+                    <span class="si-stock-name">추가하기</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 코인 탭 -->
+        <div class="si-tab-content" id="interest-coin" style="display:none">
+            <div class="si-group-title">
+                <span class="si-group-main">관심 코인</span>
+            </div>
+            <div class="si-stock-list">
+                <div class="si-stock-item">
+                    <div class="si-logo" style="background:#F7931A;">₿</div>
+                    <span class="si-stock-name">비트코인</span>
+                    <div class="si-stock-price">
+                        <span class="si-price">135,420,000원</span>
+                        <span class="si-change up">+2,100,000원 (1.57%)</span>
+                    </div>
+                    <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+                </div>
+                <div class="si-stock-item">
+                    <div class="si-logo" style="background:#627EEA;">E</div>
+                    <span class="si-stock-name">이더리움</span>
+                    <div class="si-stock-price">
+                        <span class="si-price">3,812,000원</span>
+                        <span class="si-change down">-45,000원 (1.17%)</span>
+                    </div>
+                    <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
+                </div>
+                <div class="si-stock-item si-add-btn">
+                    <div class="si-logo si-add-logo">+</div>
+                    <span class="si-stock-name">추가하기</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ③ 최근 본 섹션 -->
+    <div class="sidebar-section sb-content" id="sidebar-recent" style="display:none">
         <div class="sb-empty">
             <span class="sb-empty-icon">🕐</span>
-            <span>거래 기록이 없습니다.</span>
+            <span>최근 본 종목이 없습니다.</span>
         </div>
-        <table class="sb-table" id="history-table" style="display:none">
-            <thead>
-                <tr>
-                    <th>일시</th>
-                    <th>유형</th>
-                    <th>가격</th>
-                    <th>수량</th>
-                    <th>금액</th>
-                </tr>
-            </thead>
-            <tbody id="history-body"></tbody>
-        </table>
     </div>
-</div><!-- /.sidebar-panel -->
+
+    <!-- ④ 실시간 섹션 -->
+    <div class="sidebar-section sb-content" id="sidebar-live" style="display:none">
+        <div class="sb-empty">
+            <span class="sb-empty-icon">📡</span>
+            <span>실시간 데이터가 없습니다.</span>
+        </div>
+    </div>
+
+</div>

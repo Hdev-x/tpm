@@ -20,25 +20,17 @@
          - production : 코드가 압축(minify)된 배포용 버전
          unpkg.com : npm 패키지를 CDN으로 즉시 제공해주는 서비스
     -->
-    <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
-
-    <!-- lwc-plugin-countdown-to-close v2.0.0
-         - LightweightCharts 플러그인: 현재 봉의 남은 시간을 차트 위에 표시해줌
-         - umd.cjs : UMD(Universal Module Definition) 형식으로 브라우저에서 바로 사용 가능
-    -->
-    <script
-        src="https://unpkg.com/lwc-plugin-countdown-to-close@2.0.0/dist/lwc-plugin-countdown-to-close.umd.cjs"></script>
-
     <!-- 외부 CSS 파일 연결
          - /css/chart-toss.css → src/main/resources/static/css/chart-toss.css
          - Spring Boot는 static/ 하위 파일을 자동으로 정적 리소스로 서빙함
          - <link rel="stylesheet"> : CSS 파일을 스타일시트로 불러오는 표준 방법
     -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/chart-toss.css">
+    <link rel="stylesheet" href="/css/chart-toss-coin.css">
 </head>
 
-<body>
+<body class="chart-page" data-sidebar-tab="invest">
 
     <!-- ================================================================
          최상위 레이아웃 컨테이너
@@ -382,7 +374,16 @@
                                 <span>L: <b id="val-l">-</b></span>&nbsp;
                                 <span>C: <b id="val-c">-</b></span>
                             </div>
-                        </div>
+                            <!-- 봉 카운트다운 박스
+                              - chart-container 기준 absolute 위치
+                               - 현재가 라벨 아래에 표시
+                            -->
+                            <div id="countdown-box">
+                                <span id="countdown-time"></span>
+                            </div>
+                        </div><!-- /#chart-container -->
+
+
 
                         <!-- RSI 패널 구분선
                              - RSI가 활성화되면 JS에서 display:'block'으로 표시
@@ -522,11 +523,31 @@
                             <div class="hoga-top">
                                 <table class="hoga-table">
                                     <tbody id="hoga-asks">
-                                        <tr class="hoga-skel"><td class="hoga-ask">--,---.--</td><td>-.------</td><td>-.------</td></tr>
-                                        <tr class="hoga-skel"><td class="hoga-ask">--,---.--</td><td>-.------</td><td>-.------</td></tr>
-                                        <tr class="hoga-skel"><td class="hoga-ask">--,---.--</td><td>-.------</td><td>-.------</td></tr>
-                                        <tr class="hoga-skel"><td class="hoga-ask">--,---.--</td><td>-.------</td><td>-.------</td></tr>
-                                        <tr class="hoga-skel"><td class="hoga-ask">--,---.--</td><td>-.------</td><td>-.------</td></tr>
+                                        <tr class="hoga-skel">
+                                            <td class="hoga-ask">--,---.--</td>
+                                            <td>-.------</td>
+                                            <td>-.------</td>
+                                        </tr>
+                                        <tr class="hoga-skel">
+                                            <td class="hoga-ask">--,---.--</td>
+                                            <td>-.------</td>
+                                            <td>-.------</td>
+                                        </tr>
+                                        <tr class="hoga-skel">
+                                            <td class="hoga-ask">--,---.--</td>
+                                            <td>-.------</td>
+                                            <td>-.------</td>
+                                        </tr>
+                                        <tr class="hoga-skel">
+                                            <td class="hoga-ask">--,---.--</td>
+                                            <td>-.------</td>
+                                            <td>-.------</td>
+                                        </tr>
+                                        <tr class="hoga-skel">
+                                            <td class="hoga-ask">--,---.--</td>
+                                            <td>-.------</td>
+                                            <td>-.------</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -541,11 +562,31 @@
                             <div class="hoga-bot">
                                 <table class="hoga-table">
                                     <tbody id="hoga-bids">
-                                        <tr class="hoga-skel"><td class="hoga-bid">--,---.--</td><td>-.------</td><td>-.------</td></tr>
-                                        <tr class="hoga-skel"><td class="hoga-bid">--,---.--</td><td>-.------</td><td>-.------</td></tr>
-                                        <tr class="hoga-skel"><td class="hoga-bid">--,---.--</td><td>-.------</td><td>-.------</td></tr>
-                                        <tr class="hoga-skel"><td class="hoga-bid">--,---.--</td><td>-.------</td><td>-.------</td></tr>
-                                        <tr class="hoga-skel"><td class="hoga-bid">--,---.--</td><td>-.------</td><td>-.------</td></tr>
+                                        <tr class="hoga-skel">
+                                            <td class="hoga-bid">--,---.--</td>
+                                            <td>-.------</td>
+                                            <td>-.------</td>
+                                        </tr>
+                                        <tr class="hoga-skel">
+                                            <td class="hoga-bid">--,---.--</td>
+                                            <td>-.------</td>
+                                            <td>-.------</td>
+                                        </tr>
+                                        <tr class="hoga-skel">
+                                            <td class="hoga-bid">--,---.--</td>
+                                            <td>-.------</td>
+                                            <td>-.------</td>
+                                        </tr>
+                                        <tr class="hoga-skel">
+                                            <td class="hoga-bid">--,---.--</td>
+                                            <td>-.------</td>
+                                            <td>-.------</td>
+                                        </tr>
+                                        <tr class="hoga-skel">
+                                            <td class="hoga-bid">--,---.--</td>
+                                            <td>-.------</td>
+                                            <td>-.------</td>
+                                        </tr>
                                     </tbody>
                                 </table>
                             </div>
@@ -602,61 +643,7 @@
 
         <%@ include file="../common/sidebar.jsp" %>
 
-        <!-- ================================================================
-             아이콘 스트립 (.sidebar-icons)
-             - 항상 화면 오른쪽 끝에 표시되는 세로 아이콘 탭 바
-             - 각 아이콘 클릭 시 해당 사이드바 콘텐츠로 슬라이드 인
-             - toggleSidebar('invest'/'interest'/'recent'/'live') 로 제어
-             - display:flex; flex-direction:column; align-items:center
-        ================================================================ -->
-        <div class="sidebar-icons">
-
-            <!-- 내 투자 버튼: 파형 아이콘 (polyline = 꺾인 선)
-                 - SVG viewBox="0 0 24 24" : 24x24 좌표계 기준
-                 - polyline points : 점들을 직선으로 연결 (차트 파형 모양)
-                 - id="si-invest" : 활성화 시 JS에서 .active 클래스 추가
-            -->
-            <button class="si-btn" id="si-invest" onclick="toggleSidebar('invest')">
-                <svg viewBox="0 0 24 24">
-                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-                </svg>
-                <span>내 투자</span>
-            </button>
-
-            <!-- 구분선: 아이콘 그룹 시각적 분리 -->
-            <div class="si-divider"></div>
-
-            <!-- 관심 버튼: 하트 아이콘 -->
-            <button class="si-btn" id="si-interest" onclick="toggleSidebar('interest')">
-                <svg viewBox="0 0 24 24">
-                    <path
-                        d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-                </svg>
-                <span>관심</span>
-            </button>
-
-            <!-- 최근 본 버튼: 시계 아이콘 (circle=시계 테두리, polyline=시침/분침) -->
-            <button class="si-btn" id="si-recent" onclick="toggleSidebar('recent')">
-                <svg viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" />
-                    <polyline points="12 6 12 12 16 14" />
-                </svg>
-                <span>최근 본</span>
-            </button>
-
-            <!-- 실시간 버튼: 와이파이/라디오 방사 아이콘
-                 - circle : 중앙 점
-                 - path : 안쪽 → 바깥쪽으로 퍼지는 호(arc) 3겹
-            -->
-            <button class="si-btn" id="si-live" onclick="toggleSidebar('live')">
-                <svg viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="2" />
-                    <path
-                        d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M20.49 3.51a12 12 0 0 1 0 16.97M3.51 20.49a12 12 0 0 1 0-16.97" />
-                </svg>
-                <span>실시간</span>
-            </button>
-        </div><!-- /.sidebar-icons -->
+        <%@ include file="../common/sidebar-icons.jsp" %>
 
     </div><!-- /.app-wrapper -->
 
@@ -666,8 +653,9 @@
          - /js/chart-toss.js → src/main/resources/static/js/chart-toss.js
          - 이 파일이 로드되면 즉시 init() 함수가 실행되어 차트·WebSocket 초기화
     -->
+    <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
     <script src="/js/common.js"></script>
-    <script src="/js/chart-toss.js"></script>
+    <script src="/js/chart-toss-coin.js"></script>
 </body>
 
 </html>

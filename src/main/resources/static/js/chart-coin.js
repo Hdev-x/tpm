@@ -1,5 +1,5 @@
 /* =====================================================
-   chart-toss.js
+   chart-coin.js
    차트 페이지 전용 JavaScript
    - Bitget API로 캔들 데이터 로드
    - LightweightCharts 라이브러리로 차트 렌더링

@@ -22,51 +22,58 @@ public class StockController {
 
     @GetMapping("/chart")
     public ResponseEntity<Map<String, Object>> getChart(
-            @RequestParam(name = "symbol", defaultValue = "005930") String keyword, // keyword로 명칭 변경
+            @RequestParam(name = "code", defaultValue = "005930") String keyword, // 파라미터명 code로 변경
             @RequestParam(name = "range", defaultValue = "1y") String range) {
 
-        // 1. 종목 코드 판별 로직 (이름 -> 코드 변환)
-        String stockCode = keyword;
-        String stockName = keyword; // 기본값
-
+        // 1. 종목 코드 판별 (기존 로직 유지)
+    	String stockCode = keyword;
+        String stockName = "";
         if (!keyword.matches("\\d{6}")) { 
-            // 입력값에서 공백/특수문자 싹 제거 (ex: "SK 하이닉스" -> "sk하이닉스")
+            // [이름으로 검색 시]
             String cleanKeyword = keyword.replaceAll("[^a-zA-Z0-9가-힣]", "").toLowerCase();
             stockCode = stockJoinService.getCode(cleanKeyword);
-            
-            if (stockCode == null) {
-                log.warn("❌ 매핑 실패: 원본[{}], 정제[{}]", keyword, cleanKeyword);
-                return ResponseEntity.ok(Map.of("error", "종목을 찾을 수 없습니다."));
-            }
+            // 서비스에서 가져온 진짜 이름을 저장 (예: sk하이닉스 -> SK하이닉스)
+            stockName = stockJoinService.getName(stockCode); 
+        } else {
+            // [코드로 검색 시]
+            stockCode = keyword;
+            // ✅ 핵심: 서비스에 코드를 넣어서 진짜 이름을 가져오는 로직이 필요합니다!
+            stockName = stockJoinService.getName(stockCode); 
         }
 
-        // 2. 기간 및 timeframe 설정
+        // 이름이 여전히 비어있다면 기본값 설정
+        if (stockName == null || stockName.equals("알 수 없는 종목")) {
+            stockName = "종목명 없음";
+        }
+
+        // 2. 기간 및 timeframe 설정 (기존 calculatePeriod 활용)
         Map<String, String> periodMap = calculatePeriod(range);
         String startDate = periodMap.get("start");
         String endDate = periodMap.get("end");
         String timeframe = periodMap.get("timeframe");
-        boolean isMinute = "min".equals(range);
 
-        // 3. 서비스 호출 및 로깅
-        StockChartDTO data = isMinute 
-                ? webClientService.getMinuteChart(stockCode)
-                : webClientService.getDailyChart(stockCode, startDate, endDate, timeframe);
+        // 3. 서비스 호출 (DTO 그대로 가져오기)
+        StockChartDTO data = webClientService.getDailyChart(stockCode, startDate, endDate, timeframe);
 
-        if (data == null || data.getOutput2() == null || data.getOutput2().isEmpty()) {
-            log.error("❌ 데이터 조회 실패: {} (Msg: {})", stockCode, data != null ? data.getMsg1() : "Empty Response");
-            return ResponseEntity.ok(Map.of("candles", new ArrayList<>(), "message", "데이터가 없습니다."));
-        }
-
-        // 4. 데이터 정제 (Data Transformation)
-        List<Map<String, Object>> candles = transformToCandles(data.getOutput2(), isMinute);
-
-        // 5. 최종 응답 구조화 (실무형 응답)
+        // 4. [방법 A 핵심] 프론트엔드가 기대하는 "output2"라는 키에 리스트를 담아 리턴
         Map<String, Object> result = new HashMap<>();
-        result.put("candles", candles);
-        result.put("isMinute", isMinute);
-        result.put("stockCode", stockCode);
-        result.put("stockName", stockName);
-        result.put("range", range);
+
+        if (data != null && data.getOutput2() != null) {
+            result.put("output2", data.getOutput2());  // JS의 res.output2.map(...)과 연결됨
+            result.put("rt_cd", data.getRt_cd());
+            
+            // ✅ 1. 우리가 위에서 서비스로 찾은 진짜 코드와 이름을 넣어줍니다.
+            result.put("stockCode", stockCode); 
+            result.put("stockName", stockName); // "조회된 종목" 대신 변수 stockName 사용!
+            
+        } else {
+            result.put("output2", new ArrayList<>());
+            result.put("message", "데이터가 없습니다.");
+            
+            // 데이터가 없더라도 어떤 종목을 찾으려 했는지는 알려주는 게 좋습니다.
+            result.put("stockCode", stockCode);
+            result.put("stockName", stockName);
+        }
 
         return ResponseEntity.ok(result);
     }
@@ -128,6 +135,48 @@ public class StockController {
         }
         return candles;
     }
+    
+    @GetMapping("/ticker")
+    public ResponseEntity<Map<String, Object>> getTicker(@RequestParam String code) {
+        // 1. 서비스에서 현재가 DTO 가져오기
+        StockPriceDTO priceData = webClientService.getCurrentPrice(code);
+        
+        if (priceData == null || priceData.getOutput() == null) {
+            return ResponseEntity.ok(Map.of("error", "데이터를 가져올 수 없습니다."));
+        }
+
+        // 2. JS가 기대하는 필드명으로 변환해서 리턴 (방법 A)
+        // 한투 API의 필드명을 그대로 넘겨주면 JS의 loadTicker() 함수와 바로 연동됩니다.
+        Map<String, Object> result = new HashMap<>();
+        result.put("output", priceData.getOutput()); 
+        
+        return ResponseEntity.ok(result);
+    }
+    
+    @GetMapping("/tickers/summary")
+    public ResponseEntity<Map<String, Object>> getTickersSummary() {
+        StockListDTO listData = webClientService.getFullMarketPrices();
+        
+        if (listData == null || listData.getOutput2() == null) {
+            return ResponseEntity.ok(Map.of("data", new ArrayList<>()));
+        }
+
+        // JS의 기대 필드명에 맞춰 맵핑 (변환)
+        List<Map<String, Object>> formattedList = new ArrayList<>();
+        for (StockListDTO.StockListOutput out : listData.getOutput2()) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("stock_name", out.getHts_kor_isnm());   // 이름 맵핑
+            item.put("stck_prpr", out.getMkstat_prpr());    // 현재가 맵핑
+            item.put("prdy_ctrt", out.getPrdy_ctrt());     // 등락률 맵핑
+            formattedList.add(item);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", formattedList);
+        
+        return ResponseEntity.ok(result);
+    }
+    
 
     private String formatTimeLabel(StockChartDTO.ChartOutput out, boolean isMinute) {
         String date = out.getStck_bsop_date();

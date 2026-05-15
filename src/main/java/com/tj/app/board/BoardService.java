@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.tj.app.file.FileDTO;
@@ -82,15 +83,21 @@ public class BoardService {
 	    return result;
 	}
 
+	@Transactional
 	public int delete(BoardDTO boardDTO) throws Exception {
 		boardDTO = boardMapper.detail(boardDTO);
 
-		for (FileDTO fileDTO : boardDTO.getList()) {
-			fileManager.fileDelete(name, fileDTO);
-		}
+		if (boardDTO.getList() != null) {
+	        for (FileDTO fileDTO : boardDTO.getList()) {
+	            fileManager.fileDelete(name, fileDTO);
+	        }
+	    }
+		
+		boardMapper.deleteFiles(boardDTO);
 
 		int result = boardMapper.delete(boardDTO);
-		return result;
+	    
+	    return result;
 	}
 
 	public List<FileDTO> fileDetail(FileDTO fileDTO) throws Exception {

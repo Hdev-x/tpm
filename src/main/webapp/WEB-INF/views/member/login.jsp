@@ -5,8 +5,9 @@
 <head>
     <meta charset="UTF-8">
     <title>Insert title here</title>
-    <link rel="stylesheet" href="/css/chart-toss.css"> 
-    <link rel="stylesheet" href="/css/member.css">
+    
+<link rel="stylesheet" href="/css/common.css">
+<link rel="stylesheet" href="/css/chart-toss.css">
 </head>
 <body class="member-layout">
 
@@ -32,6 +33,7 @@
         </div>
     </div>
 
+	<script src="/js/common.js"></script>
     <script src="/js/member.js"></script>
 </body>
 </html>

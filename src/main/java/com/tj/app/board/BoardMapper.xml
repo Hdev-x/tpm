@@ -20,10 +20,13 @@
 	</resultMap>
 
 
-	<insert id="create" parameterType="BoardDTO" useGeneratedKeys="true" keyProperty="boardNo">
+	<insert id="create" parameterType="BoardDTO"
+		useGeneratedKeys="true" keyProperty="boardNo">
 		INSERT INTO "BOARD"
-		VALUES (DEFAULT, #{boardTitle},
-		#{boardWriter}, #{boardContent}, CURRENT_TIMESTAMP, #{username}, 0)
+		VALUES
+		(DEFAULT, #{boardTitle},
+		#{boardWriter}, #{boardContent},
+		CURRENT_TIMESTAMP, #{username}, 0)
 	</insert>
 
 	<select id="list" resultType="BoardDTO">
@@ -34,7 +37,7 @@
 		SELECT *
 		FROM "BOARD" B
 		LEFT JOIN
-		"BOARDFILE" BF
+		"FILE" F
 		USING ("BOARD_NO")
 		WHERE "BOARD_NO" = #{boardNo}
 	</select>
@@ -54,14 +57,20 @@
 	</delete>
 
 	<insert id="createFile">
-		INSERT INTO "BOARDFILE" ("FILE_NAME", "FILE_ORI", "BOARD_NO")
+		INSERT INTO "FILE" ("FILE_NAME", "FILE_ORI",
+		"BOARD_NO")
 		VALUES (#{fileName}, #{oriName}, #{boardNo})
 	</insert>
 
 	<select id="detailFile" resultType="FileDTO"
 		parameterType="BoardDTO">
-		SELECT * FROM "BOARDFILE"
+		SELECT * FROM "FILE"
 		WHERE "BOARD_NO" = #{boardNo}
 	</select>
+
+	<delete id="deleteFiles" parameterType="BoardDTO">
+		DELETE FROM "FILE"
+		WHERE "BOARD_NO" = #{boardNo}
+	</delete>
 
 </mapper>

@@ -1,12 +1,72 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
-    pageEncoding="UTF-8"%>
+	pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="jakarta.tags.core"%>
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <title>Insert title here</title>
+<link rel="stylesheet" href="/css/common.css">
+<link rel="stylesheet" href="/css/chart-toss.css">
 </head>
 <body>
 
+<%@ include file="../common/nav.jsp" %>
+    
+    <div style="display: flex; min-height: 100vh;">
+        <%@ include file="../common/sidebar.jsp" %>
+
+	<main class="main-layout">
+		<div class="card notice-main-card"
+			style="max-width: 800px; margin: 0 auto; padding: 40px;">
+			<div class="create-header" style="margin-bottom: 40px;">
+				<h2 class="ph-price" style="font-size: 28px;">새 글 쓰기</h2>
+				<p class="ph-label">투자자들과 자유롭게 의견을 나누어보세요.</p>
+			</div>
+
+			<form action="./create" method="post" enctype="multipart/form-data"
+				id="noticeForm">
+				<div class="input-group" style="margin-bottom: 30px;">
+					<label class="ph-label"
+						style="display: block; margin-bottom: 10px;">제목</label> <input
+						type="text" name="noticeTitle" placeholder="제목을 입력해주세요"
+						style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 15px; color: var(--text); outline: none; font-size: 16px;">
+				</div>
+
+				<div class="input-group" style="margin-bottom: 30px;">
+					<label class="ph-label"
+						style="display: block; margin-bottom: 10px;">내용</label>
+					<textarea name="noticeContent" placeholder="여기에 내용을 입력하세요"
+						style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 12px; padding: 15px; color: var(--text); outline: none; font-size: 16px; min-height: 300px; resize: none;"></textarea>
+				</div>
+
+				<div class="input-group" style="margin-bottom: 40px;">
+					<label class="ph-label"
+						style="display: block; margin-bottom: 10px;">사진 첨부</label>
+					<div
+						style="background: var(--surface2); border: 2px dashed var(--border); border-radius: 12px; padding: 20px; text-align: center;">
+						<input type="file" name="files" multiple id="fileInput"
+							style="display: none;"> <label for="fileInput"
+							style="cursor: pointer; color: var(--text2);"> <span
+							style="font-size: 30px;">+</span><br> 클릭하여 사진을 추가하세요 (여러 장
+							가능)
+						</label>
+						<div id="file-list"
+							style="margin-top: 10px; font-size: 13px; color: var(--blue);"></div>
+					</div>
+				</div>
+
+				<div class="create-actions"
+					style="display: flex; gap: 12px; justify-content: flex-end;">
+					<button type="button" class="order-type-btn" style="width: 100px;"
+						onclick="history.back()">취소</button>
+					<button type="submit" class="nav-login-btn" style="width: 150px;">등록하기</button>
+				</div>
+			</form> 	
+		</div>
+	</main>
+	</div>
+	
+    <script src="/js/notice.js"></script>
 </body>
 </html>

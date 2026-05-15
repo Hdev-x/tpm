@@ -5,9 +5,12 @@
 <head>
     <meta charset="UTF-8">
     <title>${detail.boardTitle} - 커뮤니티</title>
-    <link rel="stylesheet" href="/css/chart-toss.css">
-    <link rel="stylesheet" href="/css/board.css">
+<link rel="stylesheet" href="/css/common.css">
+<link rel="stylesheet" href="/css/chart-toss.css">
 </head>
+
+<body style="overflow: auto;">
+    <%@ include file="../common/nav.jsp" %>
 <body>
 
 <main class="main-layout">
@@ -35,28 +38,32 @@
         </div>
 
         <div class="detail-actions" style="display: flex; justify-content: center; gap: 12px; border-top: 1px solid var(--border); padding-top: 30px; margin-bottom: 40px;">
-            <div style="flex: 1;">
-                <button class="order-type-btn" style="width: 100px;" onclick="location.href='./list'">목록으로</button>
-            </div>
-            <div style="display: flex; gap: 8px;">
-                <button class="nav-login-btn" style="width: 100px;" onclick="location.href='./update?boardNo=${detail.boardNo}'">수정</button>
-                <form action="./delete" method="post" onsubmit="return confirm('정말 삭제하시겠습니까?');">
-                    <input type="hidden" name="boardNo" value="${detail.boardNo}">
-                    <button type="submit" class="btn-sell" style="width: 100px;">삭제</button>
-                </form>
-            </div>
+    <div style="flex: 1;">
+        <button class="order-type-btn" style="width: 100px;" onclick="location.href='./list'">목록으로</button>
+    </div>
+
+    <c:if test="${member.username eq detail.boardWriter}">
+        <div style="display: flex; gap: 8px;">
+            <button class="nav-login-btn" style="width: 100px;" onclick="location.href='./update?boardNo=${detail.boardNo}'">수정</button>
+            <form action="./delete" method="post" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+                <input type="hidden" name="boardNo" value="${detail.boardNo}">
+                <button type="submit" class="btn-sell" style="width: 100px;">삭제</button>
+            </form>
         </div>
+    </c:if>
+</div>
 
         <div class="comment-section" style="border-top: 1px solid var(--border); padding-top: 40px;">
             <h3 class="ph-name" style="font-size: 20px; margin-bottom: 24px;">댓글 <span style="color:var(--blue)">0</span></h3>
             
             <div class="comment-write" style="background: var(--surface2); padding: 20px; border-radius: 16px; margin-bottom: 40px;">
-                <textarea placeholder="투자에 대한 따뜻한 의견을 나누어주세요" 
+                <textarea placeholder="댓글을 작성해주세요" 
                     style="width: 100%; background: transparent; border: none; color: var(--text); outline: none; resize: none; height: 80px; font-size: 15px;"></textarea>
-                <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
+           
+            </div>
+            <div style="display: flex; justify-content: flex-end; margin-top: 12px;">
                     <button class="nav-login-btn" style="width: 100px;">등록</button>
                 </div>
-            </div>
 
             <div class="comment-list">
                 <div class="ph-label" style="text-align: center; padding: 40px 0;">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</div>
@@ -65,6 +72,6 @@
     </div>
 </main>
 
-<script src="/js/common-ui.js"></script>
+<script src="/js/common.js"></script>
 </body>
 </html>

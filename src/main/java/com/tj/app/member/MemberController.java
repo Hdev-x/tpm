@@ -3,9 +3,11 @@ package com.tj.app.member;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -22,12 +24,17 @@ public class MemberController {
     }
 
     @PostMapping("create")
-    public String create(MemberDTO memberDTO) throws Exception {
-        memberService.create(memberDTO);
+    public String create(MemberDTO memberDTO, BindingResult bindingResult) throws Exception {
+    	
+    	if(memberService.doubleCheck(memberDTO, bindingResult)) {
+    		return "member/login";
+    	}
+    	
+    	int result = memberService.create(memberDTO);
         
         return "redirect:/";
     }
-
+    
     @GetMapping("read")
     public String read(HttpSession session, Model model) throws Exception {
         MemberDTO user = (MemberDTO) session.getAttribute("member");
@@ -40,8 +47,8 @@ public class MemberController {
         
         return "member/read";
     }
-
-
+    
+   
     @PostMapping("update")
     public String update(MemberDTO memberDTO, HttpSession session) throws Exception {
         memberService.update(memberDTO);

@@ -5,20 +5,17 @@
 <head>
     <meta charset="UTF-8">
     <title>Insert title here</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/css/common.css">
 <link rel="stylesheet" href="/css/chart-toss.css">
 </head>
 
-<body style="overflow: auto;">
+<body>
+
+<div class="app-wrapper">
+<div class="page">
     <%@ include file="../common/nav.jsp" %>
-
-    <!-- margin-top: 60px 추가하여 내비바와 겹침 방지 -->
-    <div class="app-wrapper" style="margin-top: 60px; min-height: calc(100vh - 60px); background: var(--bg); display: flex;">
-        
-        <!-- open 클래스가 있어야 width: 380px가 적용됨 -->
-<%@ include file="../common/sidebar.jsp" %>
-
-        <main class="page" style="flex: 1; padding: 40px; display: flex; flex-direction: column;">
+    <div class="main-content" style="flex: 1; padding: 40px; display: flex; flex-direction: column;">
             <div class="board-summary" style="margin-bottom: 32px;">
                 <h2 class="ph-price" style="font-size: 28px;">커뮤니티</h2>
                 <p class="ph-label">투자자들과 실시간으로 정보를 공유해보세요</p>
@@ -56,9 +53,14 @@
                     </tbody>
                 </table>
             </div>
-        </main>
-    </div>
-    
+    </div><!-- main-content -->
+    </div><!-- page -->
+
+    <%@ include file="../common/sidebar.jsp" %>
+    <%@ include file="../common/sidebar-icons.jsp" %>
+
+</div><!-- app-wrapper -->
+
     <script src="/js/common.js"></script>
 </body>
 </html>

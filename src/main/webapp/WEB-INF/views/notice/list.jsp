@@ -6,19 +6,16 @@
 <head>
 <meta charset="UTF-8">
 <title>Insert title here</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/css/common.css">
 <link rel="stylesheet" href="/css/chart-toss.css">
 </head>
 <body>
 
-<body style="overflow: auto;">
+<div class="app-wrapper">
+<div class="page">
     <%@ include file="../common/nav.jsp" %>
-
-    <!-- margin-top: 60px 추가하여 내비바와 겹침 방지 -->
-    <div class="app-wrapper" style="margin-top: 60px; min-height: calc(100vh - 60px); background: var(--bg); display: flex;">
-        
-        <!-- open 클래스가 있어야 width: 380px가 적용됨 -->
-<%@ include file="../common/sidebar.jsp" %>
+    <div class="main-content">
 
 
 
@@ -100,9 +97,13 @@
 
 
 		</div>
-	</main>
-	
-	</div>
+    </div><!-- main-content -->
+    </div><!-- page -->
+
+    <%@ include file="../common/sidebar.jsp" %>
+    <%@ include file="../common/sidebar-icons.jsp" %>
+
+</div><!-- app-wrapper -->
 
 	<script src="/js/common.js"></script>
 	<!--  board.js는 board와 notice공유 -->

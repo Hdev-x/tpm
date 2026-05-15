@@ -26,8 +26,8 @@
 </div>
 <script>
 (function () {
-    /* list.jsp(data-sidebar-animate)는 common.js에서 전담 */
     if (document.body.dataset.sidebarAnimate === 'true') return;
+    if (document.body.dataset.sidebarClosed === 'true') return;
 
     var tab = document.body.dataset.sidebarTab || localStorage.getItem('sidebar');
     if (!tab) return;

@@ -45,10 +45,6 @@ public class CoinController {
 	public void chart3() throws Exception {
 	}
 
-	@GetMapping("chart3-toss")
-	public void chart3_toss() throws Exception {
-	}
-
 	@GetMapping("chart4")
 	public void chart4() throws Exception {
 	}

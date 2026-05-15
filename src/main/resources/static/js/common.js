@@ -201,13 +201,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const animate = document.body.dataset.sidebarAnimate === 'true';
     const fixedTab = document.body.dataset.sidebarTab;
 
+    if (document.body.dataset.sidebarClosed === 'true') { loadHoldings(); return; }
+
     if (animate) {
         /* list.jsp: 항상 애니메이션으로 열기 */
         requestAnimationFrame(() => requestAnimationFrame(() => toggleSidebar('interest')));
     } else {
-        /* 다른 페이지: 인라인 스크립트가 DOM·localStorage 처리 → JS 변수만 동기화 */
         const tab = fixedTab || localStorage.getItem('sidebar');
-        if (tab) sidebarActiveTab = tab;
+        if (tab) {
+            requestAnimationFrame(() => requestAnimationFrame(() => toggleSidebar(tab)));
+        }
     }
 
     loadHoldings();

@@ -148,6 +148,44 @@ nav {
 }
 
 
+/* ── 네비 드롭다운 ── */
+.dropdown { position: relative; }
+
+.dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 6px 0;
+    min-width: 110px;
+    z-index: 1100;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.dropdown-menu::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 0;
+    right: 0;
+    height: 8px;
+}
+
+.dropdown:hover .dropdown-menu { display: block; }
+
+.dropdown-menu a.nav-item {
+    display: block;
+    padding: 9px 16px;
+    border-radius: 0;
+}
+
+.dropdown-menu a.nav-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
 /* ── 상승/하락 색상 유틸리티 클래스 ── */
 .up   { color: var(--up); }
 .down { color: var(--down); }
@@ -662,4 +700,104 @@ nav {
         rgba(255,255,255,0.06) 75%);
     background-size: 200% 100%;
     animation: shimmer 1.4s infinite;
+}
+
+
+
+/* ====================================================
+   MEMBER PAGES (LOGIN / CREATE) - 회원 관련 스타일
+   ==================================================== */
+
+/* 배경 전체 레이아웃 */
+.member-layout {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    background: var(--bg); /* common.css의 배경색 사용 */
+}
+
+/* 카드 박스 */
+.member-card {
+    width: 100%;
+    max-width: 400px;
+    padding: 40px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+}
+
+.member-logo {
+    font-size: 26px;
+    font-weight: 800;
+    text-align: center;
+    margin-bottom: 30px;
+    color: var(--text);
+}
+
+.member-logo span {
+    color: var(--blue);
+}
+
+/* 입력 그룹 */
+.input-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.input-label {
+    font-size: 13px;
+    color: var(--text2);
+    font-weight: 600;
+}
+
+.member-input {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    padding: 12px 15px;
+    border-radius: 10px;
+    outline: none;
+    font-size: 14px;
+    transition: border-color 0.15s;
+}
+
+.member-input:focus {
+    border-color: var(--blue);
+}
+
+/* 버튼 */
+.member-btn {
+    width: 100%;
+    padding: 14px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: opacity 0.15s;
+}
+
+.member-btn:hover {
+    opacity: 0.9;
+}
+
+.member-footer {
+    text-align: center;
+    margin-top: 25px;
+    color: var(--text3);
+    font-size: 13px;
+}
+
+.member-footer a {
+    color: var(--blue);
+    text-decoration: none;
+    font-weight: 600;
+    margin-left: 5px;
 }

@@ -53,12 +53,24 @@ function switchInterestTab(el, tab) {
     document.getElementById('interest-' + tab).style.display = '';
 }
 
-function switchBpTab(el, tab) {
-    document.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('active'));
+function switchInvestTab(el, tab) {
+    el.closest('.si-type-tabs').querySelectorAll('.si-type-tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
-    document.getElementById('tab-positions').style.display = tab === 'positions' ? 'flex' : 'none';
-    document.getElementById('tab-orders').style.display = tab === 'orders' ? 'flex' : 'none';
-    document.getElementById('tab-history').style.display = tab === 'history' ? 'flex' : 'none';
+    ['stock', 'coin'].forEach(t => {
+        const el = document.getElementById('invest-' + t);
+        if (el) el.style.display = t === tab ? 'flex' : 'none';
+    });
+}
+
+function switchBpTab(el, tab) {
+    const tabsEl = el.closest('.sb-tabs');
+    tabsEl.querySelectorAll('.sb-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    tabsEl.querySelectorAll('.sb-tab').forEach(t => {
+        const tid = t.getAttribute('onclick').match(/'([^']+)'/)[1];
+        const panel = document.getElementById('tab-' + tid);
+        if (panel) panel.style.display = tid === tab ? 'flex' : 'none';
+    });
 }
 
 
@@ -69,61 +81,110 @@ let holdingsData = [];
 let holdingsWs = null;
 let cachedPrices = JSON.parse(localStorage.getItem('holdingPrices') || '{}');
 
-function skeletonRow() {
-    return '<tr class="skeleton-row">'
-        + '<td><span class="skeleton" style="width:55px"></span></td>'
-        + '<td><span class="skeleton" style="width:65px"></span></td>'
-        + '<td><span class="skeleton" style="width:65px"></span></td>'
-        + '<td><span class="skeleton" style="width:55px"></span></td>'
-        + '<td><span class="skeleton" style="width:75px"></span></td>'
-        + '</tr>';
+function skeletonCard() {
+    return '<div class="holding-card hc-main skeleton-card">'
+        + '<div class="hc-main-header">'
+        +   '<div class="hc-main-id">'
+        +     '<div class="hc-logo skeleton" style="background:transparent;"></div>'
+        +     '<div class="hc-main-name-col">'
+        +       '<span class="skeleton" style="width:70px;height:13px;display:block;"></span>'
+        +       '<span class="skeleton" style="width:90px;height:11px;display:block;margin-top:4px;"></span>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div class="hc-main-right">'
+        +     '<span class="skeleton" style="width:80px;height:13px;display:block;"></span>'
+        +     '<span class="skeleton" style="width:100px;height:11px;display:block;margin-top:4px;"></span>'
+        +   '</div>'
+        + '</div>'
+        + '<div class="hc-divider"></div>'
+        + '<div class="hc-main-grid">'
+        +   '<div class="hc-main-row"><span class="skeleton" style="width:50px;height:11px;"></span><span class="skeleton" style="width:60px;height:11px;"></span></div>'
+        +   '<div class="hc-main-row"><span class="skeleton" style="width:50px;height:11px;"></span><span class="skeleton" style="width:60px;height:11px;"></span></div>'
+        +   '<div class="hc-main-row"><span class="skeleton" style="width:50px;height:11px;"></span><span class="skeleton" style="width:60px;height:11px;"></span></div>'
+        +   '<div class="hc-main-row"><span class="skeleton" style="width:50px;height:11px;"></span><span class="skeleton" style="width:60px;height:11px;"></span></div>'
+        + '</div>'
+        + '</div>';
+}
+
+function coinLogoColor(code) {
+    const colors = ['#F7931A','#627EEA','#00AAC1','#E84142','#2775CA','#26A17B','#9945FF','#E6007A'];
+    let h = 0;
+    for (let i = 0; i < code.length; i++) h = (h * 31 + code.charCodeAt(i)) & 0xffff;
+    return colors[h % colors.length];
+}
+
+function coinLogoHtml(ticker) {
+    const fallback = ticker.slice(0, 3);
+    const color = coinLogoColor(ticker);
+    const url = 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/' + ticker.toLowerCase() + '.png';
+    return '<div class="hc-logo hc-logo-wrap">'
+        + '<img src="' + url + '" alt="' + ticker + '" class="hc-logo-img"'
+        + ' onerror="this.parentElement.style.background=\'' + color + '\';this.parentElement.textContent=\'' + fallback + '\'">'
+        + '</div>';
 }
 
 function renderHoldings(data) {
-    const tbody = document.getElementById('bp-holdings-body');
-    if (!tbody) return;
+    const container = document.getElementById('bp-holdings-body');
+    if (!container) return;
 
     if (data.length > 0) {
         document.getElementById('bp-empty').style.display = 'none';
-        document.getElementById('bp-holdings-table').style.display = 'table';
 
         data.forEach(h => {
             const price = cachedPrices[h.coinCode] || null;
-            const pnl = price !== null ? (price - h.avgPrice) * h.coinCount : null;
-            const pc = pnl !== null ? (pnl >= 0 ? 'var(--up)' : 'var(--down)') : '';
+            const evalAmt = price !== null ? price * h.coinCount : null;
+            const buyAmt = h.avgPrice * h.coinCount;
+            const pnl = evalAmt !== null ? evalAmt - buyAmt : null;
+            const pct = pnl !== null && buyAmt > 0 ? (pnl / buyAmt * 100) : null;
+            const cls = pnl !== null ? (pnl >= 0 ? 'up' : 'down') : '';
+            const sign = pnl !== null && pnl >= 0 ? '+' : '';
+            const arrow = pnl !== null ? (pnl >= 0 ? '▲' : '▼') : '';
 
-            /* 이미 행이 있으면 in-place 업데이트 (재렌더 깜빡임 방지) */
-            let row = tbody.querySelector('tr[data-coin="' + h.coinCode + '"]');
-            if (row) {
-                row.children[1].textContent = h.coinCount.toFixed(6);
-                row.children[2].textContent = h.avgPrice.toFixed(2);
+            let card = container.querySelector('[data-coin="' + h.coinCode + '"]');
+            if (card) {
                 if (price !== null) {
-                    row.querySelector('.holding-price').textContent = price.toFixed(2);
-                    const pnlEl = row.querySelector('.holding-pnl');
-                    pnlEl.textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' USDT';
-                    pnlEl.style.color = pc;
+                    card.querySelector('.hc-main-eval').textContent = evalAmt.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' USDT';
+                    const pnlEl = card.querySelector('.hc-main-pnl');
+                    pnlEl.textContent = arrow + Math.abs(pnl).toFixed(2) + ' (' + sign + pct.toFixed(2) + '%)';
+                    pnlEl.className = 'hc-main-pnl ' + cls;
+                    card.querySelector('.hc-price-val').textContent = price.toLocaleString(undefined, {maximumFractionDigits: 6});
+                    card.querySelector('.hc-eval-val').textContent = (evalAmt !== null ? evalAmt.toLocaleString(undefined, {maximumFractionDigits: 2}) : '-') + ' USDT';
                 }
             } else {
-                const tr = document.createElement('tr');
-                tr.dataset.coin = h.coinCode;
-                tr.innerHTML = '<td>' + h.coinCode + '</td>'
-                    + '<td>' + h.coinCount.toFixed(6) + '</td>'
-                    + '<td>' + h.avgPrice.toFixed(2) + '</td>'
-                    + '<td class="holding-price">' + (price !== null ? price.toFixed(2) : '-') + '</td>'
-                    + '<td class="holding-pnl" style="color:' + pc + '">'
-                    + (pnl !== null ? (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' USDT' : '-') + '</td>';
-                /* 스켈레톤 행 교체 또는 추가 */
-                const skelRow = tbody.querySelector('.skeleton-row');
-                if (skelRow) tbody.replaceChild(tr, skelRow);
-                else tbody.appendChild(tr);
+                const ticker = h.coinCode.replace(/USDT$/, '').replace('_SPBL', '');
+                const div = document.createElement('div');
+                div.className = 'holding-card hc-main';
+                div.dataset.coin = h.coinCode;
+                div.innerHTML =
+                    '<div class="hc-main-header">'
+                    +   '<div class="hc-main-id">'
+                    +     coinLogoHtml(ticker)
+                    +     '<div class="hc-main-name-col">'
+                    +       '<span class="hc-main-ticker">' + ticker + '</span>'
+                    +       '<span class="hc-main-sub">' + ticker + '/USDT | ' + h.coinCount.toFixed(4) + '개</span>'
+                    +     '</div>'
+                    +   '</div>'
+                    +   '<div class="hc-main-right">'
+                    +     '<span class="hc-main-eval">' + (evalAmt !== null ? evalAmt.toLocaleString(undefined, {maximumFractionDigits: 2}) : '-') + ' USDT</span>'
+                    +     '<span class="hc-main-pnl ' + cls + '">' + (pnl !== null ? arrow + Math.abs(pnl).toFixed(2) + ' (' + sign + pct.toFixed(2) + '%)' : '-') + '</span>'
+                    +   '</div>'
+                    + '</div>'
+                    + '<div class="hc-divider"></div>'
+                    + '<div class="hc-main-grid">'
+                    +   '<div class="hc-main-row"><span class="hc-label">매수금액</span><span class="hc-value">' + buyAmt.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' USDT</span></div>'
+                    +   '<div class="hc-main-row"><span class="hc-label">평균단가</span><span class="hc-value">' + h.avgPrice.toLocaleString(undefined, {maximumFractionDigits: 6}) + '</span></div>'
+                    +   '<div class="hc-main-row"><span class="hc-label">평가금액</span><span class="hc-value hc-eval-val">' + (evalAmt !== null ? evalAmt.toLocaleString(undefined, {maximumFractionDigits: 2}) : '-') + ' USDT</span></div>'
+                    +   '<div class="hc-main-row"><span class="hc-label">현재가</span><span class="hc-value hc-price-val">' + (price !== null ? price.toLocaleString(undefined, {maximumFractionDigits: 6}) : '-') + '</span></div>'
+                    + '</div>';
+                const skel = container.querySelector('.skeleton-card');
+                if (skel) container.replaceChild(div, skel);
+                else container.appendChild(div);
             }
         });
-        /* 남은 스켈레톤 행 제거 */
-        tbody.querySelectorAll('.skeleton-row').forEach(r => r.remove());
+        container.querySelectorAll('.skeleton-card').forEach(r => r.remove());
     } else {
         document.getElementById('bp-empty').style.display = '';
-        document.getElementById('bp-holdings-table').style.display = 'none';
-        tbody.innerHTML = '';
+        container.innerHTML = '';
     }
 }
 
@@ -140,8 +201,7 @@ async function loadHoldings() {
     } else {
         /* 캐시 없으면 스켈레톤 표시 */
         document.getElementById('bp-empty').style.display = 'none';
-        document.getElementById('bp-holdings-table').style.display = 'table';
-        tbody.innerHTML = skeletonRow() + skeletonRow() + skeletonRow();
+        document.getElementById('bp-holdings-body').innerHTML = skeletonCard() + skeletonCard() + skeletonCard();
     }
 
     /* 서버에서 최신 데이터 fetch → 캐시 갱신 후 in-place 업데이트 */
@@ -182,15 +242,25 @@ function connectHoldingsWs() {
 }
 
 function updateHoldingPrice(coinCode, price) {
-    const row = document.querySelector('#bp-holdings-body tr[data-coin="' + coinCode + '"]');
-    if (!row) return;
+    const card = document.querySelector('#bp-holdings-body [data-coin="' + coinCode + '"]');
+    if (!card) return;
     const h = holdingsData.find(h => h.coinCode === coinCode);
     if (!h) return;
-    const pnl = (price - h.avgPrice) * h.coinCount;
-    row.querySelector('.holding-price').textContent = price.toFixed(2);
-    const pnlEl = row.querySelector('.holding-pnl');
-    pnlEl.textContent = (pnl >= 0 ? '+' : '') + pnl.toFixed(2) + ' USDT';
-    pnlEl.style.color = pnl >= 0 ? 'var(--up)' : 'var(--down)';
+
+    const evalAmt = price * h.coinCount;
+    const buyAmt = h.avgPrice * h.coinCount;
+    const pnl = evalAmt - buyAmt;
+    const pct = buyAmt > 0 ? (pnl / buyAmt * 100) : 0;
+    const cls = pnl >= 0 ? 'up' : 'down';
+    const sign = pnl >= 0 ? '+' : '';
+    const arrow = pnl >= 0 ? '▲' : '▼';
+
+    card.querySelector('.hc-main-eval').textContent = evalAmt.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' USDT';
+    const pnlEl = card.querySelector('.hc-main-pnl');
+    pnlEl.textContent = arrow + Math.abs(pnl).toFixed(2) + ' (' + sign + pct.toFixed(2) + '%)';
+    pnlEl.className = 'hc-main-pnl ' + cls;
+    card.querySelector('.hc-price-val').textContent = price.toLocaleString(undefined, {maximumFractionDigits: 6});
+    card.querySelector('.hc-eval-val').textContent = evalAmt.toLocaleString(undefined, {maximumFractionDigits: 2}) + ' USDT';
 
     cachedPrices[coinCode] = price;
     localStorage.setItem('holdingPrices', JSON.stringify(cachedPrices));

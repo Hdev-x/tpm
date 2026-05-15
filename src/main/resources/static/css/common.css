@@ -361,6 +361,16 @@ nav {
     color: var(--text2);
 }
 
+.sb-subtabs {
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+}
+
+.sb-subtabs .sb-tab {
+    font-size: 13px;
+    padding: 8px 0;
+}
+
 
 /* ====================================================
    SIDEBAR TABLE - 보유 종목·오더·기록 테이블
@@ -419,6 +429,284 @@ nav {
 
 .sb-table tr:hover td {
     background: rgba(255, 255, 255, 0.03);
+}
+
+
+/* ====================================================
+   보유 내역 카드
+   ==================================================== */
+.holding-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    overflow-y: auto;
+}
+
+.holding-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.hc-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hc-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.hc-logo-wrap {
+    background: transparent;
+}
+
+.hc-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.hc-code {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 400;
+    margin-top: 1px;
+}
+
+.hc-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 2px 0;
+}
+
+/* 디자인 라벨 (목업 구분용) */
+.hc-design-label {
+    font-size: 11px;
+    color: var(--text3);
+    padding: 4px 2px 0;
+    font-weight: 400;
+}
+
+/* 디자인 B */
+.hc-price-big {
+    font-size: 22px;
+    font-weight: 400;
+    color: var(--text);
+    margin: 6px 0 4px;
+    letter-spacing: -0.5px;
+}
+.hc-price-unit {
+    font-size: 13px;
+    color: var(--text3);
+    margin-left: 2px;
+}
+.hc-pnl-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.hc-badge {
+    font-size: 11px;
+    font-weight: 400;
+    padding: 3px 8px;
+    border-radius: 20px;
+}
+.hc-badge.up   { background: rgba(240,68,82,0.12);  color: var(--up); }
+.hc-badge.down { background: rgba(37,99,235,0.12);  color: var(--down); }
+
+/* 디자인 C */
+.holding-card.hc-c {
+    flex-direction: row;
+    padding: 0;
+    overflow: hidden;
+    gap: 0;
+}
+.hc-accent-bar {
+    width: 4px;
+    flex-shrink: 0;
+}
+.hc-c.up   .hc-accent-bar { background: var(--up); }
+.hc-c.down .hc-accent-bar { background: var(--down); }
+.hc-c-body {
+    flex: 1;
+    padding: 10px 12px;
+}
+
+/* 디자인 D */
+.holding-card.hc-d {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 10px;
+}
+.hc-logo-lg {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+.hc-d-body {
+    flex: 1;
+}
+
+/* 디자인 E */
+.hc-e-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    margin-top: 10px;
+    background: var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.hc-e-cell {
+    background: var(--surface);
+    padding: 7px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+.hc-e-pnl {
+    background: var(--bg);
+}
+
+.hc-symbol {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text);
+}
+
+.hc-pnl-pct {
+    font-size: 14px;
+    font-weight: 400;
+}
+
+.hc-row {
+    display: flex;
+    gap: 8px;
+}
+
+.hc-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.hc-label {
+    font-size: 12px;
+    color: var(--text3);
+    font-weight: 400;
+    font-family: 'Pretendard', -apple-system, sans-serif;
+}
+
+.hc-value {
+    font-size: 13px;
+    color: var(--text2);
+    font-weight: 400;
+    font-family: 'Pretendard', -apple-system, sans-serif;
+}
+
+
+/* ====================================================
+   보유 카드 - hc-main 레이아웃
+   ==================================================== */
+.holding-card.hc-main {
+    gap: 0;
+    padding: 12px 14px;
+}
+
+.hc-main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.hc-main-id {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+}
+
+.hc-main-name-col {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.hc-main-ticker {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text);
+}
+
+.hc-main-sub {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 400;
+}
+
+.hc-main-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 3px;
+}
+
+.hc-main-eval {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text);
+}
+
+.hc-main-pnl {
+    font-size: 12px;
+    font-weight: 400;
+}
+.hc-main-pnl.up   { color: var(--up); }
+.hc-main-pnl.down { color: var(--down); }
+
+.hc-main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 7px 12px;
+    margin-top: 10px;
+}
+
+.hc-main-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hc-main-row .hc-label {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 400;
+}
+
+.hc-main-row .hc-value {
+    font-size: 12px;
+    color: var(--text2);
+    font-weight: 400;
 }
 
 

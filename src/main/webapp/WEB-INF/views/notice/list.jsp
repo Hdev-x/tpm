@@ -5,108 +5,99 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Insert title here</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<title>공지사항 - 커뮤니티</title>
+<link rel="stylesheet"
+	href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/css/common.css">
-<link rel="stylesheet" href="/css/chart-toss.css">
+<link rel="stylesheet" href="/css/chart-toss-coin.css">
 </head>
 <body>
 
-<div class="app-wrapper">
-<div class="page">
-    <%@ include file="../common/nav.jsp" %>
-    <div class="main-content">
+	<div class="app-wrapper">
+		<div class="page">
+			<%@ include file="../common/nav.jsp"%>
 
-
-
-		<div style="flex: 7;">
-			<div class="notice-summary" style="margin-bottom: 30px;">
-				<h3 class="ph-price" style="font-size: 28px;">공지사항</h3>
-				<p class="ph-label">투자자들과 실시간으로 정보를 공유해보세요</p>
-			</div>
-
-			<table class="sb-table"
-				style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
-				<thead>
-					<tr style="background: transparent;">
-						<th style="padding: 10px 20px; border: none;">번호</th>
-						<th style="padding: 10px 20px; border: none;">제목</th>
-						<th style="padding: 10px 20px; border: none;">작성자</th>
-						<th style="padding: 10px 20px; border: none;">날짜</th>
-						<th style="padding: 10px 20px; border: none; text-align: right;">조회수</th>
-					</tr>
-				</thead>
-				<tbody>
-					<c:choose>
-						<c:when test="${not empty list}">
-							<c:forEach items="${list}" var="dto">
-								<tr onclick="location.href='./detail?noticeNo=${dto.noticeNo}'"
-									style="background: var(--surface); cursor: pointer; transition: transform 0.1s;">
-									<td
-										style="padding: 20px; border-radius: 12px 0 0 12px; color: var(--text3); font-size: 12px;">
-										${dto.noticeNo}</td>
-									<td style="padding: 20px;">
-										<div
-											style="font-size: 15px; font-weight: 600; color: var(--text);">${dto.noticeTitle}</div>
-									</td>
-									<td style="padding: 20px; color: var(--text2);">${dto.noticeWriter}</td>
-									<td
-										style="padding: 20px; color: var(--text3); font-size: 12px;">${dto.noticeDate}</td>
-									<td
-										style="padding: 20px; border-radius: 0 12px 12px 0; text-align: right; font-weight: 600; color: var(--blue);">
-										${dto.noticeView}</td>
-								</tr>
-							</c:forEach>
-						</c:when>
-					</c:choose>
-				</tbody>
-			</table>
-
-			<div class="card notice-main-card"
-				style="border: none; background: transparent;">
-				<div class="list-filter"
-					style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px;">
-					<div style="display: flex; gap: 20px;">
-						<span class="active"
-							style="font-size: 16px; font-weight: 700; color: var(--text); border-bottom: 2px solid var(--text); padding-bottom: 5px;">전체글</span>
+			<div class="main-content"
+				style="display: flex; gap: 30px; padding: 40px 20px;">
+				<div style="flex: 7;">
+					<div class="notice-summary" style="margin-bottom: 30px;">
+						<h3 class="ph-price" style="font-size: 28px;">공지사항</h3>
+						<p class="ph-label">중요한 소식과 업데이트를 확인하세요</p>
 					</div>
-					
+
 					<div class="list-filter"
-						style="display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px;">
+						style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--border); padding-bottom: 15px;">
 						<div style="display: flex; gap: 20px;">
 							<span class="active"
-								style="font-size: 16px; font-weight: 700; color: var(--text); border-bottom: 2px solid var(--text); padding-bottom: 5px;">전체글</span>
+								style="font-size: 16px; font-weight: 700; color: var(--text); border-bottom: 2px solid var(--blue); padding-bottom: 13px; margin-bottom: -16px;">전체
+								공지</span>
 						</div>
 
-						<c:if test="${member.roles eq 1}">
+						<c:if
+							test="${not empty member.roles && member.roles[0].roleNo eq 1}">
 							<a href="./create" class="nav-login-btn"
-								style="text-decoration: none;">글쓰기</a>
+								style="text-decoration: none;">공지 작성</a>
 						</c:if>
 					</div>
+
+					<table class="sb-table"
+						style="width: 100%; border-collapse: separate; border-spacing: 0 12px;">
+						<thead>
+							<tr style="background: transparent;">
+								<th
+									style="padding: 10px 20px; border: none; color: var(--text3); font-weight: 400; text-align: left;">번호</th>
+								<th
+									style="padding: 10px 20px; border: none; color: var(--text3); font-weight: 400; text-align: left;">제목</th>
+								<th
+									style="padding: 10px 20px; border: none; color: var(--text3); font-weight: 400; text-align: left;">작성자</th>
+								<th
+									style="padding: 10px 20px; border: none; color: var(--text3); font-weight: 400; text-align: left;">날짜</th>
+								<th
+									style="padding: 10px 20px; border: none; color: var(--text3); font-weight: 400; text-align: right;">조회수</th>
+							</tr>
+						</thead>
+						<tbody>
+							<c:choose>
+								<c:when test="${not empty list}">
+									<c:forEach items="${list}" var="dto">
+										<tr
+											onclick="location.href='./detail?noticeNo=${dto.noticeNo}'"
+											style="background: var(--surface); cursor: pointer; transition: all 0.2s ease;">
+											<td
+												style="padding: 20px; border-radius: 16px 0 0 16px; color: var(--text3); font-size: 13px;">
+												${dto.noticeNo}</td>
+											<td style="padding: 20px;">
+												<div
+													style="font-size: 16px; font-weight: 600; color: var(--text);">${dto.noticeTitle}</div>
+											</td>
+											<td
+												style="padding: 20px; color: var(--text2); font-size: 14px;">${dto.noticeWriter}</td>
+											<td
+												style="padding: 20px; color: var(--text3); font-size: 13px;">${dto.noticeDate}</td>
+											<td
+												style="padding: 20px; border-radius: 0 16px 16px 0; text-align: right; font-weight: 600; color: var(--blue);">
+												${dto.noticeView}</td>
+										</tr>
+									</c:forEach>
+								</c:when>
+								<c:otherwise>
+									<tr>
+										<td colspan="5"
+											style="text-align: center; padding: 100px 0; color: var(--text3);">
+											등록된 공지사항이 없습니다.</td>
+									</tr>
+								</c:otherwise>
+							</c:choose>
+						</tbody>
+					</table>
 				</div>
 
-				<table class="sb-table"
-					style="width: 100%; border-collapse: separate; border-spacing: 0 10px;">
-				</table>
+				<div style="flex: 3; position: sticky; top: 100px;"></div>
 			</div>
-		</div>
-
-		<div
-			style="flex: 3; display: flex; flex-direction: column; gap: 20px; position: sticky; top: 100px;">
-
-
-
-		</div>
-    </div><!-- main-content -->
-    </div><!-- page -->
-
-    <%@ include file="../common/sidebar.jsp" %>
-    <%@ include file="../common/sidebar-icons.jsp" %>
-
-</div><!-- app-wrapper -->
-
+		</div><%@ include file="../common/sidebar.jsp"%>
+		<%@ include file="../common/sidebar-icons.jsp"%>
+	</div>
 	<script src="/js/common.js"></script>
-	<!--  board.js는 board와 notice공유 -->
 	<script src="/js/board.js"></script>
 </body>
 </html>

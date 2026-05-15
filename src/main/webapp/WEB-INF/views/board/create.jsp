@@ -6,18 +6,19 @@
 <head>
 <meta charset="UTF-8">
 <title>Insert title here</title>
-<link rel="stylesheet" href="/css/common.css">
-<link rel="stylesheet" href="/css/chart-toss.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+    <link rel="stylesheet" href="/css/chart-toss-coin.css">
 </head>
 <body style="overflow: auto;">
-    <%@ include file="../common/nav.jsp" %>
-
+	<%@ include file="../common/nav.jsp"%>
 <body>
 
 	<main class="main-layout">
 		<div class="card board-main-card"
 			style="max-width: 800px; margin: 0 auto; padding: 40px;">
 			<div class="create-header" style="margin-bottom: 40px;">
+			 <span class="ph-ticker" style="color: var(--blue); font-size: 14px; font-weight: 600;">BOARD</span>
 				<h2 class="ph-price" style="font-size: 28px;">새 글 쓰기</h2>
 				<p class="ph-label">투자자들과 자유롭게 의견을 나누어보세요.</p>
 			</div>
@@ -44,14 +45,20 @@
 					<div
 						style="background: var(--surface2); border: 2px dashed var(--border); border-radius: 12px; padding: 20px; text-align: center;">
 						<input type="file" name="files" multiple id="fileInput"
-							style="display: none;"> <label for="fileInput"
-							style="cursor: pointer; color: var(--text2);"> <span
-							style="font-size: 30px;">+</span><br> 클릭하여 사진을 추가하세요 (여러 장
-							가능)
+							style="display: none;" accept="image/*"> <label
+							for="fileInput"
+							style="cursor: pointer; color: var(--text2); display: block; padding: 20px 0;">
+							<span style="font-size: 30px;">+</span><br> 클릭하여 사진을 추가하세요
+							(여러 장 가능)
 						</label>
+
+						<div id="image-preview-container"
+							style="display: flex; gap: 12px; flex-wrap: wrap; margin-top: 15px; justify-content: center;"></div>
+
 						<div id="file-list"
 							style="margin-top: 10px; font-size: 13px; color: var(--blue);"></div>
 					</div>
+
 				</div>
 
 				<div class="create-actions"
@@ -60,10 +67,11 @@
 						onclick="history.back()">취소</button>
 					<button type="submit" class="nav-login-btn" style="width: 150px;">등록하기</button>
 				</div>
-			</form> 	
+			</form>
 		</div>
 	</main>
-	
-    <script src="/js/board.js"></script>
+
+	<script src="/js/common.js"></script>
+	<script src="/js/board.js"></script>
 </body>
 </html>

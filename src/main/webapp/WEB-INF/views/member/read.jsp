@@ -7,7 +7,7 @@
 <meta charset="UTF-8">
 <title>Insert title here</title>
 <link rel="stylesheet" href="/css/common.css">
-<link rel="stylesheet" href="/css/chart-toss.css">
+<link rel="stylesheet" href="/css/chart-toss-coin.css">
 <style>
 /* 화면 중앙 정렬을 위한 최소한의 인라인 스타일 */
 .member-container {

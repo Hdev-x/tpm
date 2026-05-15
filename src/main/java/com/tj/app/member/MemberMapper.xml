@@ -6,8 +6,8 @@
 <mapper namespace="com.tj.app.member.MemberMapper">
 
 	<insert id="create">
-		INSERT INTO "MEMBER" ("USERNAME", "NAME", "PASSWORD", "CASH", "EMAIL")
-		VALUES  (#{username}, #{name}, #{password}, 200000000, #{email})
+		INSERT INTO "MEMBER" ("USERNAME", "NAME", "PASSWORD", "CASH", "EMAIL", "ROLE_NO")
+    VALUES (#{username}, #{name}, #{password}, 200000000, #{email}, 2)
 	</insert>
 
 	<select id="read" resultType="MemberDTO">
@@ -28,20 +28,25 @@
 		WHERE "USERNAME" = #{username}
 	</delete>
 	
-	<resultMap type="MemberDTO" id="memberResult">
+<resultMap type="MemberDTO" id="memberResult">
     <id column="USERNAME" property="username" />
     <result column="NAME" property="name" />
+    <result column="PASSWORD" property="password" /> 
     <result column="CASH" property="cash" />
     <result column="EMAIL" property="email"/>
-    <result column="ROLE_NAME" property="roleName" />
-    <result column="ROLE_NO" property="roleNo" />
+    
+    <collection property="roles" ofType="RoleDTO">
+        <id column="ROLE_NO" property="roleNo" />
+        <result column="ROLE_NAME" property="roleName" />
+    </collection>
 </resultMap>
 
 <select id="login" resultMap="memberResult">
-    SELECT *
+    SELECT 
+        M."USERNAME", M."NAME", M."PASSWORD", M."CASH", M."EMAIL",
+        R."ROLE_NO", R."ROLE_NAME"
     FROM "MEMBER" M
-    LEFT JOIN "ROLE" R 
-    USING ("ROLE_NO")
+    LEFT JOIN "ROLE" R ON M."ROLE_NO" = R."ROLE_NO"
     WHERE M."USERNAME" = #{username}
 </select>
 

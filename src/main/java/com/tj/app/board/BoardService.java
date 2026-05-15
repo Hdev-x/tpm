@@ -53,7 +53,11 @@ public class BoardService {
 		return boardMapper.list(boardDTO);
 	}
 
+	@Transactional
 	public BoardDTO detail(BoardDTO boardDTO) throws Exception {
+		
+		boardMapper.updateViewCount(boardDTO);
+		
 		boardDTO = boardMapper.detail(boardDTO);
 		
 		List<FileDTO> files = boardMapper.detailFile(boardDTO);

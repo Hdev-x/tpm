@@ -5,8 +5,9 @@
 <head>
     <meta charset="UTF-8">
     <title>${detail.noticeTitle} - 공지사항</title>
-<link rel="stylesheet" href="/css/common.css">
-<link rel="stylesheet" href="/css/chart-toss.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+    <link rel="stylesheet" href="/css/common.css">
+   <link rel="stylesheet" href="/css/chart-toss-coin.css">
 </head>
 <body>
 

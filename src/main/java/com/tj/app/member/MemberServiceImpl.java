@@ -25,7 +25,7 @@ public class MemberServiceImpl implements MemberService {
 		}
 		
 		// ID 중복 검사
-		MemberDTO m = memberMapper.read(memberDTO);
+		MemberDTO m = memberMapper.login(memberDTO);
 		if(m != null) {
 			result = true;
 			bindingResult.rejectValue("username", "member.idCheck.equal");
@@ -41,7 +41,8 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public MemberDTO read(MemberDTO memberDTO) throws Exception {
-        return memberMapper.read(memberDTO);
+        // 이제 권한 정보까지 조인해서 가져오는 mapper의 login을 호출합니다.
+        return memberMapper.login(memberDTO); 
     }
 
     @Override

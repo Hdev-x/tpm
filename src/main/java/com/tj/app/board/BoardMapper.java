@@ -24,4 +24,6 @@ public interface BoardMapper {
 	public List<FileDTO> detailFile(BoardDTO boardDTO) throws Exception;
 	
 	public int deleteFiles(BoardDTO boardDTO) throws Exception;
+	
+	public int updateViewCount(BoardDTO boardDTO) throws Exception;
 }

@@ -54,6 +54,9 @@ public class NoticeService {
 	}
 
 	public NoticeDTO detail(NoticeDTO noticeDTO) throws Exception {
+		
+		noticeMapper.updateViewCount(noticeDTO);
+		
 		noticeDTO = noticeMapper.detail(noticeDTO);
 		
 		List<FileDTO> files = noticeMapper.detailFile(noticeDTO);

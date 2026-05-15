@@ -24,4 +24,6 @@ public interface NoticeMapper {
 	public List<FileDTO> detailFile(NoticeDTO noticeDTO) throws Exception;
 	
 	public int deleteFiles(NoticeDTO noticeDTO) throws Exception;
+	
+	public int updateViewCount(NoticeDTO noticeDTO) throws Exception;
 }

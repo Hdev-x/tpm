@@ -22,11 +22,15 @@
 
 	<insert id="create" parameterType="BoardDTO"
 		useGeneratedKeys="true" keyProperty="boardNo">
-		INSERT INTO "BOARD"
+		INSERT INTO "BOARD" ("BOARD_TITLE", 
+        "BOARD_WRITER", 
+        "BOARD_CONTENT", 
+        "BOARD_DATE", 
+        "USERNAME", 
+        "BOARD_VIEW")
 		VALUES
-		(DEFAULT, #{boardTitle},
-		#{boardWriter}, #{boardContent},
-		CURRENT_TIMESTAMP, #{username}, 0)
+		(#{boardTitle}, #{boardWriter}, #{boardContent},
+CURRENT_TIMESTAMP, #{username}, 0)
 	</insert>
 
 	<select id="list" resultType="BoardDTO">
@@ -72,5 +76,11 @@
 		DELETE FROM "FILE"
 		WHERE "BOARD_NO" = #{boardNo}
 	</delete>
+	
+	<update id="updateViewCount">
+    UPDATE "BOARD"
+    SET "BOARD_VIEW" = "BOARD_VIEW" + 1
+    WHERE "BOARD_NO" = #{boardNo}
+	</update>
 
 </mapper>

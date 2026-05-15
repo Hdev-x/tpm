@@ -7,7 +7,7 @@
     <title>Insert title here</title>
     
 <link rel="stylesheet" href="/css/common.css">
-<link rel="stylesheet" href="/css/chart-toss.css">
+<link rel="stylesheet" href="/css/chart-toss-coin.css">
 </head>
 <body class="member-layout">
 

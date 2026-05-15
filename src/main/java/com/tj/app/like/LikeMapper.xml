@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="com.tj.app.like.LikeMapper">
+  
+  <insert id="create">
+  	INSERT INTO "LIKE" ("USERNAME", "BOARD_NO")
+  	VALUES (#{username}, #{boardNo})
+  </insert>
+  
+<delete id="delete">
+    DELETE FROM "LIKE"
+    WHERE "USERNAME" = #{username} 
+      AND "BOARD_NO" = #{boardNo}
+</delete>
+    
+<select id="checkLike" resultType="LikeDTO">
+        SELECT * FROM "LIKE"
+        WHERE "USERNAME" = #{username} 
+          AND "BOARD_NO" = #{boardNo}
+    </select>
+
+    <select id="countLike" resultType="Long">
+        SELECT COUNT(*) FROM "LIKE"
+        WHERE "BOARD_NO" = #{boardNo}
+    </select>
+  
+  </mapper>

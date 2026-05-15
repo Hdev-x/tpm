@@ -81,7 +81,7 @@
 								style="font-size: 16px; font-weight: 700; color: var(--text); border-bottom: 2px solid var(--text); padding-bottom: 5px;">전체글</span>
 						</div>
 
-						<c:if test="${member.role eq 1}">
+						<c:if test="${member.roles eq 1}">
 							<a href="./create" class="nav-login-btn"
 								style="text-decoration: none;">글쓰기</a>
 						</c:if>

@@ -33,7 +33,6 @@
             </svg>
             <span>검색</span>
         </div>
-        <button class="nav-login-btn">로그인</button>
         <div class="nav-right">
                 <c:choose>
                     <c:when test="${empty member}">

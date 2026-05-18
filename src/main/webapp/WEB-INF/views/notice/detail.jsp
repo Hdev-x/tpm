@@ -50,7 +50,7 @@
         </div>
     </c:if>
 </div>
-
+<!-- 
         <div class="comment-section" style="border-top: 1px solid var(--border); padding-top: 40px;">
             <h3 class="ph-name" style="font-size: 20px; margin-bottom: 24px;">댓글 <span style="color:var(--blue)">0</span></h3>
             
@@ -66,10 +66,11 @@
             <div class="comment-list">
                 <div class="ph-label" style="text-align: center; padding: 40px 0;">아직 댓글이 없습니다. 첫 댓글을 남겨보세요!</div>
             </div>
-        </div>
+        </div> -->
     </div>
 </main>
 
 <script src="/js/common.js"></script>
+<script src="/js/board.js"></script>
 </body>
 </html>

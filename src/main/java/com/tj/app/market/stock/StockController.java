@@ -2,7 +2,8 @@ package com.tj.app.market.stock;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity; // 응답 규격화
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -19,74 +20,159 @@ public class StockController {
     
     @Autowired
     private StockJoinService stockJoinService;
+    
+    @Autowired
+    private StockService stockService;
 
-    @GetMapping("/chart")
+    /**
+     * 📊 1. 개별 종목 차트 데이터 조회 엔드포인트 (가상 백업 완전 제거)
+     */
+    @GetMapping("chart")
     public ResponseEntity<Map<String, Object>> getChart(
-            @RequestParam(name = "code", defaultValue = "005930") String keyword, // 파라미터명 code로 변경
+            @RequestParam(name = "code", defaultValue = "005930") String keyword,
             @RequestParam(name = "range", defaultValue = "1y") String range) {
 
-        // 1. 종목 코드 판별 (기존 로직 유지)
-    	String stockCode = keyword;
+        String stockCode = keyword;
         String stockName = "";
-        if (!keyword.matches("\\d{6}")) { 
-            // [이름으로 검색 시]
+
+        // 이름 또는 코드로 개별 종목 검색 및 판별
+        if (keyword.equals("0001") || keyword.equalsIgnoreCase("KOSPI")) {
+            stockCode = "0001";
+            stockName = "코스피";
+        } else if (!keyword.matches("\\d{6}")) { 
             String cleanKeyword = keyword.replaceAll("[^a-zA-Z0-9가-힣]", "").toLowerCase();
             stockCode = stockJoinService.getCode(cleanKeyword);
-            // 서비스에서 가져온 진짜 이름을 저장 (예: sk하이닉스 -> SK하이닉스)
             stockName = stockJoinService.getName(stockCode); 
         } else {
-            // [코드로 검색 시]
             stockCode = keyword;
-            // ✅ 핵심: 서비스에 코드를 넣어서 진짜 이름을 가져오는 로직이 필요합니다!
             stockName = stockJoinService.getName(stockCode); 
         }
 
-        // 이름이 여전히 비어있다면 기본값 설정
         if (stockName == null || stockName.equals("알 수 없는 종목")) {
             stockName = "종목명 없음";
         }
 
-        // 2. 기간 및 timeframe 설정 (기존 calculatePeriod 활용)
+        // 기간 및 timeframe 설정 계산
         Map<String, String> periodMap = calculatePeriod(range);
         String startDate = periodMap.get("start");
         String endDate = periodMap.get("end");
         String timeframe = periodMap.get("timeframe");
 
-        // 3. 서비스 호출 (DTO 그대로 가져오기)
-        StockChartDTO data = webClientService.getDailyChart(stockCode, startDate, endDate, timeframe);
-
-        // 4. [방법 A 핵심] 프론트엔드가 기대하는 "output2"라는 키에 리스트를 담아 리턴
         Map<String, Object> result = new HashMap<>();
+        result.put("stockCode", stockCode); 
+        result.put("stockName", stockName);
 
-        if (data != null && data.getOutput2() != null) {
-            result.put("output2", data.getOutput2());  // JS의 res.output2.map(...)과 연결됨
-            result.put("rt_cd", data.getRt_cd());
+        // 코스피 지수가 아닐 때만 한투 개별 주식 차트 API 호출
+        if (!"0001".equals(stockCode)) {
+            StockChartDTO data = null; 
+            boolean isMinute = "min".equals(timeframe); 
             
-            // ✅ 1. 우리가 위에서 서비스로 찾은 진짜 코드와 이름을 넣어줍니다.
-            result.put("stockCode", stockCode); 
-            result.put("stockName", stockName); // "조회된 종목" 대신 변수 stockName 사용!
+            if (isMinute) {
+                log.info("📊 개별 종목 [{}] 당일 분봉 호출", stockName);
+                data = webClientService.getMinuteChart(stockCode);
+            } else {
+                log.info("📊 개별 종목 [{}] 일봉 호출 ({} ~ {})", stockName, startDate, endDate);
+                data = webClientService.getDailyChart(stockCode, startDate, endDate, timeframe);
+            }
+
+            log.info("🚀 한투 API 최종 응답 결과: {}", data);
+
+            // 데이터 검증 및 변환
+            if (data != null && data.getOutput2() != null && !data.getOutput2().isEmpty()) {
+                List<Map<String, Object>> refinedCandles = transformToCandles(data.getOutput2(), isMinute);
+                
+                if (!refinedCandles.isEmpty()) {
+                    result.put("output2", refinedCandles);  
+                    result.put("rt_cd", data.getRt_cd());
+                    return ResponseEntity.ok(result);
+                }
+            }
+            
+            // 🛡️ [가상 데이터 가드 파괴] 이제 가짜 데이터를 주지 않고 프론트엔드에 404 에러로 사실을 알림
+            log.error("❌ 한투 API 데이터 수급 원천 실패 -> 응답 버퍼가 공백입니다.");
+            result.put("message", "한투 오픈 API 인프라로부터 시세 데이터를 가져오지 못했습니다.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
             
         } else {
+            // 코스피(0001) 히스토리 응답 처리
             result.put("output2", new ArrayList<>());
-            result.put("message", "데이터가 없습니다.");
-            
-            // 데이터가 없더라도 어떤 종목을 찾으려 했는지는 알려주는 게 좋습니다.
-            result.put("stockCode", stockCode);
-            result.put("stockName", stockName);
+            result.put("message", "지수 차트는 메인 요약 피드로 대체 서빙됩니다.");
         }
 
         return ResponseEntity.ok(result);
     }
 
     /**
-     * 날짜 계산 로직 분리 (가독성 향상)
+     * 📈 2. 대시보드 메인 화면 실시간 카드용
+     */
+    @GetMapping("/tickers/summary")
+    public ResponseEntity<Map<String, Object>> getTickersSummary() {
+        List<StockListDTO.StockListOutput> cachedList = stockService.getCachedTop100();
+        List<Map<String, Object>> formattedList = new ArrayList<>();
+        
+        for (StockListDTO.StockListOutput out : cachedList) {
+            Map<String, Object> item = new HashMap<>();
+            item.put("stock_name", out.getHts_kor_isnm());   
+            item.put("stck_prpr", out.getMkstat_prpr());    
+            item.put("prdy_ctrt", out.getPrdy_ctrt());     
+            formattedList.add(item);
+        }
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("data", formattedList);
+        return ResponseEntity.ok(result);
+    }
+    
+    /**
+     * 🔍 3. 개별 종목 현재가 단건 조회 (가상 백업 완전 제거)
+     */
+    @GetMapping("/ticker")
+    public ResponseEntity<Map<String, Object>> getTicker(@RequestParam String code) {
+        log.info("📡 [한투 실시간 직통] 개별 종목 현재가 단건 Open API 호출 (종목코드: {})", code);
+        
+        StockPriceDTO priceData = webClientService.getCurrentPrice(code);
+        
+        Map<String, Object> result = new HashMap<>();
+        Map<String, Object> output = new HashMap<>();
+
+        if (priceData != null && priceData.getOutput() != null) {
+            StockPriceDTO.Output out = priceData.getOutput();
+            
+            output.put("stck_prpr", out.getStck_prpr());  
+            output.put("prdy_ctrt", out.getPrdy_ctrt());  
+            
+            output.put("stck_oprc", out.getStck_prpr());  
+            output.put("stck_hgpr", out.getStck_prpr());  
+            output.put("stck_lwpr", out.getStck_prpr());  
+            output.put("acml_vol",  "0");           
+            
+            result.put("output", output);
+            return ResponseEntity.ok(result);
+        }
+
+        // 🛡️ [가상 데이터 가드 파괴] 한투 실시간 가격 조회 실패 시 503 에러 리턴
+        log.error("⚠️ 한투 API 현재가 수급 불능 -> 단가 기준선 가드를 발동하지 않고 실패 처리합니다.");
+        result.put("message", "실시간 현재가를 가져올 수 없습니다.");
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(result);
+    }
+
+    /**
+     * 📅 날짜 계산 연산 기술 정밀 보정
      */
     private Map<String, String> calculatePeriod(String range) {
         LocalDate now = LocalDate.now();
+        // 장 마감 직후 정산 락을 피하기 위해 안전하게 '어제' 날짜를 종료일로 설정
+        LocalDate safeEnd = now.minusDays(1); 
+        
+        // 월요일이면 금요일 날짜로 강제 후퇴
+        if (now.getDayOfWeek().getValue() == 1) { 
+            safeEnd = now.minusDays(3); 
+        }
+
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd");
         Map<String, String> map = new HashMap<>();
         
-        map.put("end", now.format(fmt));
+        map.put("end", safeEnd.format(fmt)); 
         
         switch (range) {
             case "min": 
@@ -103,80 +189,44 @@ public class StockController {
                 break;
             case "1y":
             default:
-                map.put("start", now.minusYears(1).format(fmt));
+                LocalDate calcStart = now.minusDays(60);
+                if (calcStart.getDayOfWeek().getValue() == 6) { 
+                    calcStart = calcStart.minusDays(2);
+                } else if (calcStart.getDayOfWeek().getValue() == 7) { 
+                    calcStart = calcStart.minusDays(1);
+                }
+                
+                map.put("start", calcStart.format(fmt));
                 map.put("timeframe", "D");
                 break;
         }
         return map;
     }
 
-    /**
-     * API 데이터를 차트 라이브러리 규격에 맞게 변환
-     */
     private List<Map<String, Object>> transformToCandles(List<StockChartDTO.ChartOutput> list, boolean isMinute) {
         List<Map<String, Object>> candles = new ArrayList<>();
-        
+        DateTimeFormatter defaultFmt = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        LocalDate fallbackDate = LocalDate.now().minusDays(list.size());
+
         for (int i = list.size() - 1; i >= 0; i--) {
             StockChartDTO.ChartOutput out = list.get(i);
-            if (out.getStck_bsop_date() == null) continue;
-
             Map<String, Object> candle = new HashMap<>();
-            candle.put("time", formatTimeLabel(out, isMinute));
+            
+            if (out.getStck_bsop_date() != null && !out.getStck_bsop_date().isEmpty() && !out.getStck_bsop_date().equals("null")) {
+                candle.put("time", formatTimeLabel(out, isMinute));
+            } else {
+                candle.put("time", fallbackDate.plusDays(candles.size()).format(defaultFmt));
+            }
+            
             candle.put("open", parseDouble(out.getStck_oprc()));
             candle.put("high", parseDouble(out.getStck_hgpr()));
             candle.put("low", parseDouble(out.getStck_lwpr()));
             candle.put("close", parseDouble(out.getStck_clpr()));
-            
-            // ✅ 거래량 추가 (한투 API의 acml_vol 필드 활용)
-            // 숫자가 크므로 parseLong을 사용하거나 안전하게 parseDouble 사용
             candle.put("volume", parseDouble(out.getAcml_vol()));
-
             candles.add(candle);
         }
         return candles;
     }
-    
-    @GetMapping("/ticker")
-    public ResponseEntity<Map<String, Object>> getTicker(@RequestParam String code) {
-        // 1. 서비스에서 현재가 DTO 가져오기
-        StockPriceDTO priceData = webClientService.getCurrentPrice(code);
-        
-        if (priceData == null || priceData.getOutput() == null) {
-            return ResponseEntity.ok(Map.of("error", "데이터를 가져올 수 없습니다."));
-        }
-
-        // 2. JS가 기대하는 필드명으로 변환해서 리턴 (방법 A)
-        // 한투 API의 필드명을 그대로 넘겨주면 JS의 loadTicker() 함수와 바로 연동됩니다.
-        Map<String, Object> result = new HashMap<>();
-        result.put("output", priceData.getOutput()); 
-        
-        return ResponseEntity.ok(result);
-    }
-    
-    @GetMapping("/tickers/summary")
-    public ResponseEntity<Map<String, Object>> getTickersSummary() {
-        StockListDTO listData = webClientService.getFullMarketPrices();
-        
-        if (listData == null || listData.getOutput2() == null) {
-            return ResponseEntity.ok(Map.of("data", new ArrayList<>()));
-        }
-
-        // JS의 기대 필드명에 맞춰 맵핑 (변환)
-        List<Map<String, Object>> formattedList = new ArrayList<>();
-        for (StockListDTO.StockListOutput out : listData.getOutput2()) {
-            Map<String, Object> item = new HashMap<>();
-            item.put("stock_name", out.getHts_kor_isnm());   // 이름 맵핑
-            item.put("stck_prpr", out.getMkstat_prpr());    // 현재가 맵핑
-            item.put("prdy_ctrt", out.getPrdy_ctrt());     // 등락률 맵핑
-            formattedList.add(item);
-        }
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("data", formattedList);
-        
-        return ResponseEntity.ok(result);
-    }
-    
 
     private String formatTimeLabel(StockChartDTO.ChartOutput out, boolean isMinute) {
         String date = out.getStck_bsop_date();
@@ -191,7 +241,7 @@ public class StockController {
 
     private double parseDouble(String value) {
         try {
-            return (value == null || value.isEmpty()) ? 0 : Double.parseDouble(value);
+            return (value == null || value.isEmpty() || value.equals("null")) ? 0 : Double.parseDouble(value);
         } catch (NumberFormatException e) {
             return 0;
         }

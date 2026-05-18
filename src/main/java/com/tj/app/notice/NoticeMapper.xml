@@ -21,10 +21,10 @@
 
 
 	<insert id="create" parameterType="noticeDTO"
-		useGeneratedKeys="true" keyProperty="NoticeNo">
-		INSERT INTO "NOTICE"
+		useGeneratedKeys="true" keyProperty="noticeNo">
+		INSERT INTO "NOTICE" ("NOTICE_TITLE", "NOTICE_WRITER", "NOTICE_CONTENT", "NOTICE_DATE", "USERNAME", "NOTICE_VIEW")
 		VALUES
-		(DEFAULT, #{noticeTitle},
+		(#{noticeTitle},
 		#{noticeWriter}, #{noticeContent},
 		CURRENT_TIMESTAMP, #{username}, 0)
 	</insert>

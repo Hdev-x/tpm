@@ -1,11 +1,27 @@
+/* ====================================================
+   [전역 상태 읽기]
+   이 값들은 여러 함수가 함께 사용하는 화면 상태입니다.
+   allTickers는 API로 받은 전체 코인 목록, renderIndex는 현재 몇 개 행까지 그렸는지,
+   logoMap은 티커(BTC 등)와 로고 이미지 URL을 연결하는 객체입니다.
+   ==================================================== */
 let allTickers = [];
 let renderIndex = 0;
 const PAGE_SIZE = 50;
 let logoMap = {};
 let currentSort = '거래대금';
 
+function calcChange(t) {
+    const open = parseFloat(t.openUtc);
+    return open > 0 ? (parseFloat(t.lastPr) - open) / open * 100 : parseFloat(t.change24h) * 100;
+}
 
-// ── 메인 탭 전환 ──
+function getDisplayChange(t) {
+    return currentTimeFilter === '1일' ? parseFloat(t.change24h) * 100 : calcChange(t);
+}
+
+/* [DOM 연결 읽기]
+   .main-tab 버튼의 data-tab 값과 .tab-content의 id를 연결해 탭 화면을 바꿉니다.
+   예: data-tab="realtime" -> id="tab-realtime" */
 document.querySelectorAll('.main-tab').forEach(tab => {
     tab.addEventListener('click', function () {
         document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
@@ -15,7 +31,9 @@ document.querySelectorAll('.main-tab').forEach(tab => {
     });
 });
 
-// ── 필터 버튼 그룹 토글 ──
+/* [콜백 읽기]
+   .filter-group마다 내부 버튼을 따로 관리합니다.
+   그래서 마켓 필터의 active 변경이 정렬 필터 버튼까지 지우지 않습니다. */
 document.querySelectorAll('.filter-group').forEach(group => {
     group.querySelectorAll('.filter-btn').forEach(btn => {
         btn.addEventListener('click', function () {
@@ -25,16 +43,14 @@ document.querySelectorAll('.filter-group').forEach(group => {
     });
 });
 
-// ── 테이블 행 클릭 → 우측 패널 active 표시 ──
-document.querySelectorAll('.stock-row').forEach(row => {
-    row.addEventListener('click', function () {
-        document.querySelectorAll('.stock-row').forEach(r => r.classList.remove('active'));
-        this.classList.add('active');
-    });
-});
-
-
-// ── 숫자 축약 (1,234,567 → 1.23M) ──
+/**
+ * [함수 선언부 읽기]
+ * function fmtNum(n)
+ * 큰 거래대금 숫자를 K/M/B 단위 문자열로 줄여서 테이블에 표시합니다.
+ *
+ * @param {number} n 줄여서 표시할 숫자
+ * @return {string} 축약된 숫자 문자열
+ */
 function fmtNum(n) {
     if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(2) + 'B';
     if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + 'M';
@@ -42,7 +58,13 @@ function fmtNum(n) {
     return n.toFixed(2);
 }
 
-// ── CoinGecko 로고 매핑 ──
+/**
+ * [실행 흐름]
+ * CoinGecko에서 여러 페이지의 코인 목록을 가져와 logoMap을 채웁니다.
+ * Promise.all()은 여러 fetch 요청을 동시에 실행하고, 실패한 페이지는 빈 배열로 처리합니다.
+ *
+ * @return {Promise<void>} logoMap 전역 객체를 갱신합니다.
+ */
 async function loadLogoMap() {
     const pages = [1, 2, 3];
     const results = await Promise.all(
@@ -56,31 +78,50 @@ async function loadLogoMap() {
     });
 }
 
-// ── 코인 목록 fetch ──
+/**
+ * [실행 흐름]
+ * Bitget REST API에서 현재 현물 ticker 목록을 가져옵니다.
+ * 반환된 data 배열은 initializeCoinList()에서 필터/정렬 후 테이블에 사용됩니다.
+ *
+ * @return {Promise<Array>} Bitget ticker 배열
+ */
 async function loadTickers() {
     const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers');
     const json = await res.json();
     return json.data || [];
 }
 
-
-// ── 행 HTML 생성 ──
+/**
+ * [함수 선언부 읽기]
+ * function makeRow(t, rank)
+ * ticker 객체 하나를 받아 table 안에 들어갈 tr DOM 요소를 만듭니다.
+ *
+ * [DOM 연결]
+ * tr.dataset.symbol은 HTML의 data-symbol 속성이 됩니다.
+ * 이후 WebSocket 업데이트와 mouseover/click 이벤트가 이 값을 기준으로 행을 찾습니다.
+ *
+ * @param {Object} t Bitget ticker 데이터
+ * @param {number} rank 화면에 보여줄 순위
+ * @return {HTMLTableRowElement} tbody에 붙일 행 요소
+ */
 function makeRow(t, rank) {
     const ticker = t.symbol.replace(/USDT$/, '').replace(/USDC$/, '').replace('_SPBL', '') || t.symbol;
-    const change = parseFloat(t.change24h) * 100;
+    const change = getDisplayChange(t);
     const cls = change >= 0 ? 'up' : 'down';
     const sign = change >= 0 ? '+' : '';
     const logoUrl = logoMap[ticker] || 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/' + ticker.toLowerCase() + '.png';
     const fallback = ticker.slice(0, 3);
     const market = t.symbol.endsWith('USDC') ? '/ USDC' : '/ USDT';
 
+    // [코드 읽기] createElement('tr')은 문자열이 아니라 실제 테이블 행 DOM 노드를 만듭니다.
+    const isLiked = getWatchlist().includes(t.symbol);
     const tr = document.createElement('tr');
     tr.className = 'stock-row';
     tr.dataset.symbol = t.symbol;
     tr.innerHTML =
         '<td class="td-rank">'
         + '<div class="rank-inner">'
-        + '<button class="like-btn"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>'
+        + '<button class="like-btn' + (isLiked ? ' liked' : '') + '"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>'
         + '<span class="rank-num">' + rank + '</span>'
         + '<div class="coin-logo">'
         + '<img src="' + logoUrl + '" alt="' + ticker + '"'
@@ -92,15 +133,21 @@ function makeRow(t, rank) {
         + '</div>'
         + '</div>'
         + '</td>'
-        + '<td class="td-price">' + parseFloat(t.lastPr).toLocaleString() + '</td>'
+        + '<td class="td-price">$' + parseFloat(t.lastPr).toLocaleString() + '</td>'
         + '<td class="td-change"><span class="badge ' + cls + '">' + sign + change.toFixed(2) + '%</span></td>'
-        + '<td class="td-quote">' + fmtNum(parseFloat(t.quoteVolume)) + ' USDT</td>'
+        + '<td class="td-quote">' + fmtNum(parseFloat(t.quoteVolume)) + '</td>'
         + '<td class="td-high">' + parseFloat(t.high24h).toLocaleString() + '</td>'
         + '<td class="td-low">' + parseFloat(t.low24h).toLocaleString() + '</td>';
     return tr;
 }
 
-// ── 테이블 렌더링 ──
+/**
+ * [DOM 연결 읽기]
+ * id="stockTableBody"인 tbody를 비우고 ticker 배열을 처음부터 다시 렌더링합니다.
+ * 필터나 정렬이 바뀔 때는 기존 행을 모두 지우는 이 함수가 적합합니다.
+ *
+ * @param {Array} tickers 화면에 새로 그릴 ticker 배열
+ */
 function renderTable(tickers) {
     const tbody = document.getElementById('stockTableBody');
     tbody.innerHTML = '';
@@ -111,7 +158,13 @@ function renderTable(tickers) {
     tbody.appendChild(sentinel);
 }
 
-// ── 추가 로드 ──
+/**
+ * [실행 흐름]
+ * 무한 스크롤에서 다음 페이지의 행만 tbody 뒤에 추가합니다.
+ * sentinel 행은 스크롤 끝에 남겨두는 기준점 역할을 하므로 새 행을 붙이기 전에 제거하고 다시 붙입니다.
+ *
+ * @param {Array} tickers 추가로 표시할 ticker 배열
+ */
 function appendRows(tickers) {
     const tbody = document.getElementById('stockTableBody');
     const old = document.getElementById('scroll-sentinel');
@@ -123,32 +176,28 @@ function appendRows(tickers) {
     tbody.appendChild(sentinel);
 }
 
-// ── 초기 로드 ──
-Promise.all([loadLogoMap(), loadTickers()]).then(([, data]) => {
-    data = data.filter(t => t.symbol.endsWith('USDT') || t.symbol.endsWith('USDC'));
-    data.sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume));
-    allTickers = data;
-    renderIndex = 0;
-    renderTable(allTickers.slice(0, PAGE_SIZE));
-    renderIndex = PAGE_SIZE;
-    connectListWs(allTickers.slice(0, PAGE_SIZE).map(d => d.symbol));
-    if (allTickers.length > 0) {
-        const firstRow = document.querySelector('#stockTableBody .stock-row');
-        if (firstRow) firstRow.classList.add('active');
-        loadDetailChart(allTickers[0].symbol);
-    }
-});
-
-
-// ── 실시간 WebSocket ──
 let listWs = null;
 
+/**
+ * [함수 선언부 읽기]
+ * function connectListWs(symbols)
+ * 보이는 코인 목록을 Bitget WebSocket ticker 채널에 구독합니다.
+ *
+ * [실행 흐름]
+ * 1. 이전 WebSocket이 있으면 닫습니다.
+ * 2. symbols 배열을 구독 요청 객체 배열로 바꿉니다.
+ * 3. 수신 메시지의 symbol로 tr[data-symbol="..."] 행을 찾아 가격과 등락률을 갱신합니다.
+ * 4. 현재 우측 상세 패널의 symbol과 같으면 상세 가격도 함께 갱신합니다.
+ *
+ * @param {string[]} symbols 실시간 가격을 받을 코인 심볼 목록
+ */
 function connectListWs(symbols) {
     if (listWs) listWs.close();
     const ws = new WebSocket('wss://ws.bitget.com/v2/ws/public');
     listWs = ws;
 
     ws.onopen = () => {
+        // [콜백 읽기] map의 s는 symbols 배열에서 하나씩 전달되는 코인 심볼입니다.
         const args = symbols.map(s => ({ instType: 'SPOT', channel: 'ticker', instId: s }));
         ws.send(JSON.stringify({ op: 'subscribe', args }));
         setInterval(() => ws.readyState === 1 && ws.send('ping'), 20000);
@@ -162,7 +211,11 @@ function connectListWs(symbols) {
 
         const symbol = msg.arg.instId;
         const price = parseFloat(msg.data[0].lastPr);
-        const change = parseFloat(msg.data[0].change24h) * 100;
+        const openUtc = parseFloat(msg.data[0].openUtc);
+        const changeUtc = openUtc > 0 ? (price - openUtc) / openUtc * 100 : (parseFloat(msg.data[0].change24h) * 100);
+        const change = currentTimeFilter === '1일' ? parseFloat(msg.data[0].change24h) * 100 : changeUtc;
+
+        // [DOM 연결 읽기] makeRow()에서 저장한 data-symbol과 WebSocket 메시지의 symbol을 맞춰 행을 찾습니다.
         const row = document.querySelector(`tr[data-symbol="${symbol}"]`);
         if (!row) return;
 
@@ -171,7 +224,7 @@ function connectListWs(symbols) {
         const badge = row.querySelector('.badge');
         const prevChange = badge.textContent;
         const newChange = sign + change.toFixed(2) + '%';
-        row.querySelector('.td-price').textContent = price.toLocaleString();
+        row.querySelector('.td-price').textContent = '$' + price.toLocaleString();
         if (currentTimeFilter === '실시간' || currentTimeFilter === '1일') {
             badge.textContent = newChange;
             badge.className = 'badge ' + cls;
@@ -186,14 +239,14 @@ function connectListWs(symbols) {
                 }, 200);
             }
         }
-        row.querySelector('.td-quote').textContent = fmtNum(parseFloat(msg.data[0].quoteVolume)) + ' USDT';
+        row.querySelector('.td-quote').textContent = fmtNum(parseFloat(msg.data[0].quoteVolume));
         row.querySelector('.td-high').textContent = parseFloat(msg.data[0].high24h).toLocaleString();
         row.querySelector('.td-low').textContent = parseFloat(msg.data[0].low24h).toLocaleString();
 
         if (symbol === currentDetailSymbol) {
             const sign = change >= 0 ? '+' : '';
             const cls = change >= 0 ? 'up' : 'down';
-            document.getElementById('detailPrice').textContent = price.toLocaleString() + ' USDT';
+            document.getElementById('detailPrice').textContent = '$' + price.toLocaleString();
             const changeEl = document.getElementById('detailChange');
             changeEl.textContent = sign + change.toFixed(2) + '%';
             changeEl.className = 'hc-main-pnl ' + cls;
@@ -205,8 +258,9 @@ function connectListWs(symbols) {
     };
 }
 
-
-// ── 무한 스크롤 ──
+/* [실행 흐름]
+   .stock-table-wrap은 실제 스크롤 컨테이너입니다.
+   사용자가 아래쪽 200px 근처까지 내리면 다음 PAGE_SIZE만큼 행을 추가하고 WebSocket 구독 범위도 늘립니다. */
 document.querySelector('.stock-table-wrap').addEventListener('scroll', function () {
     if (renderIndex >= allTickers.length) return;
     if (this.scrollTop + this.clientHeight >= this.scrollHeight - 200) {
@@ -217,11 +271,15 @@ document.querySelector('.stock-table-wrap').addEventListener('scroll', function 
     }
 });
 
-
-// ── 마켓 필터 ──
 let currentMarket = '전체';
 
+/**
+ * [함수 선언부 읽기]
+ * function applyFilters()
+ * 현재 선택된 마켓/정렬 상태를 allTickers에 적용하고 첫 페이지를 다시 렌더링합니다.
+ */
 function applyFilters() {
+    // [주의] allTickers 원본은 유지하고, 조건에 맞는 filtered 배열만 화면에 사용합니다.
     let filtered = allTickers;
     if (currentMarket === 'USDT') filtered = allTickers.filter(t => t.symbol.endsWith('USDT'));
     if (currentMarket === 'USDC') filtered = allTickers.filter(t => t.symbol.endsWith('USDC'));
@@ -234,58 +292,95 @@ function applyFilters() {
 
 document.querySelectorAll('.filter-group:nth-child(1) .filter-btn').forEach(btn => {
     btn.addEventListener('click', function () {
+        // [이벤트 객체 읽기] 여기서 this는 클릭된 마켓 필터 버튼입니다.
         currentMarket = this.textContent.trim();
         applyFilters();
     });
 });
 
-// ── 정렬 필터 ──
 const sortFns = {
     '거래대금': (a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume),
-    '급상승': (a, b) => parseFloat(b.change24h) - parseFloat(a.change24h),
-    '급하락': (a, b) => parseFloat(a.change24h) - parseFloat(b.change24h),
+    '급상승': (a, b) => getDisplayChange(b) - getDisplayChange(a),
+    '급하락': (a, b) => getDisplayChange(a) - getDisplayChange(b),
 };
 
 document.querySelectorAll('.filter-group:nth-child(3) .filter-btn').forEach(btn => {
     btn.addEventListener('click', function () {
         const label = this.textContent.trim();
+
+        // [주의] sortFns에 없는 버튼은 아직 동작이 없는 버튼이므로 정렬을 실행하지 않습니다.
         if (!sortFns[label]) return;
         currentSort = label;
         applyFilters();
     });
 });
 
-// ── 시간 필터 ──
 let currentTimeFilter = '실시간';
 
+/* [실행 흐름]
+   시간 필터 버튼은 현재 표시된 행의 등락률 배지만 다시 계산합니다.
+   1주일 이상 버튼은 JSP에서 disabled 상태라 클릭되지 않습니다. */
 document.querySelectorAll('.filter-group:nth-child(5) .filter-btn').forEach(btn => {
     btn.addEventListener('click', function () {
-        const label = this.textContent.trim();
-        currentTimeFilter = label;
-        document.querySelectorAll('#stockTableBody .stock-row').forEach(row => {
-            const t = allTickers.find(t => t.symbol === row.dataset.symbol);
-            if (!t) return;
-            const change = parseFloat(t.change24h) * 100;
-            const cls = change >= 0 ? 'up' : 'down';
-            const sign = change >= 0 ? '+' : '';
-            const badge = row.querySelector('.badge');
-            badge.textContent = sign + change.toFixed(2) + '%';
-            badge.className = 'badge ' + cls;
-        });
+        currentTimeFilter = this.textContent.trim();
+        applyFilters();
     });
 });
 
-// ── 하트 클릭 ──
+/* [이벤트 위임 읽기]
+   like-btn은 JS가 동적으로 만든 행 안에 있으므로, 버튼마다 이벤트를 붙이지 않고
+   부모 tbody에서 click을 받은 뒤 e.target.closest('.like-btn')로 실제 하트 버튼을 찾습니다. */
 document.getElementById('stockTableBody').addEventListener('click', function (e) {
     const btn = e.target.closest('.like-btn');
     if (!btn) return;
     e.stopPropagation();
-    btn.classList.toggle('liked');
+    const symbol = btn.closest('tr').dataset.symbol;
+    toggleWatchlist(symbol);
+    btn.classList.toggle('liked', getWatchlist().includes(symbol));
 });
 
-// ── 상세 패널 ──
+/* [실행 흐름]
+   테이블 행에 마우스를 올리면 active 행을 바꾸고 우측 상세 패널을 미리 갱신합니다.
+   closest('.stock-row')는 마우스가 td/span/img 위에 있어도 가장 가까운 tr 행을 찾아줍니다. */
+document.getElementById('stockTableBody').addEventListener('mouseover', function (e) {
+    if (e.target.closest('.like-btn')) return;
+    const row = e.target.closest('.stock-row');
+    if (!row || row.classList.contains('active')) return;
+
+    document.querySelectorAll('.stock-row').forEach(r => r.classList.remove('active'));
+    row.classList.add('active');
+    loadDetailChart(row.dataset.symbol);
+});
+
+/* [실행 흐름]
+   행 자체를 클릭하면 차트 상세 페이지로 이동합니다.
+   하트 버튼 클릭은 위 이벤트에서 처리되므로 여기서는 무시합니다. */
+document.getElementById('stockTableBody').addEventListener('click', function (e) {
+    if (e.target.closest('.like-btn')) return;
+    const row = e.target.closest('.stock-row');
+    if (!row) return;
+
+    const symbol = row.dataset.symbol;
+    addToRecent(symbol);
+    location.href = '/coin/chart?symbol=' + symbol;
+});
+
 let currentDetailSymbol = null;
 
+/**
+ * [함수 선언부 읽기]
+ * async function loadDetailChart(symbol)
+ * 선택된 코인의 주봉 데이터를 가져와 우측 상세 패널을 갱신합니다.
+ *
+ * [실행 흐름]
+ * 1. Bitget 주봉 캔들을 fetch합니다.
+ * 2. 종가/거래량 배열을 만들고 SVG 좌표로 변환합니다.
+ * 3. detailChartArea에 SVG 차트를 삽입합니다.
+ * 4. detailName/detailPrice/detailChange 등 JSP의 id 요소를 업데이트합니다.
+ *
+ * @param {string} symbol Bitget 코인 심볼
+ * @return {Promise<void>} 상세 패널 DOM을 갱신합니다.
+ */
 async function loadDetailChart(symbol) {
     currentDetailSymbol = symbol;
     const ticker = symbol.replace(/USDT$/, '').replace(/USDC$/, '') || symbol;
@@ -319,6 +414,7 @@ async function loadDetailChart(symbol) {
     const xOf = i => padL + (i / (prices.length - 1)) * (W - padL - padR);
     const yOf = p => padTop + chartH - ((Math.log(p) - logMin) / logRange) * chartH;
 
+    // [콜백 읽기] prices.map의 p는 종가, i는 순번입니다. 각 가격을 SVG polyline의 "x,y" 문자열로 바꿉니다.
     const linePoints = prices.map((p, i) => `${xOf(i).toFixed(1)},${yOf(p).toFixed(1)}`).join(' ');
     const fillPoints = linePoints + ` ${xOf(prices.length - 1).toFixed(1)},${(padTop + chartH).toFixed(1)} ${padL},${(padTop + chartH).toFixed(1)}`;
 
@@ -326,7 +422,7 @@ async function loadDetailChart(symbol) {
     const color = isUp ? '#F04452' : '#2563EB';
     const fillId = 'grad-' + symbol.replace(/[^a-zA-Z0-9]/g, '');
 
-    // 볼륨 바 (회색)
+    // [코드 읽기] 거래량 배열을 SVG rect 문자열로 바꿔 차트 하단 막대 그래프를 만듭니다.
     const barW = Math.max(1, (W - padL - padR) / prices.length - 1);
     const volBars = vols.map((v, i) => {
         const x = xOf(i) - barW / 2;
@@ -337,6 +433,7 @@ async function loadDetailChart(symbol) {
 
     const labelIdxs = [0, Math.floor(prices.length / 2), prices.length - 1];
 
+    // [DOM 연결 읽기] detailChartArea의 기존 내용을 새 SVG 문자열로 교체합니다.
     area.innerHTML = `
         <svg width="100%" height="calc(100% - 18px)" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="display:block">
             <defs>
@@ -351,17 +448,20 @@ async function loadDetailChart(symbol) {
         </svg>
         <div style="display:flex;justify-content:space-between;padding:2px 8px 0;font-size:12px;color:#555;">
             ${labelIdxs.map(i => {
-                const d = new Date(candles[i].ts);
-                return `<span>${d.getFullYear() % 100}년 ${d.getMonth() + 1}월</span>`;
-            }).join('')}
+        const d = new Date(candles[i].ts);
+        return `<span>${d.getFullYear() % 100}년 ${d.getMonth() + 1}월</span>`;
+    }).join('')}
         </div>`;
 
     document.getElementById('detailEmpty').style.display = 'none';
     document.getElementById('detailBody').style.display = 'block';
+
+    const wlBtn = document.getElementById('detail-watchlist-btn');
+    if (wlBtn) wlBtn.classList.toggle('active', getWatchlist().includes(symbol));
     document.getElementById('detailName').textContent = ticker;
     document.getElementById('detailSub').textContent = symbol.endsWith('USDC') ? ticker + ' / USDC' : ticker + ' / USDT';
 
-    // 로고
+    // [실행 흐름] 이미지 로딩에 실패하면 로고 대신 티커 앞 3글자를 원형 배경 안에 표시합니다.
     const logoWrap = document.getElementById('detailLogoWrap');
     const logoImg = document.getElementById('detailLogoImg');
     const logoUrl = logoMap[ticker] || 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/' + ticker.toLowerCase() + '.png';
@@ -386,7 +486,7 @@ async function loadDetailChart(symbol) {
 
     const t = allTickers.find(t => t.symbol === symbol);
     if (t) {
-        const change = parseFloat(t.change24h) * 100;
+        const change = currentTimeFilter === '1일' ? parseFloat(t.change24h) * 100 : calcChange(t);
         const sign = change >= 0 ? '+' : '';
         const cls = change >= 0 ? 'up' : 'down';
         document.getElementById('detailPrice').textContent = parseFloat(t.lastPr).toLocaleString() + ' USDT';
@@ -394,118 +494,155 @@ async function loadDetailChart(symbol) {
         changeEl.textContent = sign + change.toFixed(2) + '%';
         changeEl.className = 'hc-main-pnl ' + cls;
     }
+
+    connectChat(symbol);
 }
 
-document.getElementById('stockTableBody').addEventListener('click', function (e) {
-    if (e.target.closest('.like-btn')) return;
-    const row = e.target.closest('.stock-row');
-    if (!row) return;
-    document.querySelectorAll('.stock-row').forEach(r => r.classList.remove('active'));
-    row.classList.add('active');
-    loadDetailChart(row.dataset.symbol);
-});
+async function initializeCoinList() {
+    const [, data] = await Promise.all([loadLogoMap(), loadTickers()]);
+    const filtered = data
+        .filter(t => t.symbol.endsWith('USDT') || t.symbol.endsWith('USDC'))
+        .sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume));
+
+    allTickers = filtered;
+    renderIndex = 0;
+    renderTable(allTickers.slice(0, PAGE_SIZE));
+    renderIndex = PAGE_SIZE;
+    connectListWs(allTickers.slice(0, PAGE_SIZE).map(d => d.symbol));
+
+    if (allTickers.length === 0) return;
+
+    const firstRow = document.querySelector('#stockTableBody .stock-row');
+    if (firstRow) firstRow.classList.add('active');
+    loadDetailChart(allTickers[0].symbol);
+}
 
 /* ====================================================
-   커뮤니티 댓글 무한스크롤 (목업)
+   실시간 댓글 - WebSocket(STOMP)
    ==================================================== */
-const MOCK_COMMENTS = [
-    { name: '오니들마미',   color: '#4caf50', time: '2분',  text: '최회장님 이렇게 긴 파격세일기간은 원하지않습니다' },
-    { name: '홈그리',       color: '#2196f3', time: '3분',  text: 'tsmc시총은 따라잡겠지 아몰랑' },
-    { name: '사버지',       color: '#78909c', time: '7분',  text: '주식은 공포에 사라', badge: '1억대 자산가' },
-    { name: '김하은여신',   color: '#e53935', time: '8분',  text: '6시지나고 급등예상!' },
-    { name: '지리산범고래', color: '#8d6e63', time: '6분',  text: '하닉 실적발표 나왔네요 ^^ 월요일 떡상각입니다~ 다들 얼릉 탑승 하세요', badge: '1억대 자산가' },
-    { name: '이민준',       color: '#7b1fa2', time: '11분', text: '저점 다진 것 같은데 슬슬 들어가봐야겠다' },
-    { name: '강민서',       color: '#f57c00', time: '14분', text: '볼린저 밴드 하단 터치했네요' },
-    { name: '정태양',       color: '#00897b', time: '18분', text: '나스닥이랑 같이 움직이는 중' },
-    { name: '윤하늘',       color: '#5e35b1', time: '22분', text: '단타는 좀 위험할듯 스윙으로 가야지' },
-    { name: '임도현',       color: '#c0392b', time: '25분', text: '거래량이 터지면 진짜 가는데...' },
-    { name: '송지우',       color: '#1565c0', time: '30분', text: '주봉 차트 보니까 아직 추세 살아있음' },
-    { name: '박민재',       color: '#2e7d32', time: '33분', text: 'RSI 과매도 구간이에요', badge: '5천만대 자산가' },
-    { name: '최유진',       color: '#6d4c41', time: '37분', text: '고래들이 쓸어담는 중 ㅋㅋ' },
-    { name: '한지원',       color: '#37474f', time: '41분', text: '지지선 깨지면 손절각 봐야할 듯' },
-    { name: '노을빛',       color: '#ad1457', time: '45분', text: '매물대 돌파하면 한 번 가즈아~' },
-    { name: '김태현',       color: '#0277bd', time: '48분', text: '이 가격이면 충분히 살만하지 않나요?' },
-    { name: '박서연',       color: '#558b2f', time: '51분', text: '단기 저항선 돌파 시도 중이에요' },
-    { name: '최준호',       color: '#6a1b9a', time: '55분', text: '저도 조금 담았습니다 같이 가시죠' },
-    { name: '이지은',       color: '#d84315', time: '58분', text: '차트 패턴 좋은데 눌림 한 번 더 올 수도', badge: '1억대 자산가' },
-    { name: '황민철',       color: '#00695c', time: '1시간', text: '거래소별 차이 확인해보니까 여기가 제일 싸네요' },
-    { name: '신보람',       color: '#4527a0', time: '1시간', text: '롱 포지션 잡았습니다 ㄱㄱ' },
-    { name: '류재원',       color: '#bf360c', time: '1시간', text: '전고점 돌파하면 진짜 신고가 가나요?' },
-    { name: '안소희',       color: '#01579b', time: '1시간', text: '너무 빨리 올라온 느낌인데 조정 한 번 오면 살 예정' },
-    { name: '조민우',       color: '#1b5e20', time: '1시간', text: '고점 대비 얼마나 빠진 건지 알아요?', badge: '5천만대 자산가' },
-    { name: '윤지수',       color: '#880e4f', time: '1시간', text: '눌리면 더 살 예정 기다리는 중' },
-    { name: '임현준',       color: '#3e2723', time: '2시간', text: '이 종목 커뮤니티 사람들 다 같이 물린 건지 ㅋㅋ' },
-    { name: '강예빈',       color: '#263238', time: '2시간', text: '기관이 매수하고 있다는데 호재 아닌가요', badge: '1억대 자산가' },
-    { name: '정성훈',       color: '#827717', time: '2시간', text: '이거 들어간 거 후회 없음 장기로 갑니다' },
-    { name: '배지현',       color: '#e65100', time: '2시간', text: '알트 시즌 올 때 이거 제일 먼저 튄다' },
-    { name: '오태양',       color: '#4a148c', time: '2시간', text: '매집 구간인 것 같아서 분할 매수 중' },
-    { name: '한수진',       color: '#006064', time: '2시간', text: '비트 눌릴 때마다 얘는 버텨주네요 신기' },
-    { name: '권도윤',       color: '#b71c1c', time: '3시간', text: '지금이라도 들어가야 하나 고민됩니다' },
-    { name: '문예진',       color: '#212121', time: '3시간', text: '반등 구간에서 단타 쳤다가 수익 냄 ㅎ', badge: '5천만대 자산가' },
-    { name: '서민혁',       color: '#1a237e', time: '3시간', text: '차트가 너무 예쁘다 이건 가야지' },
-    { name: '채소희',       color: '#33691e', time: '3시간', text: '주봉 기준으로 보면 아직 충분히 상승 여력 있음' },
-    { name: '김준서',       color: '#4e342e', time: '3시간', text: 'MACD 골든크로스 났어요 진입 신호!', badge: '1억대 자산가' },
-    { name: '박하연',       color: '#880e4f', time: '4시간', text: '개인적으로 이번 사이클 가장 기대되는 코인' },
-    { name: '이찬호',       color: '#0d47a1', time: '4시간', text: '전 이미 평단 훨씬 아래라서 느긋하게 존버 중' },
-    { name: '정유나',       color: '#37474f', time: '4시간', text: '세력이 모아가고 있는 거 보임 바닥 다지는 중' },
-    { name: '홍성민',       color: '#558b2f', time: '4시간', text: '저 이거 1년째 홀딩 중인데 이제 빛 보나요 ㅠ' },
-    { name: '최아름',       color: '#6a1b9a', time: '5시간', text: '여기서 손절하면 무조건 오른다는 법칙 있잖아요 ㅋㅋ' },
-    { name: '남도현',       color: '#004d40', time: '5시간', text: '전략적으로 분할 매수 완료 이제 기다립니다', badge: '1억대 자산가' },
-    { name: '양지원',       color: '#bf360c', time: '5시간', text: '비트 5만불 때부터 담은 사람인데 지금도 괜찮음' },
-    { name: '고민준',       color: '#283593', time: '5시간', text: '커뮤니티 분위기 보니까 바닥 맞는 것 같아요' },
-    { name: '전소윤',       color: '#ad1457', time: '5시간', text: '기다림이 답이죠 저도 장기 홀드' },
-];
+let listStompClient = null;
 
-let chatPage = 0;
-const CHAT_PAGE_SIZE = 10;
-let chatLoading = false;
+function connectChat(symbol) {
+    if (listStompClient && listStompClient.connected) {
+        listStompClient.disconnect();
+    }
 
-function makeChatMsg(c) {
-    const badge = c.badge ? `<span class="cm-badge">${c.badge}</span>` : '';
-    return `<div class="chat-msg">
-        <div class="cm-avatar-col">
-            <div class="cm-avatar" style="background:${c.color};">${c.name[0]}</div>
-            <span class="cm-rank">주주</span>
-        </div>
-        <div class="cm-content">
-            <div class="cm-meta"><span class="cm-name">${c.name}</span>${badge}<span class="cm-time">${c.time}</span></div>
-            <div class="cm-text">${c.text}</div>
-        </div>
-    </div>`;
+    const socket = new SockJS('/ws-coin');
+    listStompClient = Stomp.over(socket);
+    listStompClient.debug = null;
+
+    listStompClient.connect({}, () => {
+        listStompClient.subscribe('/topic/coin/' + symbol, msg => {
+            const dto = JSON.parse(msg.body);
+            appendListChatMsg(dto.username, dto.content, dto.createdAt, true, dto.imageUrl);
+        });
+        loadListChatHistory(symbol);
+    });
 }
 
-function loadMoreComments() {
-    if (chatLoading) return;
+function loadListChatHistory(symbol) {
+    fetch('/coin/comments/' + symbol)
+        .then(r => r.json())
+        .then(list => {
+            const msgs = document.getElementById('chat-messages');
+            msgs.innerHTML = '';
+            if (!list.length) {
+                msgs.innerHTML = '<div class="chat-empty"><span class="chat-empty-icon">💬</span><span>첫 댓글을 남겨보세요</span></div>';
+                return;
+            }
+            list.slice().reverse().forEach(dto => appendListChatMsg(dto.username, dto.content, dto.createdAt, false, dto.imageUrl));
+            msgs.scrollTop = msgs.scrollHeight;
+        });
+}
+
+function cmAvatarColor(name) {
+    const palette = ['#4caf50','#2196f3','#e91e63','#ff9800','#9c27b0','#00bcd4','#f44336','#3f51b5','#009688','#795548'];
+    let h = 0;
+    for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) & 0x7fffffff;
+    return palette[h % palette.length];
+}
+
+function cmRelTime(createdAt) {
+    if (!createdAt) return '';
+    const diff = Date.now() - new Date(createdAt).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return '방금';
+    if (m < 60) return m + '분';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + '시간';
+    return Math.floor(h / 24) + '일';
+}
+
+function appendListChatMsg(username, content, createdAt, scroll = true, imageUrl = null) {
     const msgs = document.getElementById('chat-messages');
     if (!msgs) return;
-    const start = chatPage * CHAT_PAGE_SIZE;
-    const slice = MOCK_COMMENTS.slice(start % MOCK_COMMENTS.length, (start % MOCK_COMMENTS.length) + CHAT_PAGE_SIZE)
-        .concat(MOCK_COMMENTS.slice(0, Math.max(0, ((start % MOCK_COMMENTS.length) + CHAT_PAGE_SIZE) - MOCK_COMMENTS.length)));
-    chatLoading = true;
-    setTimeout(() => {
-        const empty = msgs.querySelector('.chat-empty');
-        if (empty) empty.remove();
-        slice.forEach(c => msgs.insertAdjacentHTML('beforeend', makeChatMsg(c)));
-        chatPage++;
-        chatLoading = false;
-    }, 300);
+    const empty = msgs.querySelector('.chat-empty');
+    if (empty) empty.remove();
+
+    const safe = s => s.replace(/</g, '&lt;');
+    const color = cmAvatarColor(username);
+    const initial = username.charAt(0).toUpperCase();
+    const time = cmRelTime(createdAt);
+    const MAX = 100;
+    const isTrunc = content.length > MAX;
+    const preview = isTrunc ? safe(content.slice(0, MAX)) + '...' : safe(content);
+    const full = safe(content);
+    const imgHtml = imageUrl ? '<img class="cm-image" src="' + imageUrl + '" alt="" onclick="cmOpenImage(this)">' : '';
+
+    const div = document.createElement('div');
+    div.className = 'chat-msg';
+    div.innerHTML =
+        '<div class="cm-left">' +
+            '<div class="cm-avatar" style="background:' + color + '">' + initial + '</div>' +
+            '<span class="cm-rank">주주</span>' +
+        '</div>' +
+        '<div class="cm-right">' +
+            '<div class="cm-meta">' +
+                '<span class="cm-name">' + safe(username) + '</span>' +
+                '<span class="cm-time">' + time + '</span>' +
+            '</div>' +
+            '<div class="cm-text" data-full="' + full.replace(/"/g, '&quot;') + '" data-trunc="' + (isTrunc ? '1' : '0') + '">' +
+                preview +
+                (isTrunc ? ' <button class="cm-more-btn" onclick="cmToggleMore(this)">더 보기</button>' : '') +
+            '</div>' +
+            imgHtml +
+        '</div>';
+    msgs.appendChild(div);
+    if (scroll) msgs.scrollTop = msgs.scrollHeight;
 }
 
+function cmToggleMore(btn) {
+    const textEl = btn.parentElement;
+    const full = textEl.dataset.full;
+    textEl.innerHTML = full + ' <button class="cm-more-btn" onclick="cmToggleLess(this)">접기</button>';
+}
+
+function cmToggleLess(btn) {
+    const textEl = btn.parentElement;
+    const full = textEl.dataset.full;
+    const MAX = 100;
+    const preview = full.slice(0, MAX) + '...';
+    textEl.innerHTML = preview + ' <button class="cm-more-btn" onclick="cmToggleMore(this)">더 보기</button>';
+}
+
+
 document.addEventListener('DOMContentLoaded', () => {
+    initializeCoinList();
+
     const panel = document.getElementById('detailPanel');
     if (panel) {
-        panel.addEventListener('scroll', function() {
-            if (this.scrollTop + this.clientHeight >= this.scrollHeight - 100) loadMoreComments();
-        });
         panel.addEventListener('mouseenter', () => panel.classList.add('scrollbar-visible'));
         panel.addEventListener('mouseleave', () => panel.classList.remove('scrollbar-visible'));
+    }
+
+    const chatMsgs = document.getElementById('chat-messages');
+    if (chatMsgs) {
+        chatMsgs.addEventListener('mouseenter', () => chatMsgs.classList.add('scrollbar-visible'));
+        chatMsgs.addEventListener('mouseleave', () => chatMsgs.classList.remove('scrollbar-visible'));
     }
     const tableWrap = document.querySelector('.stock-table-wrap');
     if (tableWrap) {
         tableWrap.addEventListener('mouseenter', () => tableWrap.classList.add('scrollbar-visible'));
         tableWrap.addEventListener('mouseleave', () => tableWrap.classList.remove('scrollbar-visible'));
     }
-    loadMoreComments();
 });
-
-

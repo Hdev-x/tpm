@@ -1,6 +1,7 @@
 package com.tj.app.market.coin;
 
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import java.util.List;
 
 @Mapper
@@ -63,4 +64,10 @@ public interface CoinMapper {
      * @return 주문 내역 목록
      */
     List<CoinOrdersDTO> getOrderList(String username) throws Exception;
+
+    List<CoinOrdersDTO> getPendingOrders(String username) throws Exception;
+
+    void updateOrderStatus(CoinOrdersDTO order) throws Exception;
+
+    void cancelPendingByCoin(@Param("username") String username, @Param("coinCode") String coinCode) throws Exception;
 }

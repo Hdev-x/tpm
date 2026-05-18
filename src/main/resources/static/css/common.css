@@ -41,10 +41,9 @@ body {
     background: var(--bg);
     color: var(--text);
     font-size: 16px;
+    height: 100vh;
+    overflow: hidden;
     font-variant-numeric: tabular-nums;
-    height: auto !important;
-    min-height: 100vh !important;
-    overflow-y: auto !important; 
 }
 
 
@@ -198,9 +197,8 @@ nav {
    ==================================================== */
 .app-wrapper {
     display: flex;
-    height: auto !important;
-    min-height: 100vh !important;
-    overflow: visible !important;
+    height: 100vh;
+    overflow: hidden;
 }
 
 .page {
@@ -208,10 +206,9 @@ nav {
     min-width: 0;
     display: flex;
     flex-direction: column;
-    height: auto !important;
-    min-height: 100vh !important;
-    overflow: visible !important;
+    overflow: hidden;
 }
+
 
 /* ====================================================
    SIDEBAR PANEL - 우측 슬라이드 사이드바
@@ -1160,18 +1157,4 @@ nav {
 .btn-delete:hover {
     opacity: 0.9;
     box-shadow: 0 4px 12px rgba(240, 68, 82, 0.3);
-}
-
-::-webkit-scrollbar {
-    width: 8px; /* 얇고 세련된 두께 */
-}
-::-webkit-scrollbar-track {
-    background: var(--bg); /* 대시보드 배경색과 완벽 통일 */
-}
-::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1); /* 은은한 다크 그레이 휠 바 */
-    border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: rgba(255, 255, 255, 0.2); /* 마우스 올리면 살짝 밝아짐 */
 }

@@ -74,8 +74,8 @@ currentBtcPrice = typeof currentBtcPrice !== 'undefined' ? currentBtcPrice : 114
 
 function generateBaseHistory(basePrice, variance) {
     const data = [];
-    const timeNow = Math.floor(Date.now() / 1000);
-    for (let i = 20; i >= 0; i--) {
+    const timeNow = Math.floor(Date.now() / 1000) + 32400;
+    for (let i = 120; i >= 0; i--) {
         data.push({
             time: timeNow - (i * 60),
             value: basePrice + (Math.random() * variance - (variance / 2))
@@ -161,7 +161,7 @@ async function initDashboardData() {
    6. 실시간 동기화 엔진 (실전 시세 반영)
    ===================================================== */
 async function startRealTimeEngine() {
-    const currentTime = Math.floor(Date.now() / 1000);
+    const currentTime = Math.floor(Date.now() / 1000) + 32400;
 
     // 코스피 실시간 루틴 (백엔드가 포워딩한 네이버 실전 주가 반영)
     try {
@@ -265,36 +265,63 @@ function loadMarketHotTrends() {
     const rankListTbody = document.getElementById("market-rank-list");
     if(!rankListTbody) return;
     
-    const mockTrends = [
-        { rank: 1, name: "삼성전자", price: "76,200", rate: "+3.45%", isUp: true },
-        { rank: 2, name: "SK하이닉스", price: "182,300", rate: "+2.81%", isUp: true },
-        { rank: 3, name: "카카오", price: "48,900", rate: "-1.75%", isUp: false },
-        { rank: 4, name: "현대차", price: "241,500", rate: "+1.20%", isUp: true },
-        { rank: 5, name: "네이버", price: "178,200", rate: "-0.95%", isUp: false }
-    ];
+    // 💡 전역 변수로 관리 중인 모드('UP' 또는 'DOWN')를 동적으로 읽어옵니다.
+    // 만약 변수가 안 잡혀있다면 기본값 'UP'으로 방어합니다.
+    const mode = typeof currentRankMode !== 'undefined' ? currentRankMode : 'UP';
     
-    rankListTbody.innerHTML = "";
-    
-	mockTrends.forEach(stock => {
-	    const row = document.createElement("tr");
-	    row.style.borderBottom = "1px solid #222634";
-	    row.style.cursor = "pointer";
-	    
-	    row.addEventListener("click", () => {
-	        loadStockNews(stock.name);
-	    });
-	    
-	    const rateColor = stock.isUp ? "#f23645" : "#2962ff";
-	    
-	    // 💡 외부 js 파일 스펙에 맞게 역슬래시(\) 없는 순정 템플릿 리터럴로 교정
-	    row.innerHTML = `
-	        <td style="padding: 12px 4px; font-weight: bold; color: #848e9c;">${stock.rank}</td>
-	        <td style="padding: 12px 4px; font-weight: bold; color: #e9ecf0; text-align: left;">${stock.name}</td>
-	        <td style="padding: 12px 4px; text-align: right; color: #e9ecf0;">${stock.price}</td>
-	        <td style="padding: 12px 4px; text-align: right; font-weight: bold; color: ${rateColor};">${stock.rate}</td>
-	    `;
-	    rankListTbody.appendChild(row);
-	});
+    // 📡 방금 컨트롤러에 새로 뚫은 따끈따끈한 실전 랭킹 API 창구를 직격합니다!
+    fetch(`/stock/rank?mode=${mode}`)
+        .then(response => {
+            if (!response.ok) throw new Error("시세 엔진 통신 대기");
+            return response.json();
+        })
+        .then(data => {
+            rankListTbody.innerHTML = "";
+            
+            // 🛡️ 백엔드 캐시가 아직 준비되지 않았거나 비어있을 때 예외 가드
+            if (!data || data.length === 0) {
+                rankListTbody.innerHTML = `<tr><td colspan="4" style="color: #848e9c; text-align: center; padding: 20px 0;">실시간 데이터를 파싱 중입니다...</td></tr>`;
+                return;
+            }
+            
+            // 백엔드 자바 스트림이 정렬해서 준 최상위 5개 종목을 그대로 순회 렌더링
+            data.forEach((stock, index) => {
+                const row = document.createElement("tr");
+                row.style.borderBottom = "1px solid #222634";
+                row.style.cursor = "pointer";
+                
+                // 🔴 [한투 순정 DTO 파이프라인] 백엔드 StockListOutput 필드명 매싱 완료!
+                const stockName = stock.hts_kor_isnm; // HTS 한글 종목명
+                const priceStr = stock.stck_prpr;     // 주식 현재가 (문자열 혹은 숫자)
+                const rateStr = stock.prdy_ctrt;      // 전일 대비 등락률
+                
+                // 현재가 포맷팅 (콤마 추가)
+                const price = typeof priceStr !== 'undefined' ? parseFloat(priceStr).toLocaleString() : '-';
+                
+                // 부호 결정을 위한 변수 치환
+                const rate = parseFloat(rateStr);
+                const isUp = rate >= 0;
+                const rateColor = isUp ? "#f23645" : "#2962ff";
+                const sign = isUp ? "+" : ""; // 백엔드가 부호를 안 붙여줬을 때를 대비한 가드
+                
+                // 종목 클릭 시 해당 종목 실시간 네이버 뉴스 수급 링크 연동
+                row.addEventListener("click", () => {
+                    if (typeof loadStockNews === "function") loadStockNews(stockName);
+                });
+                
+                // 외부 js 파일 전용 순정 템플릿 리터럴 렌더링
+                row.innerHTML = `
+                    <td style="padding: 12px 4px; font-weight: bold; color: #848e9c;">${index + 1}</td>
+                    <td style="padding: 12px 4px; font-weight: bold; color: #e9ecf0; text-align: left;">${stockName}</td>
+                    <td style="padding: 12px 4px; text-align: right; color: #e9ecf0;">${price}</td>
+                    <td style="padding: 12px 4px; text-align: right; font-weight: bold; color: ${rateColor};">${sign}${rateStr}%</td>
+                `;
+                rankListTbody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.warn("⚠️ 백엔드 실시간 랭킹 서블릿 통신 대기 중...", error);
+        });
 }
 
 // 최초 구동부 연동

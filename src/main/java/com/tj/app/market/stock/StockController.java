@@ -200,4 +200,52 @@ public class StockController {
             return 0;
         }
     }
+    
+    @GetMapping("/rank")
+    public ResponseEntity<?> getMarketRank(@RequestParam(value = "mode", defaultValue = "UP") String mode) {
+        
+        List<com.tj.app.market.stock.StockListDTO.StockListOutput> allStocks = stockService.getCachedTop100(); 
+        
+        // 🛡️ 1단계 방어: 리스트 자체가 비어있거나 지수 1건만 딸랑 있으면 500 에러 없이 안전하게 빈 배열 리턴
+        if (allStocks == null || allStocks.size() <= 1) {
+            return ResponseEntity.ok(List.of()); 
+        }
+
+        try {
+            List<com.tj.app.market.stock.StockListDTO.StockListOutput> rankedList = allStocks.stream()
+                // 🛡️ 2단계 방어: 코스피 지수는 랭킹에서 무조건 칼같이 드롭
+                .filter(stock -> stock.getHts_kor_isnm() != null && !stock.getHts_kor_isnm().equals("코스피"))
+                // 🛡️ 3단계 방어: 등락률 필드가 null이거나 완전히 비어있는 녀석은 정렬 대상에서 필터링
+                .filter(stock -> stock.getPrdy_ctrt() != null && !stock.getPrdy_ctrt().trim().isEmpty()) 
+                .sorted((s1, s2) -> {
+                    try {
+                        // 특수 기호 정제 가드
+                        String rateStr1 = s1.getPrdy_ctrt().replace("+", "").replace("%", "").trim();
+                        String rateStr2 = s2.getPrdy_ctrt().replace("+", "").replace("%", "").trim();
+                        
+                        double rate1 = Double.parseDouble(rateStr1);
+                        double rate2 = Double.parseDouble(rateStr2);
+                        
+                        if ("UP".equalsIgnoreCase(mode)) {
+                            return Double.compare(rate2, rate1); // 📈 급상승 내림차순
+                        } else {
+                            return Double.compare(rate1, rate2); // 📉 급하락 오름차순
+                        }
+                    } catch (Exception e) {
+                        // 🛡️ 4단계 내부 방어: 파싱 중 에러 발생 시 예외를 던지지 않고 무시하여 500 발생 원천 봉쇄
+                        return 0; 
+                    }
+                })
+                .limit(5)
+                .toList();
+
+            return ResponseEntity.ok(rankedList);
+            
+        } catch (Exception e) {
+            // 혹시 모를 스트림 전체 예외가 발생하더라도 빈 배열로 안전하게 가드
+            return ResponseEntity.ok(List.of());
+        }
+    }
+    
+    
 }

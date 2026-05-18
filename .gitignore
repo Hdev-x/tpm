@@ -2,6 +2,7 @@
 .DS_Store
 .claude/
 application-dev.properties
+application.properties
 
 HELP.md
 .gradle

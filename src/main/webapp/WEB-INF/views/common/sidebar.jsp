@@ -2,11 +2,23 @@
 <div class="sidebar-panel" id="sidebar-panel">
 
     <div class="sidebar-header">
-        <span id="sidebar-title">내 투자</span>
-        <div class="sidebar-header-btns">
-            <button class="sb-fold-btn" onclick="closeSidebar()">접기</button>
-            <button class="sb-expand-btn">&gt;&gt;</button>
+        <div style="display:flex; align-items:baseline; gap:8px;">
+            <span id="sidebar-title">내 투자</span>
+            <span id="sidebar-title-sub" style="display:none; font-size:14px; color:var(--text2); font-weight:300;"></span>
         </div>
+        <div class="sidebar-header-btns">
+            <div class="cur-switch" id="cur-switch" onclick="setCurrency(currencyMode === 'usd' ? 'krw' : 'usd')">
+                <span class="cur-switch-label">$</span>
+                <span class="cur-switch-label">원</span>
+                <div class="cur-switch-thumb"></div>
+            </div>
+        </div>
+        <script>(function(){
+            var s = document.getElementById('cur-switch');
+            if(localStorage.getItem('currencyMode')==='krw') s.classList.add('krw');
+            var tab = localStorage.getItem('sidebar');
+            if(!tab || tab === 'invest') s.style.display = 'none';
+        })();</script>
     </div>
 
     <!-- ① 내 투자 섹션 -->
@@ -116,7 +128,7 @@
                     <span>거래 내역이 없습니다.</span>
                 </div>
                 <table class="sb-table" style="display:none">
-                    <thead><tr><th>일시</th><th>유형</th><th>가격</th><th>수량</th><th>금액</th></tr></thead>
+                    <thead><tr><th>일시</th><th>유형</th><th>종목</th><th>가격</th><th>수량</th><th>금액</th></tr></thead>
                     <tbody id="stock-history-body"></tbody>
                 </table>
             </div>
@@ -147,14 +159,11 @@
                 </table>
             </div>
             <div class="sb-content" id="tab-coin-history" style="display:none">
-                <div class="sb-empty">
+                <div class="sb-empty" id="history-empty">
                     <span class="sb-empty-icon">🕐</span>
                     <span>거래 내역이 없습니다.</span>
                 </div>
-                <table class="sb-table" id="history-table" style="display:none">
-                    <thead><tr><th>일시</th><th>유형</th><th>가격</th><th>수량</th><th>금액</th></tr></thead>
-                    <tbody id="history-body"></tbody>
-                </table>
+                <div class="holding-cards" id="history-cards"></div>
             </div>
         </div>
 
@@ -162,12 +171,6 @@
 
     <!-- ② 관심 섹션 -->
     <div class="sidebar-section" id="sidebar-interest" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
-
-        <!-- 통화 토글 -->
-        <div class="si-currency-bar">
-            <button class="si-cur-btn active">$</button>
-            <button class="si-cur-btn">원</button>
-        </div>
 
         <!-- AI 배너 -->
         <div class="si-ai-banner">
@@ -192,6 +195,20 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
                     순서 변경
                 </button>
+                <div class="wl-sort-wrap" id="wl-sort-wrap-all">
+                    <button class="wl-sort-btn" onclick="toggleSortDropdown('all')">
+                        <span id="wl-sort-label-all">등록순</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="wl-sort-dropdown" id="wl-sort-dropdown-all">
+                        <div class="wl-sort-item active" onclick="setWatchlistSort('등록순', 'all')">등록순</div>
+                        <div class="wl-sort-item" onclick="setWatchlistSort('이름순', 'all')">이름순</div>
+                        <div class="wl-sort-item" onclick="setWatchlistSort('등락률 높은순', 'all')">등락률 높은순</div>
+                        <div class="wl-sort-item" onclick="setWatchlistSort('등락률 낮은순', 'all')">등락률 낮은순</div>
+                        <div class="wl-sort-item" onclick="setWatchlistSort('가격 높은순', 'all')">가격 높은순</div>
+                        <div class="wl-sort-item" onclick="setWatchlistSort('가격 낮은순', 'all')">가격 낮은순</div>
+                    </div>
+                </div>
             </div>
             <div class="si-all-container" id="si-all-container">
 
@@ -249,26 +266,7 @@
                             <span class="si-group-main">코인</span>
                         </div>
                     </div>
-                    <div class="si-stock-list">
-                        <div class="si-stock-item">
-                            <div class="si-logo" style="background:#F7931A;">₿</div>
-                            <span class="si-stock-name">비트코인</span>
-                            <div class="si-stock-price">
-                                <span class="si-price">135,420,000원</span>
-                                <span class="si-change up">+2,100,000원 (1.57%)</span>
-                            </div>
-                            <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-                        </div>
-                        <div class="si-stock-item">
-                            <div class="si-logo" style="background:#627EEA;">E</div>
-                            <span class="si-stock-name">이더리움</span>
-                            <div class="si-stock-price">
-                                <span class="si-price">3,812,000원</span>
-                                <span class="si-change down">-45,000원 (1.17%)</span>
-                            </div>
-                            <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-                        </div>
-                    </div>
+                    <div class="si-stock-list" id="watchlist-coin-all-list"></div>
                 </div>
 
             </div>
@@ -325,51 +323,125 @@
 
         <!-- 코인 탭 -->
         <div class="si-tab-content" id="interest-coin" style="display:none">
-            <div class="si-group-title">
+            <div class="si-all-header" style="justify-content:flex-end">
+                <div class="wl-sort-wrap" id="wl-sort-wrap-coin">
+                    <button class="wl-sort-btn" onclick="toggleSortDropdown('coin')">
+                        <span id="wl-sort-label-coin">등록순</span>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                    </button>
+                    <div class="wl-sort-dropdown" id="wl-sort-dropdown-coin">
+                        <div class="wl-sort-item active" onclick="setWatchlistSort('등록순', 'coin')">등록순</div>
+                        <div class="wl-sort-item" onclick="setWatchlistSort('이름순', 'coin')">이름순</div>
+                        <div class="wl-sort-item" onclick="setWatchlistSort('등락률 높은순', 'coin')">등락률 높은순</div>
+                        <div class="wl-sort-item" onclick="setWatchlistSort('등락률 낮은순', 'coin')">등락률 낮은순</div>
+                        <div class="wl-sort-item" onclick="setWatchlistSort('가격 높은순', 'coin')">가격 높은순</div>
+                        <div class="wl-sort-item" onclick="setWatchlistSort('가격 낮은순', 'coin')">가격 낮은순</div>
+                    </div>
+                </div>
+            </div>
+            <div class="si-group-title" style="padding: 4px 14px 0;">
                 <span class="si-group-main">관심 코인</span>
             </div>
-            <div class="si-stock-list">
-                <div class="si-stock-item">
-                    <div class="si-logo" style="background:#F7931A;">₿</div>
-                    <span class="si-stock-name">비트코인</span>
-                    <div class="si-stock-price">
-                        <span class="si-price">135,420,000원</span>
-                        <span class="si-change up">+2,100,000원 (1.57%)</span>
-                    </div>
-                    <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-                </div>
-                <div class="si-stock-item">
-                    <div class="si-logo" style="background:#627EEA;">E</div>
-                    <span class="si-stock-name">이더리움</span>
-                    <div class="si-stock-price">
-                        <span class="si-price">3,812,000원</span>
-                        <span class="si-change down">-45,000원 (1.17%)</span>
-                    </div>
-                    <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-                </div>
-                <div class="si-stock-item si-add-btn">
-                    <div class="si-logo si-add-logo">+</div>
-                    <span class="si-stock-name">추가하기</span>
-                </div>
-            </div>
+            <div class="si-stock-list" id="watchlist-coin-list"></div>
         </div>
 
     </div>
 
     <!-- ③ 최근 본 섹션 -->
-    <div class="sidebar-section sb-content" id="sidebar-recent" style="display:none">
-        <div class="sb-empty">
-            <span class="sb-empty-icon">🕐</span>
-            <span>최근 본 종목이 없습니다.</span>
+    <div class="sidebar-section" id="sidebar-recent" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+
+        <div class="si-type-tabs">
+            <div class="si-type-tab active" onclick="switchRecentTab(this,'all')">전체</div>
+            <div class="si-type-tab" onclick="switchRecentTab(this,'stock')">주식</div>
+            <div class="si-type-tab" onclick="switchRecentTab(this,'coin')">코인</div>
         </div>
+
+        <!-- 전체 탭 -->
+        <div class="si-recent-tab" id="recent-tab-all" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+            <div class="si-all-header">
+                <span style="font-size:14px; color:var(--text3);">최근 본 종목</span>
+                <button class="wl-sort-btn" onclick="clearRecent('all')">전체 삭제</button>
+            </div>
+            <div style="overflow-y:auto; flex:1; padding-bottom:12px;">
+                <div class="si-all-group" id="recent-group-coin">
+                    <div class="si-group-title"><span class="si-group-main">코인</span></div>
+                    <div class="si-stock-list" id="recent-coin-all"></div>
+                </div>
+                <div class="si-all-group" id="recent-group-stock">
+                    <div class="si-group-title"><span class="si-group-main">주식</span></div>
+                    <div class="si-stock-list" id="recent-stock-all"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 주식 탭 -->
+        <div class="si-recent-tab" id="recent-tab-stock" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+            <div class="si-all-header">
+                <span style="font-size:12px; color:var(--text3);">최근 본 주식</span>
+                <button class="wl-sort-btn" onclick="clearRecent('stock')">전체 삭제</button>
+            </div>
+            <div class="si-stock-list" id="recent-stock-only" style="overflow-y:auto; flex:1; padding-bottom:12px;"></div>
+        </div>
+
+        <!-- 코인 탭 -->
+        <div class="si-recent-tab" id="recent-tab-coin" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+            <div class="si-all-header">
+                <span style="font-size:12px; color:var(--text3);">최근 본 코인</span>
+                <button class="wl-sort-btn" onclick="clearRecent('coin')">전체 삭제</button>
+            </div>
+            <div class="si-stock-list" id="recent-coin-only" style="overflow-y:auto; flex:1; padding-bottom:12px;"></div>
+        </div>
+
     </div>
 
     <!-- ④ 실시간 섹션 -->
-    <div class="sidebar-section sb-content" id="sidebar-live" style="display:none">
-        <div class="sb-empty">
-            <span class="sb-empty-icon">📡</span>
-            <span>실시간 데이터가 없습니다.</span>
+    <div class="sidebar-section" id="sidebar-live" style="display:none;">
+
+        <div class="si-type-tabs">
+            <div class="si-type-tab active" onclick="switchLiveTab(this,'all')">전체</div>
+            <div class="si-type-tab" onclick="switchLiveTab(this,'stock')">주식</div>
+            <div class="si-type-tab" onclick="switchLiveTab(this,'coin')">코인</div>
         </div>
+
+        <div class="live-filter-bar">
+            <div class="wl-sort-wrap">
+                <button class="wl-sort-btn live-filter-btn" onclick="toggleLiveDropdown('sort')">
+                    <span id="live-sort-label">거래대금</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="wl-sort-dropdown" id="live-sort-dd">
+                    <div class="wl-sort-item active" onclick="setLiveSort('거래대금')">거래대금</div>
+                    <div class="wl-sort-item" onclick="setLiveSort('급상승')">급상승</div>
+                    <div class="wl-sort-item" onclick="setLiveSort('급하락')">급하락</div>
+                </div>
+            </div>
+            <div class="wl-sort-wrap">
+                <button class="wl-sort-btn live-filter-btn" onclick="toggleLiveDropdown('time')">
+                    <span id="live-time-label">실시간</span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+                </button>
+                <div class="wl-sort-dropdown" id="live-time-dd">
+                    <div class="wl-sort-item active" onclick="setLiveTime('실시간')">실시간</div>
+                    <div class="wl-sort-item" onclick="setLiveTime('1일')">1일</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 전체 탭 -->
+        <div class="live-tab-panel" id="live-tab-all">
+            <div class="live-list" id="live-all-list"></div>
+        </div>
+
+        <!-- 주식 탭 -->
+        <div class="live-tab-panel" id="live-tab-stock" style="display:none;">
+            <div class="si-wl-empty" style="margin-top:40px;">준비 중입니다</div>
+        </div>
+
+        <!-- 코인 탭 -->
+        <div class="live-tab-panel" id="live-tab-coin" style="display:none;">
+            <div class="live-list" id="live-coin-list"></div>
+        </div>
+
     </div>
 
 </div>

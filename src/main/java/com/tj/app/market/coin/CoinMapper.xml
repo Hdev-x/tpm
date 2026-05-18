@@ -43,13 +43,29 @@
 
     <!-- 주문 내역 추가 -->
     <insert id="insertOrder">
-        INSERT INTO "COIN_ORDERS" ("USERNAME", "COIN_CODE", "ORDER_TYPE", "ORDER_PRICE", "ORDER_COUNT")
-        VALUES (#{username}, #{coinCode}, #{orderType}, #{orderPrice}, #{orderCount})
+        INSERT INTO "COIN_ORDERS" ("USERNAME", "COIN_CODE", "ORDER_TYPE", "ORDER_PRICE", "ORDER_COUNT", "AVG_PRICE", "STATUS", "TARGET_PRICE")
+        VALUES (#{username}, #{coinCode}, #{orderType}, #{orderPrice}, #{orderCount}, #{avgPrice}, #{status}, #{targetPrice})
     </insert>
 
-    <!-- 주문 내역 조회 -->
+    <!-- 주문 내역 조회 (체결 완료만) -->
     <select id="getOrderList" resultType="com.tj.app.market.coin.CoinOrdersDTO">
-        SELECT * FROM "COIN_ORDERS" WHERE "USERNAME" = #{username} ORDER BY "ORDER_DATE" DESC
+        SELECT * FROM "COIN_ORDERS" WHERE "USERNAME" = #{username} AND "STATUS" = 'COMPLETED' ORDER BY "ORDER_DATE" DESC
     </select>
+
+    <!-- 미체결 주문 조회 -->
+    <select id="getPendingOrders" resultType="com.tj.app.market.coin.CoinOrdersDTO">
+        SELECT * FROM "COIN_ORDERS" WHERE "USERNAME" = #{username} AND "STATUS" = 'PENDING' ORDER BY "ORDER_DATE" DESC
+    </select>
+
+    <!-- 주문 상태 업데이트 -->
+    <update id="updateOrderStatus">
+        UPDATE "COIN_ORDERS" SET "STATUS" = #{status} WHERE "ORDER_NO" = #{orderNo}
+    </update>
+
+    <!-- 특정 코인 미체결 주문 일괄 취소 -->
+    <update id="cancelPendingByCoin">
+        UPDATE "COIN_ORDERS" SET "STATUS" = 'CANCELLED'
+        WHERE "USERNAME" = #{username} AND "COIN_CODE" = #{coinCode} AND "STATUS" = 'PENDING'
+    </update>
 
 </mapper>

@@ -1,0 +1,474 @@
+/* =====================================================
+   coinCommunity.css
+   코인 커뮤니티 페이지 전용 스타일
+   ===================================================== */
+
+/* ── 페이지 헤더 (심볼 / 가격) ── */
+.cm-page-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.cm-page-symbol {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.cm-page-name {
+    font-size: 13px;
+    color: var(--text2);
+}
+
+.cm-page-price {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-left: auto;
+}
+
+.cm-page-change {
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.cm-page-change.up   { color: var(--up); }
+.cm-page-change.down { color: var(--down); }
+
+
+/* ── 3단 레이아웃 ── */
+.cm-page-layout {
+    padding: var(--gap) 50px 70px;
+    gap: 0;
+}
+
+
+/* ── 왼쪽: 뉴스 패널 ── */
+.cm-left-panel {
+    flex: 0 0 300px;
+    width: 300px;
+    min-width: 260px;
+    max-width: 360px;
+    flex-shrink: 0;
+    background: var(--bg);
+    overflow: hidden;
+}
+
+.cm-panel-title {
+    padding: 13px 16px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--surface);
+    letter-spacing: 0;
+}
+
+.cm-news-list {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.cm-news-item {
+    padding: 15px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.cm-news-item:last-child {
+    border-bottom: none;
+}
+
+.cm-news-item:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.cm-news-source {
+    font-size: 11px;
+    color: var(--text3);
+    font-weight: 500;
+}
+
+.cm-news-time {
+    font-size: 11px;
+    color: var(--text3);
+    margin-left: 6px;
+}
+
+.cm-news-text {
+    margin: 7px 0 0;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.55;
+    word-break: keep-all;
+}
+
+
+/* ── 가운데: 커뮤니티 피드 ── */
+.cm-feed-panel {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--bg);
+}
+
+
+/* ── 댓글 입력 영역 ── */
+.cm-input-wrap {
+    display: flex;
+    gap: 10px;
+    padding: 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--surface);
+}
+
+.cm-input-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.cm-input-inner {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cm-input-box {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 14px;
+    color: var(--text);
+    resize: none;
+    min-height: 72px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s;
+}
+
+.cm-input-box:focus {
+    border-color: var(--blue);
+}
+
+.cm-input-box::placeholder {
+    color: var(--text3);
+}
+
+.cm-input-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.cm-input-icon-btn {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    transition: color 0.12s, background 0.12s;
+}
+
+.cm-input-icon-btn:hover {
+    color: var(--text2);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.cm-submit-btn {
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.cm-submit-btn:hover {
+    opacity: 0.85;
+}
+
+
+/* ── 정렬 필터 ── */
+.cm-feed-filter {
+    display: flex;
+    gap: 2px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    background: var(--bg);
+}
+
+.cm-filter-btn {
+    background: none;
+    border: none;
+    font-size: 13px;
+    color: var(--text3);
+    padding: 5px 10px;
+    border-radius: 7px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: color 0.12s, background 0.12s;
+}
+
+.cm-filter-btn:hover {
+    color: var(--text2);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.cm-filter-btn.active {
+    color: #fff;
+    background: var(--blue);
+}
+
+
+/* ── 피드 목록 ── */
+.cm-feed-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.cm-feed-item {
+    display: flex;
+    gap: 10px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+    background: var(--bg);
+}
+
+.cm-feed-item:last-child {
+    border-bottom: none;
+}
+
+.cm-feed-item:hover {
+    background: rgba(255, 255, 255, 0.025);
+}
+
+.cm-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    width: 36px;
+}
+
+.cm-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--blue);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.cm-rank {
+    font-size: 10px;
+    color: var(--text3);
+    white-space: nowrap;
+}
+
+.cm-right {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.cm-meta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.cm-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.cm-time {
+    font-size: 12px;
+    color: var(--text3);
+}
+
+.cm-follow-btn {
+    margin-left: auto;
+    background: none;
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    border-radius: 6px;
+    padding: 2px 10px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: border-color 0.12s, color 0.12s;
+}
+
+.cm-follow-btn:hover {
+    border-color: var(--text3);
+    color: var(--text);
+}
+
+.cm-text {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.55;
+    word-break: keep-all;
+}
+
+.cm-feed-actions {
+    display: flex;
+    gap: 4px;
+    margin-top: 4px;
+}
+
+.cm-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: none;
+    border: none;
+    color: var(--text3);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: color 0.12s, background 0.12s;
+}
+
+.cm-action-btn:hover {
+    color: var(--text2);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+
+/* ── 오른쪽: 주문 패널 ── */
+.cm-right-panel {
+    flex: 0 0 340px;
+    width: 340px;
+    min-width: 340px;
+    max-width: 340px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.cm-right-panel .panel-order-wrap {
+    flex: 1;
+    min-height: 0;
+}
+
+.cm-right-panel .order-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.cm-right-panel .order-avail {
+    margin-top: auto;
+}
+
+
+/* ── 이미지 모달 (공통 스타일 있으면 중복 주의) ── */
+.cm-image-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+}
+
+.cm-image-modal.open {
+    display: flex;
+}
+
+.cm-image-modal img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 8px;
+    object-fit: contain;
+}
+
+
+/* ── 스크롤바 ── */
+.cm-feed-list::-webkit-scrollbar,
+.cm-left-panel::-webkit-scrollbar,
+.cm-right-panel::-webkit-scrollbar,
+.cm-news-list::-webkit-scrollbar { width: 4px; }
+
+.cm-feed-list::-webkit-scrollbar-track,
+.cm-left-panel::-webkit-scrollbar-track,
+.cm-right-panel::-webkit-scrollbar-track,
+.cm-news-list::-webkit-scrollbar-track { background: transparent; }
+
+.cm-feed-list::-webkit-scrollbar-thumb,
+.cm-left-panel::-webkit-scrollbar-thumb,
+.cm-right-panel::-webkit-scrollbar-thumb,
+.cm-news-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+@media (max-width: 1100px) {
+    .cm-page-layout {
+        padding: var(--gap);
+        flex-direction: column;
+        overflow-y: auto;
+    }
+
+    .cm-left-panel,
+    .cm-feed-panel,
+    .cm-right-panel {
+        flex: none;
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        min-height: 260px;
+    }
+
+    .cm-right-panel {
+        height: 520px;
+    }
+
+    .cm-resize {
+        display: none;
+    }
+}

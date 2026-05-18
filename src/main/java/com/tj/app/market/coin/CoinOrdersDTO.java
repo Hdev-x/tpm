@@ -11,4 +11,7 @@ public class CoinOrdersDTO {
     private Double orderPrice;
     private Double orderCount;
     private String orderDate;
+    private Double avgPrice;
+    private String status;
+    private Double targetPrice;
 }

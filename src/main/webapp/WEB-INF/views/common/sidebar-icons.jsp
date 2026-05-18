@@ -1,6 +1,14 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <div class="sidebar-icons">
 
+    <button class="si-btn si-fold-btn" id="si-fold-btn" onclick="toggleFold()">
+        <svg class="si-fold-icon" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6.41 6 5 7.41 9.58 12 5 16.59 6.41 18l6-6-6-6zm8 0-1.41 1.41L17.58 12l-4.58 4.59L14.41 18l6-6-6-6z"/>
+        </svg>
+    </button>
+
+    <div class="si-divider"></div>
+
     <button class="si-btn" id="si-invest" onclick="toggleSidebar('invest')">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 9.2h3V19H5V9.2zM10.6 5h2.8v14h-2.8V5zm5.6 8H19v6h-2.8v-6z"/></svg>
         <span>내 투자</span>
@@ -26,35 +34,35 @@
 </div>
 <script>
 (function () {
-    if (document.body.dataset.sidebarAnimate === 'true') return;
     if (document.body.dataset.sidebarClosed === 'true') return;
 
-    var tab = document.body.dataset.sidebarTab || localStorage.getItem('sidebar');
+    var navType = (performance.getEntriesByType('navigation')[0] || {}).type;
+    var legacyNavType = performance.navigation ? performance.navigation.type : -1;
+    var isFirstLoad = !sessionStorage.getItem('sidebarInit') || navType === 'reload' || legacyNavType === 1;
+
+    /* 첫 방문·새로고침은 common.js가 애니메이션으로 처리 */
+    if (isFirstLoad) return;
+
+    var tab = localStorage.getItem('sidebar');
     if (!tab) return;
 
     var TITLES = { invest: '내 투자현황', interest: '관심 종목', recent: '최근 본', live: '실시간' };
-
-    /* UI 세팅 (버튼·타이틀·섹션) */
     var btn = document.getElementById('si-' + tab);
     if (btn) btn.classList.add('active');
     var titleEl = document.getElementById('sidebar-title');
     if (titleEl) titleEl.textContent = TITLES[tab] || tab;
+    var subTitle = document.getElementById('sidebar-title-sub');
+    if (subTitle) subTitle.style.display = tab === 'live' ? '' : 'none';
+    document.getElementById('si-fold-btn') && document.getElementById('si-fold-btn').classList.remove('folded');
+    var curSwitch = document.getElementById('cur-switch');
+    if (curSwitch) curSwitch.style.display = tab === 'invest' ? 'none' : '';
     document.querySelectorAll('.sidebar-section').forEach(function (s) { s.style.display = 'none'; });
     var sec = document.getElementById('sidebar-' + tab);
     if (sec) sec.style.display = '';
-
     var panel = document.getElementById('sidebar-panel');
     if (!panel) return;
-
-    if (document.body.dataset.sidebarTab) {
-        /* 고정 탭 페이지(차트 등): 항상 애니메이션으로 열기 */
-        localStorage.setItem('sidebar', tab);
-        setTimeout(function () { requestAnimationFrame(function () { requestAnimationFrame(function () { panel.classList.add('open'); }); }); });
-    } else {
-        /* 다른 페이지: localStorage 상태 즉시 복원 */
-        panel.style.transition = 'none';
-        panel.classList.add('open');
-        requestAnimationFrame(function () { requestAnimationFrame(function () { panel.style.transition = ''; }); });
-    }
+    panel.style.transition = 'none';
+    panel.classList.add('open');
+    requestAnimationFrame(function () { requestAnimationFrame(function () { panel.style.transition = ''; }); });
 })();
 </script>

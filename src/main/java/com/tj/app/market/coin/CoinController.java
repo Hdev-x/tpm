@@ -5,6 +5,7 @@ import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -30,7 +31,17 @@ public class CoinController {
 	private CoinService coinService;
 
 	@GetMapping("chart")
-	public void chart() throws Exception {
+	public String chart(@RequestParam(value = "symbol", required = false) String symbol, Model model) throws Exception {
+		// 1. 파라미터로 넘어온 symbol을 받아서
+		// 2. JSP에서 쓸 수 있도록 model에 담아줍니다.
+		model.addAttribute("symbol", symbol);
+
+		// 3. 만약 파라미터가 없으면 기본값으로 "BTCUSDT" 같은 걸 줄 수도있습니다.
+		if (symbol == null) {
+			model.addAttribute("symbol", "BTCUSDT");
+		}
+
+		return "coin/chart"; // coin/chart.jsp를 보여줘!
 	}
 
 	@GetMapping("chart2")
@@ -41,6 +52,12 @@ public class CoinController {
 	public void list() throws Exception {
 	}
 
+	@GetMapping("community")
+	public String community(@RequestParam(value = "symbol", required = false, defaultValue = "BTCUSDT") String symbol, Model model) throws Exception {
+		model.addAttribute("symbol", symbol);
+		return "coin/community";
+	}
+
 	@GetMapping("chart3")
 	public void chart3() throws Exception {
 	}
@@ -48,7 +65,6 @@ public class CoinController {
 	@GetMapping("chart4")
 	public void chart4() throws Exception {
 	}
-
 
 	// // 토큰 발급
 	// private String cachedToken = null;
@@ -136,11 +152,42 @@ public class CoinController {
 		return coinService.getHoldingList(username);
 	}
 
-	/** 주문 내역 조회 */
+	/** 주문 내역 조회 (체결 완료) */
 	@GetMapping("orders")
 	@ResponseBody
 	public List<CoinOrdersDTO> getOrders(@RequestParam("username") String username) throws Exception {
 		return coinService.getOrderList(username);
+	}
+
+	/** 미체결 주문 조회 */
+	@GetMapping("pending")
+	@ResponseBody
+	public List<CoinOrdersDTO> getPendingOrders(@RequestParam("username") String username) throws Exception {
+		return coinService.getPendingOrders(username);
+	}
+
+	/** 지정가 주문 등록 */
+	@PostMapping("limitOrder")
+	@ResponseBody
+	public String limitOrder(CoinOrdersDTO order) throws Exception {
+		coinService.limitOrder(order);
+		return "success";
+	}
+
+	/** 미체결 주문 취소 */
+	@PostMapping("cancelOrder")
+	@ResponseBody
+	public String cancelOrder(CoinOrdersDTO order) throws Exception {
+		coinService.cancelOrder(order);
+		return "success";
+	}
+
+	/** 지정가 체결 처리 */
+	@PostMapping("executePending")
+	@ResponseBody
+	public String executePendingOrder(CoinOrdersDTO order) throws Exception {
+		coinService.executePendingOrder(order);
+		return "success";
 	}
 
 }

@@ -35,7 +35,7 @@
                         <div class="chart-header" style="display: flex; justify-content: space-between; margin-bottom: 15px;">
                             <div>
                                 <span style="font-size: 14px; color: var(--text-grey);">KOSPI</span>
-                                <h3 id="idx-kospi-price" style="font-size: 20px; margin-top: 5px;">2,500.00</h3>
+                                <h3 id="idx-kospi-price" style="font-size: 20px; margin-top: 5px;">7,500.00</h3>
                             </div>
                             <span id="idx-kospi-change" class="ph-change" style="font-size: 14px; color: #F04452;">0.00%</span>
                         </div>
@@ -52,6 +52,42 @@
                         </div>
                         <div id="btc-mini-chart" style="height: 180px;"></div>
                     </div>
+                    
+                    <div class="dashboard-bottom-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; font-family: 'Malgun Gothic', sans-serif;">
+    
+    <div class="news-panel" style="background-color: #1c2030; color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #2a2e39; max-height: 450px; overflow-y: auto;">
+        <h3 style="border-bottom: 2px solid #2a2e39; padding-bottom: 10px; margin-top: 0; display: flex; justify-content: space-between; align-items: center;">
+            <span>📰 실시간 종목 뉴스</span>
+            <span id="current-news-keyword" style="color: #2962ff; font-size: 14px; background: #131722; padding: 4px 8px; border-radius: 4px;">삼성전자</span>
+        </h3>
+        
+        <div id="naver-news-list" class="news-list">
+            <p style="color: #848e9c; text-align: center; padding: 20px 0;">뉴스를 불러오는 중입니다...</p>
+        </div>
+    </div>
+
+    <div class="market-rank-panel" style="background-color: #1c2030; color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #2a2e39; max-height: 450px; overflow-y: auto;">
+        <h3 style="border-bottom: 2px solid #2a2e39; padding-bottom: 10px; margin-top: 0;">
+            🔥 실시간 급등락 TOP 5
+        </h3>
+        
+        <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
+            <thead>
+                <tr style="border-bottom: 1px solid #2a2e39; color: #848e9c;">
+                    <th style="padding: 8px 4px;">순위</th>
+                    <th style="padding: 8px 4px;">종목명</th>
+                    <th style="padding: 8px 4px; text-align: right;">현재가</th>
+                    <th style="padding: 8px 4px; text-align: right;">등락률</th>
+                </tr>
+            </thead>
+            <tbody id="market-rank-list">
+                <tr style="border-bottom: 1px solid #222634;"><td colspan="4" style="color: #848e9c; text-align: center; padding: 20px 0;">순위 데이터를 계산 중입니다...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+</div>
+                    
                 </div>
             </main>
         </div>

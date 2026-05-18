@@ -103,34 +103,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 /* 5. 최초 데이터 매핑 */
 async function initDashboardData() {
-    let isChartLoaded = false; 
-
-    // A. 코스피 진짜 당일 분봉 차트 연동 시도
-    try {
-        const response = await fetch('/stock/chart?code=0001&range=min');
-        const resData = await response.json();
-
-        if (resData && resData.output2 && resData.output2.length > 0) {
-            const rawList = resData.output2;
-            const chartData = [];
-
-            for (let i = rawList.length - 1; i >= 0; i--) {
-                const item = rawList[i];
-                const timestamp = parseStockDate(item.stck_bsop_date, item.stck_cntg_hour);
-                
-                chartData.push({
-                    time: timestamp,
-                    value: parseFloat(item.stck_clpr)
-                });
-            }
-            kospiSeries.setData(chartData);
-            isChartLoaded = true; 
-            console.log("✅ 코스피 실제 분봉 차트 빌드 성공");
-        }
-    } catch (e) {
-        console.warn("⚠️ 코스피 초기 차트 빌드 실패, 기본 가상 대역 유지");
-    }
-
+    let isChartLoaded = false;
+   
     // B. 한투 백엔드 요약 정보 수급
     try {
         const response = await fetch('/stock/tickers/summary');
@@ -235,3 +209,96 @@ async function startRealTimeEngine() {
     btcSeries.update({ time: currentTime, value: currentBtcPrice });
     document.getElementById('idx-btc-price').textContent = Math.floor(currentBtcPrice).toLocaleString();
 }
+
+function loadStockNews(keyword) {
+    if (!keyword) keyword = "삼성전자";
+    
+    const keywordSpan = document.getElementById("current-news-keyword");
+    if(keywordSpan) keywordSpan.innerText = keyword;
+    
+    const newsListDiv = document.getElementById("naver-news-list");
+    if(!newsListDiv) return;
+    
+    // 🌟 [최종 동기화] 방금 데이터 터진 그 주소 그대로 정밀 타격합니다!
+    fetch("/news?keyword=" + encodeURIComponent(keyword))
+        .then(response => {
+            if (!response.ok) throw new Error("뉴스 서버 응답 불능");
+            return response.json();
+        })
+        .then(data => {
+            newsListDiv.innerHTML = "";
+            
+            if (!data.items || data.items.length === 0) {
+                newsListDiv.innerHTML = `<p style="color: #848e9c; text-align: center; padding: 20px 0;">관련 뉴스가 존재하지 않습니다.</p>`;
+                return;
+            }
+            
+			data.items.forEach(item => {
+			    const card = document.createElement("div");
+			    card.style.borderBottom = "1px solid #222634";
+			    card.style.padding = "12px 0";
+			    
+			    // 💡 외부 js 파일이므로 역슬래시(\)를 빼고 순정 백틱(` `)으로만 감싸야 합니다!
+			    card.innerHTML = `
+			        <div style="margin-bottom: 4px; text-align: left;">
+			            <a href="${item.link}" target="_blank" style="color: #e9ecf0; text-decoration: none; font-weight: bold; font-size: 13px;">
+			                ${item.title}
+			            </a>
+			        </div>
+			        <div style="color: #848e9c; font-size: 11px; line-height: 1.4; text-align: left;">
+			            ${item.description}
+			        </div>
+			    `;
+			    newsListDiv.appendChild(card);
+			});
+        })
+        .catch(error => {
+            console.error("❌ 뉴스 렌더링 실패:", error);
+            newsListDiv.innerHTML = `<p style="color: #f23645; text-align: center; padding: 10px 0; font-size: 12px;">⚠️ 실시간 뉴스 수급이 지연되고 있습니다.</p>`;
+        });
+}
+
+/**
+ * 📈 2. 실시간 급상승 / 급등락 종목 렌더링 (JSP EL태그 충돌 완벽 방어)
+ */
+function loadMarketHotTrends() {
+    const rankListTbody = document.getElementById("market-rank-list");
+    if(!rankListTbody) return;
+    
+    const mockTrends = [
+        { rank: 1, name: "삼성전자", price: "76,200", rate: "+3.45%", isUp: true },
+        { rank: 2, name: "SK하이닉스", price: "182,300", rate: "+2.81%", isUp: true },
+        { rank: 3, name: "카카오", price: "48,900", rate: "-1.75%", isUp: false },
+        { rank: 4, name: "현대차", price: "241,500", rate: "+1.20%", isUp: true },
+        { rank: 5, name: "네이버", price: "178,200", rate: "-0.95%", isUp: false }
+    ];
+    
+    rankListTbody.innerHTML = "";
+    
+	mockTrends.forEach(stock => {
+	    const row = document.createElement("tr");
+	    row.style.borderBottom = "1px solid #222634";
+	    row.style.cursor = "pointer";
+	    
+	    row.addEventListener("click", () => {
+	        loadStockNews(stock.name);
+	    });
+	    
+	    const rateColor = stock.isUp ? "#f23645" : "#2962ff";
+	    
+	    // 💡 외부 js 파일 스펙에 맞게 역슬래시(\) 없는 순정 템플릿 리터럴로 교정
+	    row.innerHTML = `
+	        <td style="padding: 12px 4px; font-weight: bold; color: #848e9c;">${stock.rank}</td>
+	        <td style="padding: 12px 4px; font-weight: bold; color: #e9ecf0; text-align: left;">${stock.name}</td>
+	        <td style="padding: 12px 4px; text-align: right; color: #e9ecf0;">${stock.price}</td>
+	        <td style="padding: 12px 4px; text-align: right; font-weight: bold; color: ${rateColor};">${stock.rate}</td>
+	    `;
+	    rankListTbody.appendChild(row);
+	});
+}
+
+// 최초 구동부 연동
+document.addEventListener("DOMContentLoaded", function() {
+    loadStockNews("삼성전자");
+    loadMarketHotTrends();
+});

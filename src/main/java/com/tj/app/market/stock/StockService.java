@@ -1,5 +1,6 @@
 package com.tj.app.market.stock;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -15,66 +16,80 @@ import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
-@EnableScheduling // 스케줄링 활성화
+@EnableScheduling
 public class StockService {
 
     @Autowired
-    private WebClientService webClientService; // 네이버 및 한투 연동 클라이언트
+    private StockJoinService stockJoinService; 
     
-    // 💡 프론트엔드 유저들에게 4초 주기로 서빙할 인메모리 Thread-Safe 캐시 저장소
+    @Autowired
+    private WebClientService webClientService; 
+
+    // 프론트엔드가 긁어갈 최종 인메모리 캐시 (0번: 네이버 코스피 지수, 1번~: 한투 100개 종목)
     private List<StockListOutput> top100Stocks = new CopyOnWriteArrayList<>();
 
     /**
-     * [API 컨트롤러 전용] 현재 메모리에 동기화된 클린 시세 리스트 즉시 반환 창구
+     * 📊 [API 컨트롤러용] 현재 메모리에 동기화된 지수 + 종목 리스트 반환
      */
     public List<StockListOutput> getCachedTop100() {
         return this.top100Stocks;
     }
     
     /**
-     * ⏲️ 4초 주기: 네이버 실전 주가 피드를 가로채 자릿수 보정 후 캐시 적재 (가상 백업 완전 제거)
+     * ⏲️ 15초 주기: 한투 전 종목 데이터와 네이버 코스피 단일 지수 조인 스케줄러
      */
-    @Scheduled(fixedRate = 4000) 
+    @Scheduled(fixedRate = 15000) 
     public void refreshTop100() {
         try {
-            // 네이버 금융 실시간 지수 수급
+            List<StockListOutput> combinedList = new ArrayList<>();
+            
+            // 1. 🎯 [네이버 코스피 '단일' 지수 피드 가로채기]
             Map<String, String> naverKospi = webClientService.getRealtimeKospiFromNaver();
             
-            // 🛡️ [가상 데이터 가드 파괴] 네이버 피드가 유실되었거나 정상 응답이 아니면 캐시를 갱신하지 않고 즉시 리턴
-            if (naverKospi == null || naverKospi.get("price") == null || "7565.40".equals(naverKospi.get("price"))) {
-                log.warn("⚠️ 네이버 금융 피드 수급 실패 또는 우회 방어막 감지 -> 인메모리 싱크를 스킵합니다.");
-                return;
+            if (naverKospi != null && naverKospi.get("price") != null) {
+                StockListOutput kospiIndexItem = new StockListOutput();
+                kospiIndexItem.setHts_kor_isnm("코스피"); // 화면 전광판용 이름
+                
+                // 네이버에서 유입된 실전 주가 문자열 추출 및 포맷 가공
+                String rawPriceStr = naverKospi.get("price").replaceAll("[^0-9.]", ""); 
+                double rawPrice = Double.parseDouble(rawPriceStr);
+                
+                // 자릿수가 밀려 들어올 경우를 대비한 세이프 보정 연산
+                if (!naverKospi.get("price").contains(".") && rawPrice > 70000.0) {
+                    rawPrice = rawPrice / 100.0;
+                }
+                
+                kospiIndexItem.setMkstat_prpr(String.format("%.2f", rawPrice)); // 스크린샷의 7516.04 반영
+                kospiIndexItem.setPrdy_ctrt(naverKospi.get("rate"));             // 스크린샷의 +0.31% 반영
+                
+                // 0번째 인덱스 확보를 위해 리스트에 먼저 추가
+                combinedList.add(kospiIndexItem);
+                log.info("📈 [네이버 단일 지수 연동] KOSPI 종합지수 로딩 성공: {} ({}%)", kospiIndexItem.getMkstat_prpr(), kospiIndexItem.getPrdy_ctrt());
             }
             
-            StockListOutput kospiItem = new StockListOutput();
-            kospiItem.setHts_kor_isnm("코스피");
+            // 2. 📡 [한투 순정 전종목 리스트 수급]
+            StockListDTO marketData = webClientService.getFullMarketPrices();
             
-            // 🔴 [순정 원복] 네이버 금융에서 유입된 실전 주가 문자열 추출
-            String rawPriceStr = naverKospi.get("price").replaceAll("[^0-9.]", ""); 
-            double rawPrice = Double.parseDouble(rawPriceStr);
-            
-            // 💡 만약 네이버 데이터가 소수점 없는 통정수(예: 755239)로 유입될 경우에만 100을 나눕니다.
-            if (!naverKospi.get("price").contains(".") && rawPrice > 70000.0) {
-                rawPrice = rawPrice / 100.0;
+            if (marketData != null && marketData.getOutput2() != null && !marketData.getOutput2().isEmpty()) {
+                // 한투가 준 순정 종목 100개를 네이버 지수 뒤에 그대로 이어 붙임
+                combinedList.addAll(marketData.getOutput2());
+            } else {
+                // 🛡️ 장마감/모의투자 404 방어: 한투가 뻗었을 경우 기존 캐시에 저장되어 있던 주식 목록 복사해서 생명 연장
+                log.warn("⚠️ 한투 종목 API 수급 제한 단계 발생 -> 기존 메모리에 살아있는 주식 데이터를 보존합니다.");
+                if (this.top100Stocks != null && this.top100Stocks.size() > 1) {
+                    List<StockListOutput> oldStocks = new ArrayList<>(this.top100Stocks.subList(1, this.top100Stocks.size()));
+                    combinedList.addAll(oldStocks);
+                }
             }
             
-            // 최종 대역 스펙 문자열로 포맷팅 완료
-            String formattedPrice = String.format("%.2f", rawPrice);
-            kospiItem.setMkstat_prpr(formattedPrice); 
-            kospiItem.setPrdy_ctrt(naverKospi.get("rate")); // 등락률 매핑 (+0.79%)
-            
-            // 캐시 스왑 버퍼 레이아웃 구성
-            List<StockListOutput> tempSummary = new java.util.ArrayList<>();
-            tempSummary.add(kospiItem);
-            
-            // 최종 메모리 싱크 완료 (원자적 치환)
-            this.top100Stocks = tempSummary;
-            
-            log.debug("🚀 [인메모리 싱크 완수] KOSPI 캐시 동기화 완료 -> {} ({}%)", 
-                    kospiItem.getMkstat_prpr(), kospiItem.getPrdy_ctrt());
+            // 3. 최종 결합된 리스트를 메모리에 동기화 (원자적 치환)
+            if (!combinedList.isEmpty()) {
+                this.top100Stocks = combinedList;
+                log.info("✅ [동기화 완료] 총 {}개의 요소 캐시 업데이트 완료 (지수 1건 + 종목)", combinedList.size());
+            }
             
         } catch (Exception e) {
-            log.error("❌ 실시간 시세 캐시 엔진 동기화 실패: {}", e.getMessage());
+            log.error("❌ 시세 캐시 엔진 스케줄러 루프 제어 장애: {}", e.getMessage());
         }
     }
 }

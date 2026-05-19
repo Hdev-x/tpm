@@ -4,6 +4,9 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+import java.util.Map;
+
 @Mapper
 public interface StockJoinMapper {
 
@@ -23,4 +26,7 @@ public interface StockJoinMapper {
     @Select("SELECT \"STOCK_NAME\" FROM \"STOCK\" " +
             "WHERE \"STOCK_CODE\" = #{code}")
     String findNameByStockCode(@Param("code") String code);
+
+    @Select("SELECT \"STOCK_CODE\" AS code, \"STOCK_NAME\" AS name FROM \"STOCK\" ORDER BY \"STOCK_CODE\"")
+    List<Map<String, Object>> findAllStocks();
 }

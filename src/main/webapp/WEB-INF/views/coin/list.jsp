@@ -151,68 +151,9 @@
                      [MARKET SUMMARY] .ticker-bar
                      ==================================================== -->
                 <div class="ticker-bar">
-                    <!--
-                         위치 : .main-content > .ticker-bar
-                         역할 : 화면 상단에서 환율/지수 요약을 보여주는 정적 시장 요약 영역
-                         연결 : 현재는 API 없이 JSP에 직접 적힌 정적 마크업입니다.
-                    -->
-                    <div class="ticker-left">
-                        <div class="ticker-today">
-                            <div class="ticker-today-label">오늘</div>
-                            <div class="ticker-today-content">
-                                <div class="ticker-today-title">증시캘린더</div>
-                                <div class="ticker-today-sub">주간 신규실업수당 청구건수...</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="ticker-items">
-                        <div class="ticker-item">
-                            <div class="ticker-item-chart down-chart">
-                                <svg viewBox="0 0 60 28" preserveAspectRatio="none">
-                                    <polyline points="0,8 15,10 30,14 45,18 60,22" />
-                                </svg>
-                            </div>
-                            <div class="ticker-item-info">
-                                <div class="ticker-item-name">달러 환율</div>
-                                <div class="ticker-item-price">1,493.25 <span class="down">-1.85 (0.12%)</span></div>
-                            </div>
-                        </div>
-                        <div class="ticker-item">
-                            <div class="ticker-item-chart up-chart">
-                                <svg viewBox="0 0 60 28" preserveAspectRatio="none">
-                                    <polyline points="0,20 15,18 30,14 45,10 60,6" />
-                                </svg>
-                            </div>
-                            <div class="ticker-item-info">
-                                <div class="ticker-item-name">코스피</div>
-                                <div class="ticker-item-price">7,860.98 <span class="up">+16.97 (0.21%)</span></div>
-                            </div>
-                        </div>
-                        <div class="ticker-item">
-                            <div class="ticker-item-chart down-chart">
-                                <svg viewBox="0 0 60 28" preserveAspectRatio="none">
-                                    <polyline points="0,8 15,12 30,16 45,20 60,22" />
-                                </svg>
-                            </div>
-                            <div class="ticker-item-info">
-                                <div class="ticker-item-name">코스닥</div>
-                                <div class="ticker-item-price">1,165.77 <span class="down">-11.16 (0.94%)</span></div>
-                            </div>
-                        </div>
-                        <div class="ticker-item">
-                            <div class="ticker-item-chart up-chart">
-                                <svg viewBox="0 0 60 28" preserveAspectRatio="none">
-                                    <polyline points="0,22 15,18 30,14 45,10 60,4" />
-                                </svg>
-                            </div>
-                            <div class="ticker-item-info">
-                                <div class="ticker-item-name">나스닥</div>
-                                <div class="ticker-item-price">26,402.34 <span class="up">+314.14 (1.20%)</span></div>
-                            </div>
-                        </div>
-                    </div>
+                    <div class="ticker-items" id="marketIndexItems"></div>
                     <div class="ticker-right">
-                        <button class="ticker-arrow">›</button>
+                        <button class="ticker-arrow" id="tickerArrowBtn">›</button>
                     </div>
                 </div><!-- /.ticker-bar -->
 
@@ -515,6 +456,68 @@
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <script src="/js/common.js"></script>
     <script src="/js/coinList.js"></script>
+    <script>
+        function buildSparkline(prices, isUp) {
+            if (!prices || prices.length < 2) {
+                const pts = isUp ? '0,38 15,28 30,20 45,12 60,4' : '0,4 15,12 30,20 45,28 60,38';
+                return '<polyline points="' + pts + '" fill="none" stroke="' + (isUp ? '#F04452' : '#2563EB') + '" stroke-width="1"/>';
+            }
+            const W = 60, H = 40, pad = 2;
+            const min = Math.min(...prices), max = Math.max(...prices);
+            const range = max - min || 1;
+            const xOf = i => pad + (i / (prices.length - 1)) * (W - pad * 2);
+            const yOf = p => H - pad - ((p - min) / range) * (H - pad * 2);
+            const linePoints = prices.map((p, i) => xOf(i).toFixed(1) + ',' + yOf(p).toFixed(1)).join(' ');
+            const fillPoints = linePoints
+                + ' ' + xOf(prices.length - 1).toFixed(1) + ',' + (H - pad)
+                + ' ' + xOf(0).toFixed(1) + ',' + (H - pad);
+            const color = isUp ? '#F04452' : '#2563EB';
+            const gradId = 'sg' + Math.random().toString(36).slice(2, 6);
+            return '<defs><linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">'
+                + '<stop offset="0%" stop-color="' + color + '" stop-opacity="0.3"/>'
+                + '<stop offset="100%" stop-color="' + color + '" stop-opacity="0"/>'
+                + '</linearGradient></defs>'
+                + '<polygon points="' + fillPoints + '" fill="url(#' + gradId + ')"/>'
+                + '<polyline points="' + linePoints + '" fill="none" stroke="' + color + '" stroke-width="1" stroke-linejoin="round"/>';
+        }
+
+        async function loadMarketIndex() {
+            try {
+                const list = await fetch('/api/market-index').then(r => r.json());
+                const container = document.getElementById('marketIndexItems');
+                if (!container || !list.length) return;
+
+                container.innerHTML = list.map((item, i) => {
+                    const cls = item.up ? 'up' : 'down';
+                    const sparkSvg = buildSparkline(item.prices, item.up);
+                    const delay = (i * 0.07).toFixed(2) + 's';
+                    return '<div class="ticker-item" style="animation-delay:' + delay + '">'
+                        + '<div class="ticker-item-chart">'
+                        + '<svg viewBox="0 0 60 40" preserveAspectRatio="none">' + sparkSvg + '</svg>'
+                        + '</div>'
+                        + '<div class="ticker-item-info">'
+                        + '<div class="ticker-item-name">' + item.name + '</div>'
+                        + '<div class="ticker-item-price">' + item.price
+                        + ' <span class="' + cls + '">' + (item.change === '-' ? '-' : item.change + ' (' + item.changeRate + '%)') + '</span>'
+                        + '</div></div></div>';
+                }).join('');
+            } catch (e) {}
+        }
+
+        loadMarketIndex();
+        setInterval(loadMarketIndex, 30000);
+
+        document.getElementById('tickerArrowBtn').addEventListener('click', function() {
+            const items = document.getElementById('marketIndexItems');
+            const scrollAmt = 300;
+            const maxScroll = items.scrollWidth - items.clientWidth;
+            if (items.scrollLeft >= maxScroll - 4) {
+                items.scrollTo({ left: 0, behavior: 'smooth' });
+            } else {
+                items.scrollBy({ left: scrollAmt, behavior: 'smooth' });
+            }
+        });
+    </script>
 </body><!-- /body -->
 
 </html>

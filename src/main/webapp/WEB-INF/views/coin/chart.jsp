@@ -519,24 +519,24 @@
                             <div class="order-input-row">
                                 <input class="order-input" id="trade-qty" type="number" placeholder="0.000" step="0.001"
                                     oninput="calcAmount()">
-                                <span class="order-input-unit">BTC</span>
+                                <div class="pct-drop-wrap" id="pct-drop-wrap">
+                                    <div class="pct-drop-menu" id="pct-drop-menu" style="display:none;">
+                                        <div class="pct-drop-item" onclick="setPercent(25)">25%</div>
+                                        <div class="pct-drop-item" onclick="setPercent(50)">50%</div>
+                                        <div class="pct-drop-item" onclick="setPercent(75)">75%</div>
+                                        <div class="pct-drop-item" onclick="setPercent(100)">최대</div>
+                                    </div>
+                                    <button class="pct-drop-btn" onclick="togglePctDrop()">
+                                        <span id="pct-drop-label">비율</span>
+                                        <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>
+                                    </button>
+                                </div>
                             </div>
 
-                            <div class="pct-row">
-                                <button class="pct-btn" onclick="setPercent(25)">25%</button>
-                                <button class="pct-btn" onclick="setPercent(50)">50%</button>
-                                <button class="pct-btn" onclick="setPercent(75)">75%</button>
-                                <button class="pct-btn" onclick="setPercent(100)">최대</button>
+                            <div class="order-info-row">
+                                <span class="order-avail">가용 <span>- USDT</span></span>
+                                <span class="order-amount-label">주문금액 <span id="trade-amount">0</span> USDT</span>
                             </div>
-
-                            <div class="order-section-label">주문금액 (USDT)</div>
-                            <div class="order-input-row" style="margin-bottom:14px">
-                                <input class="order-input" id="trade-amount" type="number" readonly
-                                    style="background:var(--bg)">
-                                <span class="order-input-unit">USDT</span>
-                            </div>
-
-                            <div class="order-avail">가용 잔고 <span>- USDT</span></div>
 
                             <button id="order-submit-btn" class="btn-buy" onclick="submitOrder(orderSide)">매수
                                 주문</button>

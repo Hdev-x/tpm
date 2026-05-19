@@ -946,7 +946,6 @@ function switchOrderTab(side) {
     if (isBuy) {
         av.textContent = walletBalance.toFixed(2) + ' USDT';
     } else {
-        /* 매도 시: 보유 수량 표시 */
         const holding = holdingsData.find(h => h.coinCode === currentSymbol);
         const qty = holding ? holding.coinCount : 0;
         const ticker = currentSymbol.replace(/USDT$/, '').replace('_SPBL', '');
@@ -966,8 +965,17 @@ function selectOrderType(btn) {
     if (!isLimit) priceInput.value = lastPrice ? lastPrice.toFixed(2) : '';
 }
 
+function togglePctDrop() {
+    const menu = document.getElementById('pct-drop-menu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
 /* 잔고 비율로 수량 자동 계산 */
 function setPercent(pct) {
+    const label = document.getElementById('pct-drop-label');
+    if (label) label.textContent = pct === 100 ? '최대' : pct + '%';
+    const menu = document.getElementById('pct-drop-menu');
+    if (menu) menu.style.display = 'none';
     if (orderSide === 'sell') {
         const holding = holdingsData.find(h => h.coinCode === currentSymbol);
         const h = holding ? holding.coinCount : 0;
@@ -981,7 +989,8 @@ function setPercent(pct) {
 
 /* 수량 × 현재가 = 주문금액 자동 계산 */
 function calcAmount() {
-    document.getElementById('trade-amount').value =
+    const el = document.getElementById('trade-amount');
+    if (el) el.textContent =
         ((parseFloat(document.getElementById('trade-qty').value) || 0) * lastPrice).toFixed(2);
 }
 
@@ -1420,7 +1429,6 @@ let tickerTrackEl = null;
 function animateTicker() {
     if (!tickerPaused && tickerHalfWidth > 0 && tickerTrackEl) {
         tickerX -= 0.6;
-        console.log(tickerHalfWidth, document.getElementById('ticker-track').scrollWidth)
         if (Math.abs(tickerX) >= tickerHalfWidth) tickerX += tickerHalfWidth;
         tickerTrackEl.style.transform = `translateX(${tickerX}px)`;
     }
@@ -1435,3 +1443,12 @@ animateTicker();
 
 loadTickerBar();
 setInterval(loadTickerBar, 15000);
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#pct-drop-wrap')) {
+        const m = document.getElementById('pct-drop-menu');
+        if (m) m.style.display = 'none';
+    }
+});
+
+

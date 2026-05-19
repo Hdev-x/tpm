@@ -12,6 +12,8 @@ let showHighLow = true;
 let isLog = false;
 let allCandles = [];
 const indState = { ma5: false, ma20: false };
+let allStockSearchList = [];
+let popularStockSearchList = [];
 
 /* ── 2. 초기화 구동 (DOM 로드 완료 시 캔버스 빌드) ── */
 document.addEventListener('DOMContentLoaded', function () {
@@ -88,6 +90,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 초기 진입 시 1D(일봉) 차트 기준 엔진 런칭
     fetchChart('1y');
+    initStockSearchMenu();
 });
 
 /* ── 3. 종목 조회 및 검색 기능 ── */
@@ -107,6 +110,89 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+async function initStockSearchMenu() {
+    const trigger = document.getElementById('search-trigger');
+    const dropdown = document.getElementById('search-dropdown');
+    const input = document.getElementById('sd-input');
+    const label = document.getElementById('sd-label');
+
+    if (!trigger || !dropdown || !input) return;
+
+    trigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isActive = dropdown.classList.toggle('active');
+        if (isActive) {
+            input.value = '';
+            input.focus();
+            if (label) label.textContent = '주요 종목';
+            renderStockSearchList(popularStockSearchList);
+        }
+    });
+
+    document.addEventListener('click', () => dropdown.classList.remove('active'));
+    dropdown.addEventListener('click', (e) => e.stopPropagation());
+
+    try {
+        const res = await fetch('/stock/db-list');
+        const data = await res.json();
+        allStockSearchList = (Array.isArray(data) ? data : [])
+            .map(item => ({
+                code: String(item.code || item.STOCK_CODE || '').trim(),
+                name: String(item.name || item.STOCK_NAME || '').trim()
+            }))
+            .filter(item => item.code && item.name);
+        popularStockSearchList = allStockSearchList.slice(0, 5);
+        renderStockSearchList(popularStockSearchList);
+    } catch (e) {
+        renderStockSearchList([]);
+    }
+
+    input.addEventListener('input', () => {
+        const keyword = input.value.trim().toLowerCase();
+        if (!keyword) {
+            if (label) label.textContent = '주요 종목';
+            renderStockSearchList(popularStockSearchList);
+            return;
+        }
+
+        const filtered = allStockSearchList
+            .filter(item =>
+                item.code.includes(keyword) ||
+                item.name.toLowerCase().includes(keyword)
+            )
+            .slice(0, 20);
+
+        if (label) label.textContent = '검색 결과';
+        renderStockSearchList(filtered);
+    });
+}
+
+function renderStockSearchList(list) {
+    const container = document.getElementById('sd-list');
+    if (!container) return;
+
+    if (!list || list.length === 0) {
+        container.innerHTML = '<div class="sd-item"><div class="sd-info"><span class="sd-symbol">표시할 종목이 없습니다</span></div></div>';
+        return;
+    }
+
+    container.innerHTML = list.map((stock, i) => {
+        const initials = (stock.name || stock.code || '  ').slice(0, 2);
+        return `
+            <div class="sd-item" onclick="location.href='/stock/view?code=${encodeURIComponent(stock.code)}'">
+                <span class="sd-rank">${i + 1}</span>
+                <div class="sd-coin-logo"><span style="font-size:12px;font-weight:700;color:var(--text);">${initials}</span></div>
+                <div class="sd-info">
+                    <div class="sd-name-row">
+                        <span class="sd-name">${stock.name}</span>
+                        <span class="sd-symbol">${stock.code}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
 /* ── 4. 이동평균선(MA) 테크니컬 지표 연산 기술 ── */
 function calculateMA(data, period) {

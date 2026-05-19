@@ -1300,14 +1300,22 @@ function switchOrderTab(side) {
 }
 
 /* 2. 잔고 비율로 수량 자동 계산 (25%, 50%, 100% 버튼) */
+function togglePctDrop() {
+    const menu = document.getElementById('pct-drop-menu');
+    menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+}
+
 function setPercent(pct) {
+    const label = document.getElementById('pct-drop-label');
+    if (label) label.textContent = pct === 100 ? '최대' : pct + '%';
+    const menu = document.getElementById('pct-drop-menu');
+    if (menu) menu.style.display = 'none';
+
     const qtyInput = document.getElementById('trade-qty');
-    
     if (orderSide === 'sell') {
         const holdingQty = parseInt(document.getElementById('holding-qty')?.textContent) || 0;
         qtyInput.value = Math.floor(holdingQty * pct / 100);
     } else {
-        // 매수 시: (잔액 * 비율) / 현재가 = 살 수 있는 주식 수
         if (lastPrice > 0) {
             qtyInput.value = Math.floor((walletBalance * pct / 100) / lastPrice);
         }
@@ -1318,10 +1326,8 @@ function setPercent(pct) {
 /* 3. 수량 × 현재가 = 예상 주문금액 계산 */
 function calcAmount() {
     const qty = parseInt(document.getElementById('trade-qty').value) || 0;
-    const amountInput = document.getElementById('trade-amount');
-    if (amountInput) {
-        amountInput.value = Math.floor(qty * lastPrice).toLocaleString();
-    }
+    const el = document.getElementById('trade-amount');
+    if (el) el.textContent = Math.floor(qty * lastPrice).toLocaleString();
 }
 
 /* 4. 주문 제출 - 태준님의 스프링 부트 서버 REST API 호출 */
@@ -1668,5 +1674,12 @@ if (tickerContainer) {
 animateTicker();
 loadTickerBar();
 setInterval(loadTickerBar, 15000);
+
+document.addEventListener('click', function(e) {
+    if (!e.target.closest('#pct-drop-wrap')) {
+        const m = document.getElementById('pct-drop-menu');
+        if (m) m.style.display = 'none';
+    }
+});
 
 

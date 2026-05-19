@@ -511,28 +511,4 @@
 .cm-order-panel::-webkit-scrollbar-thumb,
 .cm-news-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
-@media (max-width: 1100px) {
-    .community-page .main-layout {
-        padding: var(--gap);
-        flex-direction: column;
-        overflow-y: auto;
-    }
-
-    .cm-news-panel,
-    .cm-feed-panel,
-    .cm-order-panel {
-        flex: none;
-        width: 100%;
-        min-width: 0;
-        max-width: none;
-        min-height: 260px;
-    }
-
-    .cm-order-panel {
-        height: 520px;
-    }
-
-    .cm-resize {
-        display: none;
-    }
-}
+/* @media (max-width: 1100px) removed - PC only */

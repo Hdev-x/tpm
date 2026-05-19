@@ -172,6 +172,46 @@ public class WebClientService {
     }
 
     
+    public Map<String, String> getStockPriceFromNaver(String code) {
+        Map<String, String> resultMap = new HashMap<>();
+        try {
+            WebClient naverClient = WebClient.builder()
+                    .baseUrl("https://polling.finance.naver.com")
+                    .build();
+
+            String jsonString = naverClient.get()
+                    .uri("/api/realtime?query=SERVICE_ITEM:" + code)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block(Duration.ofSeconds(3));
+
+            if (jsonString != null && !jsonString.isEmpty()) {
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                Map<String, Object> response = mapper.readValue(jsonString, Map.class);
+
+                if (response != null && response.containsKey("result")) {
+                    Map<String, Object> result = (Map<String, Object>) response.get("result");
+                    if (result != null && result.containsKey("areas")) {
+                        List<Map<String, Object>> areas = (List) result.get("areas");
+                        if (areas != null && !areas.isEmpty()) {
+                            List<Map<String, Object>> datas = (List<Map<String, Object>>) areas.get(0).get("datas");
+                            if (datas != null && !datas.isEmpty()) {
+                                Map<String, Object> data = datas.get(0);
+                                resultMap.put("price", String.valueOf(data.getOrDefault("nv", "-")));
+                                resultMap.put("rate",  String.valueOf(data.getOrDefault("cr", "-")));
+                                resultMap.put("diff",  String.valueOf(data.getOrDefault("sv", "-")));
+                                return resultMap;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error("❌ 네이버 개별 종목 시세 조회 실패 [{}]: {}", code, e.getMessage());
+        }
+        return resultMap;
+    }
+
     public Map<String, String> getRealtimeKospiFromNaver() {
         Map<String, String> resultMap = new HashMap<>();
         try {

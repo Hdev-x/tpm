@@ -40,32 +40,34 @@
 .cm-page-change.down { color: var(--down); }
 
 
-/* ── 3단 레이아웃 ── */
-.cm-page-layout {
+/* ── 오른쪽: 뉴스 패널 ── */
+.community-page .main-layout {
+    flex-direction: row;
     padding: var(--gap) 50px 70px;
+    overflow: hidden;
     gap: 0;
 }
 
-
-/* ── 왼쪽: 뉴스 패널 ── */
-.cm-left-panel {
-    flex: 0 0 300px;
-    width: 300px;
-    min-width: 260px;
-    max-width: 360px;
+.cm-news-panel {
+    flex: 0 0 340px;
+    width: 340px;
+    min-width: 340px;
+    max-width: 340px;
     flex-shrink: 0;
-    background: var(--bg);
     overflow: hidden;
+    border: 0;
+    height: auto;
+    min-height: 0;
 }
 
 .cm-panel-title {
-    padding: 13px 16px;
+    padding: 18px 20px 10px;
     font-size: 13px;
     font-weight: 700;
     color: var(--text);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 0;
     flex-shrink: 0;
-    background: var(--surface);
+    background: transparent;
     letter-spacing: 0;
 }
 
@@ -78,8 +80,8 @@
 }
 
 .cm-news-item {
-    padding: 15px 16px;
-    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    border-bottom: 0;
     cursor: pointer;
     transition: background 0.12s;
 }
@@ -94,33 +96,34 @@
 
 .cm-news-source {
     font-size: 11px;
-    color: var(--text3);
+    color: #8c919f;
     font-weight: 500;
 }
 
 .cm-news-time {
     font-size: 11px;
-    color: var(--text3);
+    color: #737887;
     margin-left: 6px;
 }
 
 .cm-news-text {
-    margin: 7px 0 0;
+    margin: 4px 0 0;
     font-size: 13px;
     color: var(--text);
-    line-height: 1.55;
+    line-height: 1.45;
     word-break: keep-all;
 }
 
 
-/* ── 가운데: 커뮤니티 피드 ── */
+/* ── 왼쪽: 커뮤니티 피드 ── */
 .cm-feed-panel {
-    flex: 1;
-    min-width: 0;
+    flex: 1 1 auto;
+    min-width: 320px;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--bg);
+    border: 0;
+    height: auto;
 }
 
 
@@ -128,19 +131,20 @@
 .cm-input-wrap {
     display: flex;
     gap: 10px;
-    padding: 16px;
-    border-bottom: 1px solid var(--border);
+    padding: 16px 28px;
+    border-bottom: 0;
     flex-shrink: 0;
-    background: var(--surface);
+    background: var(--bg);
+    align-items: center;
 }
 
 .cm-input-avatar {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: var(--blue);
-    color: #fff;
-    font-size: 14px;
+    background: #343741;
+    color: #9ca3af;
+    font-size: 13px;
     font-weight: 600;
     display: flex;
     align-items: center;
@@ -151,27 +155,34 @@
 .cm-input-inner {
     flex: 1;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
     gap: 8px;
+    min-height: 44px;
+    border: 1px solid var(--border2);
+    border-radius: 12px;
+    background: var(--surface2);
+    padding: 0 10px 0 14px;
 }
 
 .cm-input-box {
     width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    padding: 10px 12px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 10px 0;
     font-size: 14px;
     color: var(--text);
     resize: none;
-    min-height: 72px;
+    min-height: 42px;
+    height: 42px;
+    line-height: 22px;
     outline: none;
     font-family: inherit;
-    transition: border-color 0.15s;
 }
 
 .cm-input-box:focus {
-    border-color: var(--blue);
+    border-color: transparent;
 }
 
 .cm-input-box::placeholder {
@@ -181,15 +192,16 @@
 .cm-input-actions {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
+    gap: 4px;
 }
 
 .cm-input-icon-btn {
     background: none;
     border: none;
-    color: var(--text3);
+    color: #8c919f;
     cursor: pointer;
-    padding: 4px 6px;
+    padding: 5px;
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -197,16 +209,16 @@
 }
 
 .cm-input-icon-btn:hover {
-    color: var(--text2);
+    color: #d7d9df;
     background: rgba(255, 255, 255, 0.05);
 }
 
 .cm-submit-btn {
-    background: var(--blue);
+    background: #2f6feb;
     color: #fff;
     border: none;
     border-radius: 6px;
-    padding: 6px 16px;
+    padding: 6px 12px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
@@ -222,8 +234,8 @@
 .cm-feed-filter {
     display: flex;
     gap: 2px;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
+    padding: 0 28px 8px;
+    border-bottom: 0;
     flex-shrink: 0;
     background: var(--bg);
 }
@@ -247,7 +259,7 @@
 
 .cm-filter-btn.active {
     color: #fff;
-    background: var(--blue);
+    background: #3a3d47;
 }
 
 
@@ -260,98 +272,116 @@
 }
 
 .cm-feed-item {
+    position: relative;
     display: flex;
-    gap: 10px;
-    padding: 14px 16px;
-    border-bottom: 1px solid var(--border);
+    gap: 12px;
+    padding: 18px 28px;
+    border-bottom: 0;
     transition: background 0.12s;
     background: var(--bg);
 }
 
-.cm-feed-item:last-child {
-    border-bottom: none;
+.cm-feed-item::after {
+    content: "";
+    position: absolute;
+    left: 28px;
+    right: 28px;
+    bottom: 0;
+    height: 1px;
+    background: #343741;
 }
 
-.cm-feed-item:hover {
-    background: rgba(255, 255, 255, 0.025);
+.cm-feed-item:last-child::after {
+    display: none;
 }
 
-.cm-left {
+
+/* ── 피드 아이템 내부 — 차트 페이지 댓글과 동일한 스타일 ── */
+.cm-feed-item .cm-left {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 3px;
     flex-shrink: 0;
-    width: 36px;
+    width: 34px;
 }
 
-.cm-avatar {
-    width: 36px;
-    height: 36px;
+.cm-feed-item .cm-avatar {
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: var(--blue);
-    color: #fff;
-    font-size: 14px;
-    font-weight: 700;
     display: flex;
     align-items: center;
     justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
 }
 
-.cm-rank {
-    font-size: 10px;
-    color: var(--text3);
+.cm-feed-item .cm-rank {
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255, 240, 160, 1);
     white-space: nowrap;
 }
 
-.cm-right {
+.cm-feed-item .cm-right {
     flex: 1;
     min-width: 0;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
 }
 
-.cm-meta {
+.cm-feed-item .cm-meta {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    align-items: baseline;
+    gap: 5px;
+    flex-wrap: wrap;
 }
 
-.cm-name {
+.cm-feed-item .cm-name {
+    font-size: 17px;
+    font-weight: 500;
+    color: #e2e2e2;
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+}
+
+.cm-feed-item .cm-time {
     font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
+    font-weight: 300;
+    color: rgba(242, 243, 245, 0.45);
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
-.cm-time {
-    font-size: 12px;
-    color: var(--text3);
+.cm-feed-item .cm-text {
+    font-size: 17px;
+    font-weight: 300;
+    color: rgba(215, 215, 220, 0.9);
+    line-height: 1.65;
+    word-break: break-word;
+    letter-spacing: -0.1px;
 }
 
 .cm-follow-btn {
     margin-left: auto;
-    background: none;
-    border: 1px solid var(--border2);
-    color: var(--text2);
+    background: #163d7a;
+    border: 0;
+    color: #5da2ff;
     border-radius: 6px;
-    padding: 2px 10px;
+    padding: 4px 8px;
     font-size: 12px;
     cursor: pointer;
     transition: border-color 0.12s, color 0.12s;
 }
 
 .cm-follow-btn:hover {
-    border-color: var(--text3);
-    color: var(--text);
+    color: #d7e8ff;
 }
 
-.cm-text {
-    font-size: 14px;
-    color: var(--text);
-    line-height: 1.55;
-    word-break: keep-all;
-}
 
 .cm-feed-actions {
     display: flex;
@@ -365,7 +395,7 @@
     gap: 4px;
     background: none;
     border: none;
-    color: var(--text3);
+    color: #9ea3b0;
     font-size: 13px;
     cursor: pointer;
     padding: 4px 8px;
@@ -373,14 +403,18 @@
     transition: color 0.12s, background 0.12s;
 }
 
+.cm-action-btn span {
+    color: var(--text3);
+}
+
 .cm-action-btn:hover {
-    color: var(--text2);
+    color: #d0d3db;
     background: rgba(255, 255, 255, 0.04);
 }
 
 
-/* ── 오른쪽: 주문 패널 ── */
-.cm-right-panel {
+/* ── 가운데: 주문 패널 ── */
+.cm-order-panel {
     flex: 0 0 340px;
     width: 340px;
     min-width: 340px;
@@ -388,14 +422,17 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-}
-
-.cm-right-panel .panel-order-wrap {
-    flex: 1;
+    height: auto;
     min-height: 0;
 }
 
-.cm-right-panel .order-panel {
+.cm-order-panel .panel-order-wrap {
+    flex: 1;
+    min-height: 0;
+    border: 0;
+}
+
+.cm-order-panel .order-panel {
     flex: 1;
     min-height: 0;
     display: flex;
@@ -403,7 +440,7 @@
     justify-content: flex-start;
 }
 
-.cm-right-panel .order-avail {
+.cm-order-panel .order-avail {
     margin-top: auto;
 }
 
@@ -431,32 +468,59 @@
 }
 
 
+/* ── 피드 이미지 ── */
+.cm-feed-item .cm-image {
+    display: block;
+    max-width: 360px;
+    width: 100%;
+    border-radius: 10px;
+    margin-top: 8px;
+    cursor: pointer;
+}
+
+/* ── 빈 상태 ── */
+.cm-feed-list .chat-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 60px 0;
+    color: var(--text3);
+    font-size: 13px;
+}
+
+.chat-empty-icon {
+    font-size: 28px;
+}
+
+
 /* ── 스크롤바 ── */
 .cm-feed-list::-webkit-scrollbar,
-.cm-left-panel::-webkit-scrollbar,
-.cm-right-panel::-webkit-scrollbar,
+.cm-news-panel::-webkit-scrollbar,
+.cm-order-panel::-webkit-scrollbar,
 .cm-news-list::-webkit-scrollbar { width: 4px; }
 
 .cm-feed-list::-webkit-scrollbar-track,
-.cm-left-panel::-webkit-scrollbar-track,
-.cm-right-panel::-webkit-scrollbar-track,
+.cm-news-panel::-webkit-scrollbar-track,
+.cm-order-panel::-webkit-scrollbar-track,
 .cm-news-list::-webkit-scrollbar-track { background: transparent; }
 
 .cm-feed-list::-webkit-scrollbar-thumb,
-.cm-left-panel::-webkit-scrollbar-thumb,
-.cm-right-panel::-webkit-scrollbar-thumb,
+.cm-news-panel::-webkit-scrollbar-thumb,
+.cm-order-panel::-webkit-scrollbar-thumb,
 .cm-news-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
 
 @media (max-width: 1100px) {
-    .cm-page-layout {
+    .community-page .main-layout {
         padding: var(--gap);
         flex-direction: column;
         overflow-y: auto;
     }
 
-    .cm-left-panel,
+    .cm-news-panel,
     .cm-feed-panel,
-    .cm-right-panel {
+    .cm-order-panel {
         flex: none;
         width: 100%;
         min-width: 0;
@@ -464,7 +528,7 @@
         min-height: 260px;
     }
 
-    .cm-right-panel {
+    .cm-order-panel {
         height: 520px;
     }
 

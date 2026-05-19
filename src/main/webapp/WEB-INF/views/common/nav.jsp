@@ -19,7 +19,7 @@
     <div class="nav-item dropdown">
         마켓
         <div class="dropdown-menu">
-            <a href="/stock/view" class="nav-item">주식</a>
+            <a href="/stock/list" class="nav-item">주식</a>
             <a href="/coin/list" class="nav-item">코인</a>
         </div>
     </div>

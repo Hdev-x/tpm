@@ -23,9 +23,29 @@
 
 			<div class="price-header">
 				<div class="ph-left">
-					<div class="ph-name-row">
-						<span class="ph-name" id="displayTitle">삼성전자</span> <span
-							class="ph-ticker" id="displayCode">(005930)</span>
+					<div class="ph-name-row search-trigger" id="search-trigger">
+						<div class="ph-name-group">
+							<span class="ph-name" id="displayTitle">삼성전자</span>
+							<span class="ph-ticker" id="displayCode">(005930)</span>
+							<span class="ph-arrow">▾</span>
+						</div>
+
+						<div class="search-dropdown" id="search-dropdown">
+							<div class="sd-input-wrap">
+								<div class="sd-search-box">
+									<svg class="sd-search-icon" viewBox="0 0 24 24">
+										<circle cx="11" cy="11" r="8" />
+										<path d="M21 21l-4.35-4.35" />
+									</svg>
+									<input type="text" id="sd-input" placeholder="종목 검색" autocomplete="off">
+								</div>
+							</div>
+
+							<div class="sd-content">
+								<div class="sd-label" id="sd-label">주요 종목</div>
+								<div class="sd-list" id="sd-list"></div>
+							</div>
+						</div>
 					</div>
 					<div class="ph-price-row">
 						<span class="ph-price" id="ph-price">-</span> <span
@@ -73,8 +93,10 @@
 				</div>
 
 				<div class="ph-actions">
-					<input type="text" id="symbolInput" placeholder="종목명 또는 코드">
-					<button onclick="searchStock()" class="nav-login-btn">조회</button>
+					<button class="ph-like-btn" id="watchlist-btn">
+						<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+						관심
+					</button>
 				</div>
 			</div>
 

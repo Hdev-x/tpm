@@ -119,52 +119,55 @@ function calculateMA(data, period) {
 }
 
 /* ── 5. 실시간 차트 코어 데이터 파이프라인 수급 ── */
-function fetchChart(range, btnEl) {
-    document.querySelectorAll('.tf-btn[data-tf]').forEach(b => b.classList.remove('active'));
-    if (btnEl) btnEl.classList.add('active');
+function fetchChart(range, btnEl, isAutoRefresh = false) {
+    if (!isAutoRefresh) {
+        document.querySelectorAll('.tf-btn[data-tf]').forEach(b => b.classList.remove('active'));
+        if (btnEl) btnEl.classList.add('active');
+    }
 
-	fetch('/stock/chart?code=' + encodeURIComponent(currentSymbol) + '&range=' + range)
-	    .then(r => r.json())
-	    .then(data => {
-	        // 🔴 [디버그 토탈 로깅] 백엔드가 던져준 원본 객체를 브라우저 콘솔에 통째로 출력!
-	        console.log("📡 [프론트엔드 수신 데이터] :", data);
+    fetch('/stock/chart?code=' + encodeURIComponent(currentSymbol) + '&range=' + range)
+        .then(r => r.json())
+        .then(data => {
+            console.log("📡 [프론트엔드 수신 데이터] :", data);
 
-	        if (data.stockName) document.getElementById('displayTitle').innerText = data.stockName;
-	        if (data.stockCode) {
-	            document.getElementById('displayCode').innerText = '(' + data.stockCode + ')';
-	            currentSymbol = data.stockCode;
-	        }
-	        currentSymbol = data.stockCode || currentSymbol;
+            if (data.stockName) document.getElementById('displayTitle').innerText = data.stockName;
+            if (data.stockCode) {
+                document.getElementById('displayCode').innerText = '(' + data.stockCode + ')';
+                currentSymbol = data.stockCode;
+            }
+            currentSymbol = data.stockCode || currentSymbol;
 
-	        // 🔴 [가드 보정] 유연한 필드명 매핑 방어선 구축
-	        // 백엔드가 대소문자를 섞어 보냈거나(Output2), 다른 키에 담았을 경우를 대비해 스왑 가드를 칩니다.
-	        const actualList = data.output2 || data.Output2 || data.candles || [];
+            const actualList = data.output2 || data.Output2 || data.candles || [];
 
-	        if (!actualList || actualList.length === 0) {
-	            console.warn("⚠️ 시세 히스토리 버퍼가 비어있습니다. 실제 수신된 객체:", data);
-	            return;
-	        }
+            if (!actualList || actualList.length === 0) {
+                console.warn("⚠️ 시세 히스토리 버퍼가 비어있습니다.", data);
+                return;
+            }
 
-	        // candles 맵핑 타겟을 actualList로 변경
-	        const candles = actualList.map(d => {
-	            let timeValue = d.time;
-	            if (d.time && (d.time.includes(':') || d.time.includes(' '))) {
-	                timeValue = Math.floor(new Date(d.time.replace(/-/g, '/')).getTime() / 1000);
-	            }
-	            
-	            return {
-	                time:   timeValue, 
-	                open:   parseFloat(d.open || 0),
-	                high:   parseFloat(d.high || 0),
-	                low:    parseFloat(d.low || 0),
-	                close:  parseFloat(d.close || 0),
-	                volume: parseFloat(d.volume || 0)
-	            };
-	        }).sort((a, b) => {
-	            const timeA = typeof a.time === 'number' ? a.time : new Date(a.time.replace(/-/g, '/')).getTime();
-	            const timeB = typeof b.time === 'number' ? b.time : new Date(b.time.replace(/-/g, '/')).getTime();
-	            return timeA - timeB;
-	        });
+            const candles = actualList.map(d => {
+                if (!d) return null;
+                
+                let timeValue = d.time;
+                if (d.time && (typeof d.time === 'string') && (d.time.includes(':') || d.time.includes(' '))) {
+                    timeValue = Math.floor(new Date(d.time.replace(/-/g, '/')).getTime() / 1000);
+                }
+                
+                // 💡 [핵심 방어막] 네이버 지수 연동 시 캔들 전용 필드가 없으면 현재가 대역을 강제 매핑하여 에러 차단
+                const fallbackPrice = parseFloat(d.close || d.mkstat_prpr || d.stck_prpr || d.nv || lastPrice || 0);
+                
+                return {
+                    time:   timeValue, 
+                    open:   parseFloat(d.open || fallbackPrice),
+                    high:   parseFloat(d.high || fallbackPrice),
+                    low:    parseFloat(d.low || fallbackPrice),
+                    close:  parseFloat(d.close || fallbackPrice),
+                    volume: parseFloat(d.volume || 0)
+                };
+            })
+            .filter(c => c !== null && !isNaN(c.close))
+            .sort((a, b) => a.time - b.time);
+
+            if (candles.length === 0) return;
 
             allCandles = candles;
             candlestickSeries.setData(candles);
@@ -176,9 +179,13 @@ function fetchChart(range, btnEl) {
             
             ma5Series.setData(calculateMA(candles, 5));
             ma20Series.setData(calculateMA(candles, 20));
-            chart.timeScale().fitContent();
+            
+            // 🔴 3초마다 자동 갱신될 때는 사용자의 현재 줌(Zoom) 상태를 해치지 않도록 방어합니다.
+            if (!isAutoRefresh) {
+                chart.timeScale().fitContent();
+            }
 
-            /* 상단 전일대비 지표 레이블 갱신 */
+            /* 상단 전일대비 지표 레이블 및 호가창 갱신 */
             const last = candles[candles.length - 1];
             const prev = candles.length > 1 ? candles[candles.length - 2].close : last.close;
             lastPrice = last.close;
@@ -187,7 +194,7 @@ function fetchChart(range, btnEl) {
             renderMockHoga(last.close);
             updateHighLow();
             
-            console.log("✅ 외부 스크립트 기반 차트 동기화 완수");
+            console.log("✅ 차트 데이터 파이프라인 동기화 완수");
         })
         .catch(err => { 
             console.error("❌ 차트 피드 엔진 장애:", err); 
@@ -479,3 +486,19 @@ window.addEventListener('resize', () => {
         });
     }
 });
+
+setInterval(() => {
+    const activeBtn = document.querySelector('.chart-toolbar .tf-btn.active');
+    let currentRange = '1y'; 
+    
+    if (activeBtn) {
+        const onclickAttr = activeBtn.getAttribute('onclick');
+        if (onclickAttr && onclickAttr.includes("'min'")) currentRange = 'min';
+        else if (onclickAttr && onclickAttr.includes("'3y'")) currentRange = '3y';
+        else if (onclickAttr && onclickAttr.includes("'10y'")) currentRange = '10y';
+    }
+    
+    if (typeof fetchChart === 'function' && currentSymbol) {
+        fetchChart(currentRange, null, true);
+    }
+}, 3000);

@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.tj.app.file.FileDTO;
 import com.tj.app.file.FileManager;
+import com.tj.app.pager.Pager;
 
 @Service
 public class BoardService {
@@ -19,8 +20,6 @@ public class BoardService {
 
 	@Autowired
 	private FileManager fileManager;
-
-	private List<FileDTO> fileDTO;
 
 	@Value("${app.upload.base}")
 	private String name;
@@ -49,9 +48,17 @@ public class BoardService {
 		return result;
 	}
 
-	public List<BoardDTO> list(BoardDTO boardDTO) throws Exception {
-		return boardMapper.list(boardDTO);
+	public List<BoardDTO> list(Pager pager) throws Exception {
+		
+		pager.makePageNum(boardMapper.getCount(pager));
+		pager.makeStartNum();
+
+		return boardMapper.list(pager);
 	}
+	
+	public Long getCount(Pager pager) throws Exception {
+        return boardMapper.getCount(pager);
+    }
 
 	@Transactional
 	public BoardDTO detail(BoardDTO boardDTO) throws Exception {

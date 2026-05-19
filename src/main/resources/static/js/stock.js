@@ -4,7 +4,8 @@
 
 /* ── 1. 전역 상태 관리 ── */
 let chart, candlestickSeries, volumeSeries, ma5Series, ma20Series;
-let currentSymbol = '005930';
+const _urlCode = new URLSearchParams(window.location.search).get('code');
+let currentSymbol = _urlCode || '005930';
 let lastPrice = 0;
 let orderSide = 'buy';
 let showHighLow = true;

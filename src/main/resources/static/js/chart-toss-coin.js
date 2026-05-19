@@ -713,8 +713,21 @@ function updateOhlc(o, h, l, c) {
 
 /* 상단 현재가 헤더 업데이트 */
 function updatePriceHeader(price) {
-    document.getElementById('ph-price').textContent =
-        price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const el = document.getElementById('ph-price');
+    el.textContent = price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    el.dataset.prev = price;
+
+    if (prevClose > 0) {
+        const absChange = price - prevClose;
+        const chgPct = (absChange / prevClose) * 100;
+        const cls = chgPct >= 0 ? 'up' : 'down';
+        const sign = chgPct >= 0 ? '+' : '';
+        const absEl = document.getElementById('ph-change-abs');
+        const pctEl = document.getElementById('ph-change');
+        if (absEl) { absEl.textContent = sign + absChange.toFixed(2) + ' USDT'; absEl.className = 'ph-change ' + cls; }
+        if (pctEl) { pctEl.textContent = '(' + sign + chgPct.toFixed(2) + '%)'; pctEl.className = 'ph-change ' + cls; }
+    }
+
     const inp = document.getElementById('trade-price-input');
     if (inp && !inp.value) inp.placeholder = price.toFixed(2);
     const hm = document.getElementById('hoga-cur-price');
@@ -1143,9 +1156,7 @@ function loadChatHistory(symbol) {
                 msgs.innerHTML = '<div class="chat-empty"><span class="chat-empty-icon">💬</span><span>첫 댓글을 남겨보세요</span></div>';
                 return;
             }
-            /* 최신순으로 내려오므로 역순 렌더링 */
-            list.slice().reverse().forEach(dto => appendChatMsg(dto.username, dto.content, dto.createdAt, false, dto.imageUrl));
-            msgs.scrollTop = msgs.scrollHeight;
+            list.forEach(dto => appendChatMsg(dto.username, dto.content, dto.createdAt, false, dto.imageUrl));
         });
 }
 
@@ -1200,8 +1211,7 @@ function appendChatMsg(username, content, createdAt, scroll = true, imageUrl = n
             '</div>' +
             imgHtml +
         '</div>';
-    msgs.appendChild(div);
-    if (scroll) msgs.scrollTop = msgs.scrollHeight;
+    msgs.prepend(div);
 }
 
 function cmToggleMore(btn) {

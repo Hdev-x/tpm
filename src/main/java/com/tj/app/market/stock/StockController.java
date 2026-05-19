@@ -144,16 +144,20 @@ public class StockController {
      * 🔍 2. 개별 종목 현재가 단건 조회
      */
     @GetMapping("/ticker")
-    public ResponseEntity<Map<String, Object>> getTicker(@RequestParam String code) {
-        StockPriceDTO priceData = webClientService.getCurrentPrice(code);
-        
-        if (priceData == null || priceData.getOutput() == null) {
-            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of("error", "실시간 단가 데이터를 가로챌 수 없습니다."));
+    public ResponseEntity<Map<String, Object>> getTicker(@RequestParam("code") String code) {
+        Map<String, String> naverData = webClientService.getStockPriceFromNaver(code);
+
+        if (naverData == null || naverData.isEmpty() || "-".equals(naverData.get("price"))) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of("error", "시세 데이터를 가져올 수 없습니다."));
         }
 
-        Map<String, Object> result = new HashMap<>();
-        result.put("output", priceData.getOutput()); 
-        return ResponseEntity.ok(result);
+        Map<String, Object> output = new HashMap<>();
+        output.put("stck_prpr", naverData.get("price"));
+        output.put("prdy_ctrt", naverData.get("rate"));
+        output.put("prdy_vrss", naverData.get("diff"));
+
+        return ResponseEntity.ok(Map.of("output", output));
     }
     
     /**
@@ -201,6 +205,12 @@ public class StockController {
         }
     }
     
+    @GetMapping("/db-list")
+    public ResponseEntity<?> getDbStockList() {
+        List<Map<String, Object>> stocks = stockJoinService.getAllStocks();
+        return ResponseEntity.ok(stocks);
+    }
+
     @GetMapping("/rank")
     public ResponseEntity<?> getMarketRank(@RequestParam(value = "mode", defaultValue = "UP") String mode) {
         

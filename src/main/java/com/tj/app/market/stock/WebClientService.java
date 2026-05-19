@@ -197,9 +197,28 @@ public class WebClientService {
                             List<Map<String, Object>> datas = (List<Map<String, Object>>) areas.get(0).get("datas");
                             if (datas != null && !datas.isEmpty()) {
                                 Map<String, Object> data = datas.get(0);
-                                resultMap.put("price", String.valueOf(data.getOrDefault("nv", "-")));
-                                resultMap.put("rate",  String.valueOf(data.getOrDefault("cr", "-")));
-                                resultMap.put("diff",  String.valueOf(data.getOrDefault("sv", "-")));
+                                
+                                // 원본 데이터 추출 (네이버는 원래 cr, sv를 절대값 양수로만 줍니다)
+                                String price = String.valueOf(data.getOrDefault("nv", "-"));
+                                String rate = String.valueOf(data.getOrDefault("cr", "-"));
+                                String diff = String.valueOf(data.getOrDefault("sv", "-"));
+                                
+                                // 🎯 rf (Rise & Fall) 변동 부호 플래그 추출 (1: 상한, 2: 상승, 3: 보합, 4: 하한, 5: 하락)
+                                String rf = String.valueOf(data.getOrDefault("rf", "3")); 
+                                
+                                // 4 또는 5일 경우 시장가가 전일대비 하락 상태임을 의미하므로 마이너스 부호(-) 부여
+                                if ("4".equals(rf) || "5".equals(rf)) {
+                                    if (!"-".equals(rate) && !rate.startsWith("-")) {
+                                        rate = "-" + rate;
+                                    }
+                                    if (!"-".equals(diff) && !diff.startsWith("-")) {
+                                        diff = "-" + diff;
+                                    }
+                                }
+
+                                resultMap.put("price", price);
+                                resultMap.put("rate",  rate);
+                                resultMap.put("diff",  diff);
                                 return resultMap;
                             }
                         }

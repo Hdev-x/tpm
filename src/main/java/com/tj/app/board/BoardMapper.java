@@ -5,13 +5,16 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
 import com.tj.app.file.FileDTO;
+import com.tj.app.pager.Pager;
 
 @Mapper
 public interface BoardMapper {
 	
+	public Long getCount(Pager page) throws Exception;
+	
 	public int create(BoardDTO boardDTO) throws Exception;
 	
-	public List<BoardDTO> list(BoardDTO boardDTO) throws Exception;
+	public List<BoardDTO> list(Pager pager) throws Exception;
 	
 	public BoardDTO detail(BoardDTO boardDTO) throws Exception;
 	

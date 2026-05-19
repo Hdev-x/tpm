@@ -4,6 +4,21 @@
   "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.tj.app.board.BoardMapper">
 
+<sql id="search_sql">
+		WHERE
+		<choose>
+			<when test="kind == 'v2'">"BOARD_CONTENT"</when>
+			<when test="kind == 'v3'">"BOARD_WRITER"</when>
+			<otherwise>"BOARD_TITLE"</otherwise>
+		</choose>
+		LIKE concat('%', #{search}, '%')
+	</sql>
+	
+	<select id="getCount" resultType="Long">
+		SELECT COUNT("BOARD_NO") From "BOARD"
+		<include refid="search_sql"></include>
+	</select>
+
 	<resultMap type="BoardDTO" id="detailResult">
 		<id column="BOARD_NO" property="boardNo" />
 		<result column="BOARD_TITLE" property="boardTitle" />
@@ -33,8 +48,11 @@
 CURRENT_TIMESTAMP, #{username}, 0)
 	</insert>
 
-	<select id="list" resultType="BoardDTO">
-		SELECT * FROM "BOARD"
+	<select id="list" resultMap="detailResult" parameterType="Pager">
+    SELECT * FROM "BOARD"
+    <include refid="search_sql"></include>
+    ORDER BY "BOARD_NO" DESC
+    LIMIT #{perPage} OFFSET #{startNum}
 	</select>
 
 	<select id="detail" resultMap="detailResult">

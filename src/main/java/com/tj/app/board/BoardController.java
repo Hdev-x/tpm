@@ -14,6 +14,7 @@ import org.springframework.web.servlet.ModelAndView;
 import com.tj.app.like.LikeDTO;
 import com.tj.app.like.LikeService;
 import com.tj.app.member.MemberDTO;
+import com.tj.app.pager.Pager;
 import com.tj.app.reply.ReplyDTO;
 import com.tj.app.reply.ReplyService;
 
@@ -39,8 +40,8 @@ public class BoardController {
     
 
     @GetMapping("list")
-    public String list(BoardDTO boardDTO, Model model) throws Exception {
-    	List<BoardDTO> list = boardService.list(boardDTO);
+    public String list(Pager pager, Model model) throws Exception {
+    	List<BoardDTO> list = boardService.list(pager);
     	model.addAttribute("list", list);
     	return "board/list";
     }

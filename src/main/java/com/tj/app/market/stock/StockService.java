@@ -59,33 +59,18 @@ public class StockService {
                     rawPrice = rawPrice / 100.0;
                 }
                 
-                kospiIndexItem.setMkstat_prpr(String.format("%.2f", rawPrice)); // 스크린샷의 7516.04 반영
-                kospiIndexItem.setPrdy_ctrt(naverKospi.get("rate"));             // 스크린샷의 +0.31% 반영
+                kospiIndexItem.setMkstat_prpr(String.format("%.2f", rawPrice)); // 실시간 지수 반영
+                kospiIndexItem.setPrdy_ctrt(naverKospi.get("rate"));             // 실시간 등락률 반영
                 
-                // 0번째 인덱스 확보를 위해 리스트에 먼저 추가
+                // 최종 메모리 교체를 위해 리스트에 담기
                 combinedList.add(kospiIndexItem);
                 log.info("📈 [네이버 단일 지수 연동] KOSPI 종합지수 로딩 성공: {} ({}%)", kospiIndexItem.getMkstat_prpr(), kospiIndexItem.getPrdy_ctrt());
-            }
-            
-            // 2. 📡 [한투 순정 전종목 리스트 수급]
-            StockListDTO marketData = webClientService.getFullMarketPrices();
-            
-            if (marketData != null && marketData.getOutput2() != null && !marketData.getOutput2().isEmpty()) {
-                // 한투가 준 순정 종목 100개를 네이버 지수 뒤에 그대로 이어 붙임
-                combinedList.addAll(marketData.getOutput2());
-            } else {
-                // 🛡️ 장마감/모의투자 404 방어: 한투가 뻗었을 경우 기존 캐시에 저장되어 있던 주식 목록 복사해서 생명 연장
-                log.warn("⚠️ 한투 종목 API 수급 제한 단계 발생 -> 기존 메모리에 살아있는 주식 데이터를 보존합니다.");
-                if (this.top100Stocks != null && this.top100Stocks.size() > 1) {
-                    List<StockListOutput> oldStocks = new ArrayList<>(this.top100Stocks.subList(1, this.top100Stocks.size()));
-                    combinedList.addAll(oldStocks);
-                }
             }
             
             // 3. 최종 결합된 리스트를 메모리에 동기화 (원자적 치환)
             if (!combinedList.isEmpty()) {
                 this.top100Stocks = combinedList;
-                log.info("✅ [동기화 완료] 총 {}개의 요소 캐시 업데이트 완료 (지수 1건 + 종목)", combinedList.size());
+                log.info("✅ [동기화 완료] 총 1개의 요소 캐시 업데이트 완료 (순정 지수 1건)");
             }
             
         } catch (Exception e) {

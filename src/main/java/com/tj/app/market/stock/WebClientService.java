@@ -171,27 +171,6 @@ public class WebClientService {
         }
     }
 
-    /**
-     * 5. 업종별 종목 시세(KOSPI 전체 리스트) 조회
-     */
-    public StockListDTO getFullMarketPrices() {
-        try {
-            WebClient.RequestHeadersSpec<?> request = webClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .path("/uapi/domestic-stock/v1/quotations/inquire-index-category-stock")
-                            .queryParam("FID_COND_MRKT_DIV_CODE", "J") 
-                            .queryParam("FID_INPUT_ISCD", "0001")      
-                            .build());
-
-            return applyDefaultHeaders(request, "FHPK13010000") 
-                    .retrieve()
-                    .bodyToMono(StockListDTO.class)
-                    .block(Duration.ofSeconds(10));
-        } catch (Exception e) {
-            log.error("❌ 다건 시세 조회 중 오류: {}", e.getMessage());
-            return null;
-        }
-    }
     
     public Map<String, String> getStockPriceFromNaver(String code) {
         Map<String, String> resultMap = new HashMap<>();

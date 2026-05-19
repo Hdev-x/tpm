@@ -213,13 +213,14 @@ async function startRealTimeEngine() {
 function loadStockNews(keyword) {
     if (!keyword) keyword = "삼성전자";
     
+    // 키워드 텍스트 변경 가드
     const keywordSpan = document.getElementById("current-news-keyword");
     if(keywordSpan) keywordSpan.innerText = keyword;
     
     const newsListDiv = document.getElementById("naver-news-list");
     if(!newsListDiv) return;
     
-    // 🌟 [최종 동기화] 방금 데이터 터진 그 주소 그대로 정밀 타격합니다!
+    // 📡 백엔드 뉴스 API 정밀 타격
     fetch("/news?keyword=" + encodeURIComponent(keyword))
         .then(response => {
             if (!response.ok) throw new Error("뉴스 서버 응답 불능");
@@ -233,30 +234,52 @@ function loadStockNews(keyword) {
                 return;
             }
             
-			data.items.forEach(item => {
-			    const card = document.createElement("div");
-			    card.style.borderBottom = "1px solid #222634";
-			    card.style.padding = "12px 0";
-			    
-			    // 💡 외부 js 파일이므로 역슬래시(\)를 빼고 순정 백틱(` `)으로만 감싸야 합니다!
-			    card.innerHTML = `
-			        <div style="margin-bottom: 4px; text-align: left;">
-			            <a href="${item.link}" target="_blank" style="color: #e9ecf0; text-decoration: none; font-weight: bold; font-size: 13px;">
-			                ${item.title}
-			            </a>
-			        </div>
-			        <div style="color: #848e9c; font-size: 11px; line-height: 1.4; text-align: left;">
-			            ${item.description}
-			        </div>
-			    `;
-			    newsListDiv.appendChild(card);
-			});
+            data.items.forEach(item => {
+                const card = document.createElement("div");
+                card.style.borderBottom = "1px solid #222634";
+                card.style.padding = "12px 0";
+                
+                card.innerHTML = `
+                    <div style="margin-bottom: 4px; text-align: left;">
+                        <a href="${item.link}" target="_blank" style="color: #e9ecf0; text-decoration: none; font-weight: bold; font-size: 13px;">
+                            ${item.title}
+                        </a>
+                    </div>
+                    <div style="color: #848e9c; font-size: 11px; line-height: 1.4; text-align: left;">
+                        ${item.description}
+                    </div>
+                `;
+                newsListDiv.appendChild(card);
+            });
         })
         .catch(error => {
             console.error("❌ 뉴스 렌더링 실패:", error);
             newsListDiv.innerHTML = `<p style="color: #f23645; text-align: center; padding: 10px 0; font-size: 12px;">⚠️ 실시간 뉴스 수급이 지연되고 있습니다.</p>`;
         });
 }
+
+document.addEventListener("DOMContentLoaded", function() {
+    // 최초 실행구동
+    loadStockNews("삼성전자");
+    if (typeof loadMarketHotTrends === "function") loadMarketHotTrends();
+
+    // 🌟 [엔터 감지 엔진] 이벤트 리스너는 함수 바깥인 여기에 독립적으로 존재해야 합니다.
+    const mainNewsInput = document.getElementById("main-news-search");
+    if (mainNewsInput) {
+        mainNewsInput.addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                const keyword = mainNewsInput.value.trim();
+                if (keyword) {
+                    mainNewsInput.blur(); // 인풋창 포커스 아웃 효과
+                    
+                    // 📡 갱신된 키워드로 뉴스 페치 함수 원격 가동!
+                    console.log(`🔍 메인 대시보드 뉴스 타겟 전환: ${keyword}`);
+                    loadStockNews(keyword);
+                }
+            }
+        });
+    }
+});
 
 /**
  * 📈 2. 실시간 급상승 / 급등락 종목 렌더링 (JSP EL태그 충돌 완벽 방어)

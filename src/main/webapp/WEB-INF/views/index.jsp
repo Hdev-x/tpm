@@ -56,15 +56,27 @@
                     <div class="dashboard-bottom-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; font-family: 'Malgun Gothic', sans-serif;">
     
     <div class="news-panel" style="background-color: #1c2030; color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #2a2e39; max-height: 450px; overflow-y: auto;">
-        <h3 style="border-bottom: 2px solid #2a2e39; padding-bottom: 10px; margin-top: 0; display: flex; justify-content: space-between; align-items: center;">
-            <span>📰 실시간 종목 뉴스</span>
-            <span id="current-news-keyword" style="color: #2962ff; font-size: 14px; background: #131722; padding: 4px 8px; border-radius: 4px;">삼성전자</span>
-        </h3>
+    <h3 style="border-bottom: 2px solid #2a2e39; padding-bottom: 10px; margin-top: 0; display: flex; justify-content: space-between; align-items: center;">
         
-        <div id="naver-news-list" class="news-list">
-            <p style="color: #848e9c; text-align: center; padding: 20px 0;">뉴스를 불러오는 중입니다...</p>
+        <a href="#" onclick="location.href='/news/list'; return false;" 
+           class="main-news-title-link"
+           style="font-size: 16px; font-weight: bold; color: var(--text); text-decoration: none; cursor: pointer; display: flex; align-items: center; gap: 4px; transition: color 0.15s;">
+            <span>📰 실시간 종목 뉴스</span>
+        </a>
+        
+        <div style="position: relative; display: flex; align-items: center;">
+            <span id="current-news-keyword" style="display: none;">삼성전자</span>
+            <input type="text" id="main-news-search" value="삼성전자" 
+                   style="width: 100px; background: #131722; border: 1px solid #2962ff; color: #2962ff; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 4px; text-align: center; outline: none; transition: all 0.2s; font-family: 'Pretendard', sans-serif;"
+                   onfocus="this.style.width='140px'; this.style.borderColor='#3182f6'; this.style.color='#3182f6'; this.select();" 
+                   onblur="this.style.width='100px'; this.style.borderColor='#2962ff'; this.style.color='#2962ff';">
         </div>
+    </h3>
+            
+    <div id="naver-news-list" class="news-list">
+        <p style="color: #848e9c; text-align: center; padding: 20px 0;">뉴스를 불러오는 중입니다...</p>
     </div>
+</div>
 
     <div class="market-rank-panel" style="background-color: #1c2030; color: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #2a2e39; max-height: 450px; overflow-y: auto;">
         <h3 style="border-bottom: 2px solid #2a2e39; padding-bottom: 10px; margin-top: 0;">

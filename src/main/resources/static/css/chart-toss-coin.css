@@ -674,8 +674,11 @@
 
 .order-panel {
     padding: 16px;
-    overflow-y: auto;
+    overflow: hidden;
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
 }
 
 /* 지정가/시장가 드롭다운 */

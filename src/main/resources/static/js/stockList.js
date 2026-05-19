@@ -28,9 +28,23 @@ function fmtPrice(val) {
 
 function fmtRate(val) {
     if (!val || val === '-') return { text: '-', cls: 'neutral' };
+    
+    // %, + 기호를 제거하고 순수 숫자로 변환
     const n = parseFloat(val.toString().replace(/[+%]/g, ''));
     if (isNaN(n)) return { text: val, cls: 'neutral' };
-    return { text: (n >= 0 ? '+' : '') + n.toFixed(2) + '%', cls: n >= 0 ? 'up' : 'down' };
+    
+    let cls = 'neutral';
+    let text = n.toFixed(2) + '%';
+
+    if (n > 0) {
+        cls = 'up';
+        text = '+' + text; // 양수일 때만 + 붙임
+    } else if (n < 0) {
+        cls = 'down';
+        // n이 이미 음수이므로 n.toFixed(2) 결과에 -가 포함되어 나옵니다.
+    }
+
+    return { text: text, cls: cls };
 }
 
 function fmtDiff(val) {
@@ -129,26 +143,45 @@ async function fetchRowPrice(row, code) {
         const changeCell = row.querySelector('.td-change .badge');
         const diffCell = row.querySelector('.td-diff');
 
+        // 1. 현재가 반영
         if (priceCell) priceCell.textContent = fmtPrice(out.stck_prpr);
 
+        // 2. 부호 처리 정밀화 (prdy_vrss_sign 기준 또는 prdy_ctrt 자체 부호 기준)
+        let rateVal = out.prdy_ctrt || '0';
+        let diffVal = out.prdy_vrss || '0';
+        
+        // API에 따라 prdy_vrss_sign이 '3', '4', '5' 이면 하락/보합 세팅
+        const sign = out.prdy_vrss_sign;
+        const isDown = (sign === '4' || sign === '5' || parseFloat(rateVal) < 0);
+
+        // 만약 하락인데 데이터에 마이너스 부호가 없다면 강제로 붙여줌
+        if (isDown) {
+            if (!rateVal.toString().startsWith('-')) rateVal = '-' + rateVal;
+            if (!diffVal.toString().startsWith('-')) diffVal = '-' + diffVal;
+        }
+
+        // 3. 등락률 UI 반영
         if (changeCell && out.prdy_ctrt) {
-            const rate = fmtRate(out.prdy_ctrt);
+            const rate = fmtRate(rateVal);
             changeCell.textContent = rate.text;
             changeCell.className = 'badge ' + rate.cls;
         }
 
+        // 4. 전일대비 금액 UI 반영 (+6,130원 오류 해결 지점)
         if (diffCell && out.prdy_vrss) {
-            diffCell.textContent = fmtDiff(out.prdy_vrss);
+            diffCell.textContent = fmtDiff(diffVal);
         }
 
-        // allStocks 캐시도 업데이트
+        // allStocks 캐시 데이터도 동동 동기화
         const stock = allStocks.find(s => s.code === code);
         if (stock) {
             stock.price = out.stck_prpr;
-            stock.changeRate = out.prdy_ctrt;
-            stock.changeDiff = out.prdy_vrss;
+            stock.changeRate = rateVal;
+            stock.changeDiff = diffVal;
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error("실시간 시세 파싱 에러:", e);
+    }
 }
 
 /* ── 테이블 행 생성 ── */

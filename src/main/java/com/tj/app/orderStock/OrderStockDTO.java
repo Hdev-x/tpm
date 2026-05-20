@@ -12,7 +12,7 @@ import lombok.ToString;
 public class OrderStockDTO {
 	
 	private Long orderId;
-	private boolean orderType;
+	private String orderType;
 	private Long orderPrice;
 	private Long orderCount;
 	private LocalDate orderDate;

@@ -15,8 +15,13 @@ import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 
 import jakarta.websocket.ContainerProvider;
 import jakarta.websocket.WebSocketContainer;
-import java.net.URI;
+import org.springframework.scheduling.annotation.Scheduled;
 
+import java.net.URI;
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,6 +44,11 @@ public class KisWebSocketService {
     private boolean stockWebSocketEnabled;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private volatile WebSocketSession currentSession;
+
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+    private static final LocalTime MARKET_OPEN  = LocalTime.of(9, 0);
+    private static final LocalTime MARKET_CLOSE = LocalTime.of(15, 35);
 
     // 종목코드 → 최신 시세 (price/rate/diff/high/low)
     private final Map<String, Map<String, String>> priceCache = new ConcurrentHashMap<>();
@@ -47,6 +57,36 @@ public class KisWebSocketService {
 
     public Map<String, Map<String, String>> getPriceCache() { return priceCache; }
     public Map<String, String> getNameCache() { return nameCache; }
+
+    private boolean isMarketHours() {
+        ZonedDateTime now = ZonedDateTime.now(KST);
+        DayOfWeek day = now.getDayOfWeek();
+        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) return false;
+        LocalTime time = now.toLocalTime();
+        return !time.isBefore(MARKET_OPEN) && !time.isAfter(MARKET_CLOSE);
+    }
+
+    @Scheduled(cron = "0 0 9 * * MON-FRI", zone = "Asia/Seoul")
+    public void connectOnMarketOpen() {
+        log.info("🔔 장 시작 - KIS WebSocket 연결 시도");
+        connect();
+    }
+
+    @Scheduled(cron = "0 35 15 * * MON-FRI", zone = "Asia/Seoul")
+    public void disconnectOnMarketClose() {
+        log.info("🔔 장 마감 - KIS WebSocket 연결 종료");
+        disconnect();
+    }
+
+    public void disconnect() {
+        if (currentSession != null && currentSession.isOpen()) {
+            try {
+                currentSession.close();
+            } catch (Exception e) {
+                log.warn("⚠️ KIS WebSocket 종료 중 오류: {}", e.getMessage());
+            }
+        }
+    }
 
     public void connect() {
         if (!stockWebSocketEnabled) {
@@ -81,6 +121,7 @@ public class KisWebSocketService {
 
                 @Override
                 public void afterConnectionEstablished(WebSocketSession session) throws Exception {
+                    currentSession = session;
                     log.info("✅ KIS WebSocket 연결 성공");
                     for (String code : codes) {
                         subscribe(session, approvalKey, code);
@@ -96,13 +137,17 @@ public class KisWebSocketService {
 
                 @Override
                 public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-                    log.warn("⚠️ KIS WebSocket 연결 끊김 ({}), 3초 후 재연결", status);
-                    new Thread(() -> {
-                        try {
-                            Thread.sleep(3000);
-                            if (stockWebSocketEnabled) connect();
-                        } catch (InterruptedException ignored) {}
-                    }).start();
+                    if (isMarketHours()) {
+                        log.warn("⚠️ KIS WebSocket 연결 끊김 ({}), 3초 후 재연결", status);
+                        new Thread(() -> {
+                            try {
+                                Thread.sleep(3000);
+                                if (stockWebSocketEnabled) connect();
+                            } catch (InterruptedException ignored) {}
+                        }).start();
+                    } else {
+                        log.info("📴 KIS WebSocket 연결 종료 (장 시간 외) - 재연결 안 함");
+                    }
                 }
 
             }, new WebSocketHttpHeaders(), uri);

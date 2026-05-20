@@ -15,6 +15,7 @@
         <div class="member-logo" onclick="location.href='/'" style="cursor:pointer;"><span>B</span>조</div>
         
         <form action="./login" method="post" id="loginForm">
+            <input type="hidden" name="redirect" value="${redirect}">
             <div class="input-group">
                 <label class="input-label">아이디</label>
                 <input type="text" name="username" class="member-input" placeholder="아이디를 입력하세요" required>

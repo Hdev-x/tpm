@@ -44,14 +44,65 @@
         </div>
         <c:choose>
             <c:when test="${empty member}">
-                <a href="/member/login" class="nav-login-btn" style="text-decoration: none;">로그인</a>
+                <a id="nav-login-btn" href="/member/login" class="nav-login-btn" style="text-decoration: none;">로그인</a>
             </c:when>
             <c:otherwise>
-                <span style="margin-right: 12px; color: var(--text2);">
-                    <strong>${member.username}</strong>님 환영합니다
-                </span>
-                <a href="/member/logout" class="nav-item">로그아웃</a>
+                <div class="nav-user-wrap" id="nav-user-wrap">
+                    <button class="nav-user-btn" id="nav-user-btn">
+                        <c:choose>
+                            <c:when test="${not empty profileFileName}">
+                                <img src="/files/profile/${profileFileName}" alt="프로필" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">
+                            </c:when>
+                            <c:otherwise>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="20" height="20">
+                                    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                                </svg>
+                            </c:otherwise>
+                        </c:choose>
+                    </button>
+                    <div class="nav-user-dropdown" id="nav-user-dropdown">
+                        <div class="nav-user-info">
+                            <div class="nav-user-avatar">
+                                <c:choose>
+                                    <c:when test="${not empty profileFileName}">
+                                        <img src="/files/profile/${profileFileName}" alt="프로필" style="width:100%;height:100%;object-fit:cover;border-radius:10px;">
+                                    </c:when>
+                                    <c:otherwise>
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="22" height="22">
+                                            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+                                        </svg>
+                                    </c:otherwise>
+                                </c:choose>
+                            </div>
+                            <span class="nav-user-name">${member.username}</span>
+                        </div>
+                        <div class="nav-user-divider"></div>
+                        <a href="/member/read" class="nav-user-item">내 정보 <span class="nav-user-arrow">›</span></a>
+                        <a id="nav-logout-btn" href="/member/logout" class="nav-user-item">로그아웃</a>
+                    </div>
+                </div>
             </c:otherwise>
         </c:choose>
+        <script>
+            (function() {
+                const cur = encodeURIComponent(location.pathname + location.search);
+                const loginBtn = document.getElementById('nav-login-btn');
+                if (loginBtn) loginBtn.href = '/member/login?redirect=' + cur;
+                const logoutBtn = document.getElementById('nav-logout-btn');
+                if (logoutBtn) logoutBtn.href = '/member/logout?redirect=' + cur;
+
+                const userBtn = document.getElementById('nav-user-btn');
+                const userDropdown = document.getElementById('nav-user-dropdown');
+                if (userBtn && userDropdown) {
+                    userBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        userDropdown.classList.toggle('open');
+                    });
+                    document.addEventListener('click', function() {
+                        userDropdown.classList.remove('open');
+                    });
+                }
+            })();
+        </script>
     </div>
 </nav>

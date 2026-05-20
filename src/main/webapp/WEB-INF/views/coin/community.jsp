@@ -321,40 +321,74 @@
                 <div class="resize-h" id="rh-1"></div>
 
                 <div class="card panel-chart cm-feed-panel" id="panel-chart">
-                    <div class="cm-input-wrap">
-                        <div class="cm-input-avatar">익</div>
-                        <div class="cm-input-inner">
-                            <textarea class="cm-input-box" placeholder="지금 무슨 생각을 하고 있나요?"></textarea>
-                            <div class="cm-input-actions">
-                                <button class="cm-input-icon-btn" title="이미지 업로드">
-                                    <svg viewBox="0 0 24 24" fill="currentColor" width="18" height="18">
-                                        <path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-1.1 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/>
-                                    </svg>
-                                </button>
-                                <button class="cm-input-icon-btn" title="작성 옵션">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                                        <line x1="8" y1="6" x2="21" y2="6"/>
-                                        <line x1="8" y1="12" x2="21" y2="12"/>
-                                        <line x1="8" y1="18" x2="21" y2="18"/>
-                                        <line x1="3" y1="6" x2="3.01" y2="6"/>
-                                        <line x1="3" y1="12" x2="3.01" y2="12"/>
-                                        <line x1="3" y1="18" x2="3.01" y2="18"/>
-                                    </svg>
-                                </button>
-                                <button class="cm-input-icon-btn" title="공유">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
-                                        <polyline points="17 1 21 5 17 9"/>
-                                        <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
-                                        <polyline points="7 23 3 19 7 15"/>
-                                        <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
-                                    </svg>
-                                </button>
+                    <div class="cm-input-wrap" onclick="openPostModal()">
+                        <div class="cm-input-avatar" id="cm-my-avatar">
+                            <c:choose>
+                                <c:when test="${not empty profileFileName}">
+                                    <img src="/files/profile/${profileFileName}" alt="프로필" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                </c:when>
+                                <c:otherwise>익</c:otherwise>
+                            </c:choose>
+                        </div>
+                        <div class="cm-input-placeholder">
+                            <span>지금 무슨 생각을 하고 있나요?</span>
+                            <div class="cm-placeholder-icons">
+                                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
                             </div>
                         </div>
                     </div>
 
+                    <!-- 글쓰기 모달 -->
+                    <div class="cm-modal-overlay" id="cmModalOverlay" onclick="closePostModal()"></div>
+                    <div class="cm-modal" id="cmModal">
+                        <div class="cm-modal-header">
+                            <span class="cm-modal-title"><span id="cmModalSymbol">${symbol}</span> <span class="cm-modal-arrow">›</span> 에 글 남기기</span>
+                            <button class="cm-modal-close" onclick="closePostModal()">✕</button>
+                        </div>
+                        <input type="file" id="cmImageInput" accept="image/*" style="display:none" onchange="previewModalImage(this)">
+                        <div class="cm-modal-body">
+                            <div class="cm-modal-user">
+                                <div class="cm-modal-avatar" id="cm-modal-avatar">
+                                    <c:choose>
+                                        <c:when test="${not empty profileFileName}">
+                                            <img src="/files/profile/${profileFileName}" alt="프로필" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                        </c:when>
+                                        <c:otherwise>익</c:otherwise>
+                                    </c:choose>
+                                </div>
+                                <span class="cm-modal-username" id="cm-modal-username">${member.username}</span>
+                            </div>
+                            <textarea class="cm-modal-textarea" id="cm-modal-textarea" placeholder="지금 무슨 생각을 하고 있나요?" maxlength="2000" oninput="updateCharCount()"></textarea>
+                            <div class="cm-modal-preview" id="cmImagePreview" style="display:none;">
+                                <img id="cmPreviewImg" src="" alt="">
+                                <button class="cm-preview-remove" onclick="removeModalImage()">✕</button>
+                            </div>
+                        </div>
+                        <div class="cm-modal-footer">
+                            <div class="cm-modal-tools">
+                                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" style="cursor:pointer" onclick="document.getElementById('cmImageInput').click()"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                                <span class="cm-char-count"><span id="cmCharCount">0</span> / 2000</span>
+                            </div>
+                            <div class="cm-modal-bottom">
+                                <button class="cm-modal-submit" onclick="submitComment()">남기기</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 나가기 확인 다이얼로그 -->
+                    <div class="cm-confirm-overlay" id="cmConfirmOverlay"></div>
+                    <div class="cm-confirm" id="cmConfirm">
+                        <div class="cm-confirm-title">다음에 남길까요?</div>
+                        <div class="cm-confirm-desc">지금까지 쓴 내용은 저장되지 않아요.</div>
+                        <div class="cm-confirm-btns">
+                            <button class="cm-confirm-keep" onclick="continueWriting()">이어 쓰기</button>
+                            <button class="cm-confirm-leave" onclick="confirmLeave()">나가기</button>
+                        </div>
+                    </div>
+
                     <div class="cm-feed-filter">
-                        <button class="cm-filter-btn active">인기순 ⇅</button>
+                        <button class="cm-filter-btn active" id="btn-sort-latest" onclick="setSortMode('latest')">최신순</button>
+                        <button class="cm-filter-btn" id="btn-sort-popular" onclick="setSortMode('popular')">인기순</button>
                     </div>
 
                     <div class="cm-feed-list" id="cmFeedList">
@@ -456,7 +490,34 @@
 <script src="/js/common.js"></script>
 <script>
     const currentSymbol = "${symbol}";
+    const isLoggedIn = ${not empty member};
+    const currentUser = "${not empty member ? member.username : ''}";
     let orderSide = 'buy';
+
+    if (isLoggedIn && currentUser) {
+        const avatar = document.getElementById('cm-my-avatar');
+        if (avatar && !avatar.querySelector('img')) {
+            avatar.textContent = currentUser.charAt(0).toUpperCase();
+            avatar.style.background = cmFeedAvatarColor(currentUser);
+        }
+        const textarea = document.getElementById('cm-textarea');
+        if (textarea) {
+            textarea.addEventListener('keydown', e => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) submitComment();
+            });
+        }
+    }
+
+    if (!isLoggedIn) {
+        const wrap = document.querySelector('.cm-input-wrap');
+        if (wrap) {
+            wrap.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:14px 16px;color:var(--text-sub);font-size:13px;">'
+                + '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>'
+                + '<span>댓글을 작성하려면 로그인이 필요합니다</span>'
+                + '<a href="/member/login?redirect=' + encodeURIComponent(location.pathname + location.search) + '" style="margin-left:auto;padding:5px 14px;background:var(--accent,#4f8ef7);color:#fff;border-radius:6px;font-size:12px;text-decoration:none;">로그인</a>'
+                + '</div>';
+        }
+    }
 
 
     function switchOrderTab(side) {
@@ -688,6 +749,14 @@
 
     /* ── 커뮤니티 피드 실시간 댓글 ── */
     let _stompClient = null;
+    let currentSort = 'latest';
+
+    function setSortMode(mode) {
+        currentSort = mode;
+        document.getElementById('btn-sort-latest').classList.toggle('active', mode === 'latest');
+        document.getElementById('btn-sort-popular').classList.toggle('active', mode === 'popular');
+        loadCommunityFeedHistory(currentSymbol);
+    }
 
     function cmFeedAvatarColor(name) {
         const palette = ['#4caf50','#2196f3','#e91e63','#ff9800','#9c27b0','#00bcd4','#f44336','#3f51b5','#009688','#795548'];
@@ -707,7 +776,7 @@
         return Math.floor(h / 24) + '일';
     }
 
-    function appendFeedMsg(username, content, createdAt, scroll, imageUrl) {
+    function appendFeedMsg(commentNo, username, content, createdAt, scroll, imageUrl, profileFileName, likeCount, likedByMe) {
         const feed = document.getElementById('cmFeedList');
         const empty = feed.querySelector('.chat-empty');
         if (empty) empty.remove();
@@ -715,25 +784,34 @@
         const safe = s => String(s).replace(/</g, '&lt;');
         const color = cmFeedAvatarColor(username);
         const initial = username.charAt(0).toUpperCase();
+        const avatarHtml = profileFileName
+            ? '<img src="/files/profile/' + profileFileName + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+            : initial;
         const time = cmFeedRelTime(createdAt);
         const MAX = 100;
         const isTrunc = content.length > MAX;
         const preview = isTrunc ? safe(content.slice(0, MAX)) + '...' : safe(content);
         const full = safe(content);
         const imgHtml = imageUrl ? '<img class="cm-image" src="' + imageUrl + '" alt="" onclick="cmOpenImage(this)">' : '';
+        const isOwn = isLoggedIn && username === currentUser;
+        const ownerBtns = isOwn
+            ? '<button class="cm-action-btn cm-edit-btn" onclick="startEditComment(this)">수정</button>'
+            + '<button class="cm-action-btn cm-delete-btn" onclick="deleteComment(this)">삭제</button>'
+            : '';
 
         const div = document.createElement('div');
         div.className = 'cm-feed-item';
+        div.dataset.commentNo = commentNo;
+        div.dataset.symbol = currentSymbol;
         div.innerHTML =
             '<div class="cm-left">' +
-                '<div class="cm-avatar" style="background:' + color + '">' + initial + '</div>' +
+                '<div class="cm-avatar" style="background:' + (profileFileName ? 'transparent' : color) + '">' + avatarHtml + '</div>' +
                 '<span class="cm-rank">주주</span>' +
             '</div>' +
             '<div class="cm-right">' +
                 '<div class="cm-meta">' +
                     '<span class="cm-name">' + safe(username) + '</span>' +
                     '<span class="cm-time">' + time + '</span>' +
-                    '<button class="cm-follow-btn">팔로우</button>' +
                 '</div>' +
                 '<div class="cm-text" data-full="' + full.replace(/"/g, '&quot;') + '" data-trunc="' + (isTrunc ? '1' : '0') + '">' +
                     preview +
@@ -741,34 +819,238 @@
                 '</div>' +
                 imgHtml +
                 '<div class="cm-feed-actions">' +
-                    '<button class="cm-action-btn cm-like-btn">' +
-                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
-                        '<span>0</span>' +
+                    '<button class="cm-action-btn cm-like-btn' + (likedByMe ? ' liked' : '') + '" data-liked="' + (likedByMe ? '1' : '0') + '">' +
+                        '<svg viewBox="0 0 24 24" fill="' + (likedByMe ? '#e91e63' : 'none') + '" stroke="' + (likedByMe ? '#e91e63' : 'currentColor') + '" stroke-width="1.8" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+                        '<span>' + (likeCount || 0) + '</span>' +
                     '</button>' +
-                    '<button class="cm-action-btn cm-reply-btn">' +
-                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>' +
-                        '<span>0</span>' +
-                    '</button>' +
-                    '<button class="cm-action-btn cm-share-btn">' +
-                        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="16" height="16"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>' +
-                    '</button>' +
+                    ownerBtns +
                 '</div>' +
             '</div>';
 
-        /* 좋아요 토글 */
         const likeBtn = div.querySelector('.cm-like-btn');
-        likeBtn.addEventListener('click', function() {
-            const liked = this.dataset.liked === '1';
+        likeBtn.addEventListener('click', async function() {
+            if (!isLoggedIn) { location.href = '/member/login?redirect=' + encodeURIComponent(location.pathname + location.search); return; }
+            const res = await fetch('/api/coin/comment/' + commentNo + '/like', { method: 'POST' });
+            if (!res.ok) return;
+            const data = await res.json();
             const countEl = this.querySelector('span');
-            const count = parseInt(countEl.textContent) || 0;
-            this.dataset.liked = liked ? '0' : '1';
-            countEl.textContent = liked ? count - 1 : count + 1;
+            countEl.textContent = data.count;
             const svg = this.querySelector('svg');
-            svg.style.fill = liked ? 'none' : '#e91e63';
-            svg.style.stroke = liked ? 'currentColor' : '#e91e63';
+            svg.style.fill = data.liked ? '#e91e63' : 'none';
+            svg.style.stroke = data.liked ? '#e91e63' : 'currentColor';
+            this.dataset.liked = data.liked ? '1' : '0';
         });
 
-        feed.prepend(div);
+        if (scroll) feed.prepend(div); else feed.appendChild(div);
+    }
+
+    function openPostModal() {
+        if (!isLoggedIn) { location.href = '/member/login?redirect=' + encodeURIComponent(location.pathname + location.search); return; }
+        const modal = document.getElementById('cmModal');
+        const overlay = document.getElementById('cmModalOverlay');
+        const nameEl = document.getElementById('ph-display-name');
+        if (nameEl) document.getElementById('cmModalSymbol').textContent = nameEl.textContent;
+        modal.classList.add('open');
+        overlay.classList.add('open');
+        document.getElementById('cm-modal-textarea').focus();
+        const avatarEl = document.getElementById('cm-modal-avatar');
+        if (avatarEl && !avatarEl.querySelector('img') && currentUser) {
+            avatarEl.textContent = currentUser.charAt(0).toUpperCase();
+            avatarEl.style.background = cmFeedAvatarColor(currentUser);
+        }
+        const usernameEl = document.getElementById('cm-modal-username');
+        if (usernameEl && currentUser) usernameEl.textContent = currentUser;
+    }
+
+    function closePostModal() {
+        const textarea = document.getElementById('cm-modal-textarea');
+        if (textarea.value.trim()) {
+            document.getElementById('cmConfirmOverlay').classList.add('open');
+            document.getElementById('cmConfirm').classList.add('open');
+        } else {
+            _forceCloseModal();
+        }
+    }
+
+    function continueWriting() {
+        document.getElementById('cmConfirmOverlay').classList.remove('open');
+        document.getElementById('cmConfirm').classList.remove('open');
+    }
+
+    function confirmLeave() {
+        document.getElementById('cm-modal-textarea').value = '';
+        document.getElementById('cmCharCount').textContent = '0';
+        document.getElementById('cmConfirmOverlay').classList.remove('open');
+        document.getElementById('cmConfirm').classList.remove('open');
+        _forceCloseModal();
+    }
+
+    function _forceCloseModal() {
+        document.getElementById('cmModal').classList.remove('open');
+        document.getElementById('cmModalOverlay').classList.remove('open');
+    }
+
+    function updateCharCount() {
+        const ta = document.getElementById('cm-modal-textarea');
+        document.getElementById('cmCharCount').textContent = ta.value.length;
+    }
+
+    function previewModalImage(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('cmPreviewImg').src = e.target.result;
+            document.getElementById('cmImagePreview').style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function removeModalImage() {
+        document.getElementById('cmImageInput').value = '';
+        document.getElementById('cmPreviewImg').src = '';
+        document.getElementById('cmImagePreview').style.display = 'none';
+    }
+
+    function submitComment() {
+        const textarea = document.getElementById('cm-modal-textarea');
+        const content = textarea.value.trim();
+        if (!content) return;
+
+        const form = new FormData();
+        form.append('symbol', currentSymbol);
+        form.append('content', content);
+        const fileInput = document.getElementById('cmImageInput');
+        if (fileInput.files[0]) form.append('file', fileInput.files[0]);
+
+        fetch('/api/coin/comment', { method: 'POST', body: form })
+            .then(r => {
+                if (r.status === 401) { location.href = '/member/login?redirect=' + encodeURIComponent(location.pathname + location.search); return; }
+                textarea.value = '';
+                document.getElementById('cmCharCount').textContent = '0';
+                removeModalImage();
+                _forceCloseModal();
+            }).catch(() => {});
+    }
+
+    function startEditComment(btn) {
+        const item = btn.closest('.cm-feed-item');
+        const textEl = item.querySelector('.cm-text');
+        const existingImg = item.querySelector('.cm-image');
+        const existingUrl = existingImg ? existingImg.src : '';
+        const original = textEl.dataset.full.replace(/&lt;/g, '<').replace(/&quot;/g, '"');
+
+        if (existingImg) existingImg.style.display = 'none';
+
+        const imgPreviewHtml = existingUrl
+            ? '<div class="cm-edit-img-preview" style="position:relative;margin-top:6px;display:inline-block;">' +
+              '<img src="' + existingUrl + '" style="max-width:100%;max-height:160px;border-radius:8px;display:block;">' +
+              '<button onclick="removeEditImage(this)" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:12px;">✕</button>' +
+              '</div>'
+            : '';
+
+        textEl.innerHTML =
+            '<textarea class="cm-edit-textarea">' + original + '</textarea>' +
+            imgPreviewHtml +
+            '<div style="display:flex;align-items:center;gap:6px;margin-top:6px;">' +
+            '<label style="cursor:pointer;color:var(--text3);font-size:12px;display:flex;align-items:center;gap:4px;">' +
+            '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>' +
+            '이미지<input type="file" class="cm-edit-file-input" accept="image/*" style="display:none" onchange="previewEditImage(this)"></label>' +
+            '<input type="hidden" class="cm-edit-remove-flag" value="0">' +
+            '<button class="cm-submit-btn" onclick="saveEditComment(this)">저장</button>' +
+            '<button class="cm-action-btn" onclick="cancelEditComment(this)" data-original="' + textEl.dataset.full.replace(/"/g, '&quot;') + '" data-trunc="' + textEl.dataset.trunc + '">취소</button>' +
+            '</div>';
+    }
+
+    function removeEditImage(btn) {
+        const preview = btn.closest('.cm-edit-img-preview');
+        const item = btn.closest('.cm-feed-item');
+        item.querySelector('.cm-edit-remove-flag').value = '1';
+        preview.remove();
+    }
+
+    function previewEditImage(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const item = input.closest('.cm-feed-item');
+        item.querySelector('.cm-edit-remove-flag').value = '0';
+        let preview = item.querySelector('.cm-edit-img-preview');
+        const actionsDiv = input.closest('div[style]');
+        if (!preview) {
+            preview = document.createElement('div');
+            preview.className = 'cm-edit-img-preview';
+            preview.style.cssText = 'position:relative;margin-top:6px;margin-bottom:6px;display:inline-block;';
+            actionsDiv.before(preview);
+        }
+        const reader = new FileReader();
+        reader.onload = e => {
+            preview.innerHTML =
+                '<img src="' + e.target.result + '" style="max-width:100%;max-height:160px;border-radius:8px;display:block;">' +
+                '<button onclick="removeEditImage(this)" style="position:absolute;top:4px;right:4px;background:rgba(0,0,0,0.6);border:none;color:#fff;width:22px;height:22px;border-radius:50%;cursor:pointer;font-size:12px;">✕</button>';
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function saveEditComment(btn) {
+        const item = btn.closest('.cm-feed-item');
+        const commentNo = item.dataset.commentNo;
+        const textarea = item.querySelector('.cm-edit-textarea');
+        const fileInput = item.querySelector('.cm-edit-file-input');
+        const content = textarea.value.trim();
+        if (!content) return;
+
+        const removeFlag = item.querySelector('.cm-edit-remove-flag');
+        const form = new FormData();
+        form.append('symbol', currentSymbol);
+        form.append('content', content);
+        if (fileInput && fileInput.files[0]) form.append('file', fileInput.files[0]);
+        if (removeFlag && removeFlag.value === '1') form.append('removeImage', 'true');
+
+        fetch('/api/coin/comment/' + commentNo, { method: 'PUT', body: form })
+            .then(r => r.ok ? r.json() : null).then(dto => {
+                if (!dto) return;
+                const textEl = item.querySelector('.cm-text');
+                const safe = s => String(s).replace(/</g, '&lt;');
+                const MAX = 100;
+                const full = safe(content);
+                const isTrunc = content.length > MAX;
+                const preview = isTrunc ? full.slice(0, MAX) + '...' : full;
+                textEl.dataset.full = full;
+                textEl.dataset.trunc = isTrunc ? '1' : '0';
+                textEl.innerHTML = preview + (isTrunc ? ' <button class="cm-more-btn" onclick="cmFeedToggleMore(this)">더 보기</button>' : '');
+                if (dto.imageUrl) {
+                    let imgEl = item.querySelector('.cm-image');
+                    if (!imgEl) {
+                        imgEl = document.createElement('img');
+                        imgEl.className = 'cm-image';
+                        imgEl.onclick = function() { cmOpenImage(this); };
+                        textEl.after(imgEl);
+                    }
+                    imgEl.src = dto.imageUrl;
+                }
+            }).catch(() => {});
+    }
+
+    function cancelEditComment(btn) {
+        const item = btn.closest('.cm-feed-item');
+        const textEl = item.querySelector('.cm-text');
+        const full = btn.dataset.original;
+        const isTrunc = btn.dataset.trunc === '1';
+        const MAX = 100;
+        textEl.innerHTML = (isTrunc ? full.slice(0, MAX) + '...' : full) + (isTrunc ? ' <button class="cm-more-btn" onclick="cmFeedToggleMore(this)">더 보기</button>' : '');
+        const existingImg = item.querySelector('.cm-image');
+        if (existingImg) existingImg.style.display = '';
+    }
+
+    function deleteComment(btn) {
+        if (!confirm('댓글을 삭제하시겠습니까?')) return;
+        const item = btn.closest('.cm-feed-item');
+        const commentNo = item.dataset.commentNo;
+        fetch('/api/coin/comment/' + commentNo + '?symbol=' + encodeURIComponent(currentSymbol), {
+            method: 'DELETE'
+        }).then(r => {
+            if (r.ok) item.remove();
+        }).catch(() => {});
     }
 
     function cmFeedToggleMore(btn) {
@@ -784,7 +1066,7 @@
     }
 
     function loadCommunityFeedHistory(symbol) {
-        fetch('/coin/comments/' + symbol)
+        fetch('/coin/comments/' + symbol + '?sort=' + currentSort)
             .then(r => r.json())
             .then(list => {
                 const feed = document.getElementById('cmFeedList');
@@ -793,7 +1075,7 @@
                     feed.innerHTML = '<div class="chat-empty"><span class="chat-empty-icon">💬</span><span>첫 댓글을 남겨보세요</span></div>';
                     return;
                 }
-                list.forEach(dto => appendFeedMsg(dto.username, dto.content, dto.createdAt, false, dto.imageUrl));
+                list.forEach(dto => appendFeedMsg(dto.commentNo, dto.username, dto.content, dto.createdAt, false, dto.imageUrl, dto.profileFileName, dto.likeCount, dto.likedByMe));
             })
             .catch(() => {});
     }
@@ -806,7 +1088,23 @@
         _stompClient.connect({}, () => {
             _stompClient.subscribe('/topic/coin/' + symbol, msg => {
                 const dto = JSON.parse(msg.body);
-                appendFeedMsg(dto.username, dto.content, dto.createdAt, true, dto.imageUrl);
+                if (dto.type === 'DELETE') {
+                    const item = document.querySelector('.cm-feed-item[data-comment-no="' + dto.commentNo + '"]');
+                    if (item) item.remove();
+                } else if (dto.type === 'UPDATE') {
+                    const item = document.querySelector('.cm-feed-item[data-comment-no="' + dto.commentNo + '"]');
+                    if (item) {
+                        const safe = s => String(s).replace(/</g, '&lt;');
+                        const textEl = item.querySelector('.cm-text');
+                        const full = safe(dto.content);
+                        const MAX = 100;
+                        const isTrunc = dto.content.length > MAX;
+                        textEl.dataset.full = full;
+                        textEl.innerHTML = (isTrunc ? full.slice(0, MAX) + '...' : full) + (isTrunc ? ' <button class="cm-more-btn" onclick="cmFeedToggleMore(this)">더 보기</button>' : '');
+                    }
+                } else {
+                    appendFeedMsg(dto.commentNo, dto.username, dto.content, dto.createdAt, true, dto.imageUrl, dto.profileFileName, 0, false);
+                }
             });
             loadCommunityFeedHistory(symbol);
         });

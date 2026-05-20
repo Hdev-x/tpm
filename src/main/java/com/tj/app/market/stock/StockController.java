@@ -17,13 +17,18 @@ public class StockController {
 
     @Autowired
     private WebClientService webClientService;
-    
+
     @Autowired
     private StockJoinService stockJoinService;
 
-    // 🎯 네이버 지수가 합성된 캐시 데이터 수급을 위해 StockService 주입
     @Autowired
     private StockService stockService;
+
+    @Autowired
+    private KisWebSocketService kisWebSocketService;
+
+    @Autowired
+    private StockMiniChartService stockMiniChartService;
 
     /**
      * 📊 1. 개별 종목 차트 데이터 조회 엔드포인트
@@ -156,6 +161,7 @@ public class StockController {
         output.put("stck_prpr", naverData.get("price"));
         output.put("prdy_ctrt", naverData.get("rate"));
         output.put("prdy_vrss", naverData.get("diff"));
+        output.put("hts_kor_isnm", stockJoinService.getName(code));
 
         return ResponseEntity.ok(Map.of("output", output));
     }
@@ -206,55 +212,89 @@ public class StockController {
     }
     
     @GetMapping("/db-list")
-    public ResponseEntity<?> getDbStockList() {
+    public ResponseEntity<?> getDbStockList(
+            @RequestParam(value = "limit", defaultValue = "0") int limit) {
+        if (limit == 40) {
+            return ResponseEntity.ok(withCachedPrices(stockJoinService.getTop40Stocks()));
+        }
         List<Map<String, Object>> stocks = stockJoinService.getAllStocks();
-        return ResponseEntity.ok(stocks);
+        if (limit > 0 && stocks.size() > limit) {
+            stocks = stocks.subList(0, limit);
+        }
+        return ResponseEntity.ok(withCachedPrices(stocks));
+    }
+
+    private List<Map<String, Object>> withCachedPrices(List<Map<String, Object>> stocks) {
+        Map<String, Map<String, String>> priceCache = kisWebSocketService.getPriceCache();
+        return stocks.stream()
+                .map(stock -> {
+                    Map<String, Object> item = new HashMap<>(stock);
+                    String code = String.valueOf(item.get("code"));
+                    Map<String, String> price = priceCache.get(code);
+                    if (price != null) {
+                        item.put("price", price.get("price"));
+                        item.put("rate", price.get("rate"));
+                        item.put("diff", price.get("diff"));
+                        item.put("high", price.get("high"));
+                        item.put("low", price.get("low"));
+                        item.put("volume", price.get("volume"));
+                    }
+                    return item;
+                })
+                .toList();
     }
 
     @GetMapping("/rank")
     public ResponseEntity<?> getMarketRank(@RequestParam(value = "mode", defaultValue = "UP") String mode) {
-        
-        List<com.tj.app.market.stock.StockListDTO.StockListOutput> allStocks = stockService.getCachedTop100(); 
-        
-        // 🛡️ 1단계 방어: 리스트 자체가 비어있거나 지수 1건만 딸랑 있으면 500 에러 없이 안전하게 빈 배열 리턴
-        if (allStocks == null || allStocks.size() <= 1) {
-            return ResponseEntity.ok(List.of()); 
+        Map<String, Map<String, String>> priceCache = kisWebSocketService.getPriceCache();
+        Map<String, String> nameCache = kisWebSocketService.getNameCache();
+
+        if (priceCache.isEmpty()) {
+            return ResponseEntity.ok(List.of());
         }
 
         try {
-            List<com.tj.app.market.stock.StockListDTO.StockListOutput> rankedList = allStocks.stream()
-                // 🛡️ 2단계 방어: 코스피 지수는 랭킹에서 무조건 칼같이 드롭
-                .filter(stock -> stock.getHts_kor_isnm() != null && !stock.getHts_kor_isnm().equals("코스피"))
-                // 🛡️ 3단계 방어: 등락률 필드가 null이거나 완전히 비어있는 녀석은 정렬 대상에서 필터링
-                .filter(stock -> stock.getPrdy_ctrt() != null && !stock.getPrdy_ctrt().trim().isEmpty()) 
-                .sorted((s1, s2) -> {
+            List<Map<String, Object>> ranked = priceCache.entrySet().stream()
+                .filter(e -> {
+                    String rate = e.getValue().get("rate");
+                    return rate != null && !rate.isEmpty() && !"-".equals(rate);
+                })
+                .sorted((a, b) -> {
                     try {
-                        // 특수 기호 정제 가드
-                        String rateStr1 = s1.getPrdy_ctrt().replace("+", "").replace("%", "").trim();
-                        String rateStr2 = s2.getPrdy_ctrt().replace("+", "").replace("%", "").trim();
-                        
-                        double rate1 = Double.parseDouble(rateStr1);
-                        double rate2 = Double.parseDouble(rateStr2);
-                        
-                        if ("UP".equalsIgnoreCase(mode)) {
-                            return Double.compare(rate2, rate1); // 📈 급상승 내림차순
-                        } else {
-                            return Double.compare(rate1, rate2); // 📉 급하락 오름차순
-                        }
+                        double r1 = Double.parseDouble(a.getValue().get("rate"));
+                        double r2 = Double.parseDouble(b.getValue().get("rate"));
+                        return "UP".equalsIgnoreCase(mode)
+                            ? Double.compare(r2, r1)
+                            : Double.compare(r1, r2);
                     } catch (Exception e) {
-                        // 🛡️ 4단계 내부 방어: 파싱 중 에러 발생 시 예외를 던지지 않고 무시하여 500 발생 원천 봉쇄
-                        return 0; 
+                        return 0;
                     }
                 })
-                .limit(5)
+                .limit(40)
+                .map(e -> {
+                    Map<String, Object> item = new HashMap<>(e.getValue());
+                    item.put("name", nameCache.getOrDefault(e.getKey(), "-"));
+                    return item;
+                })
                 .toList();
 
-            return ResponseEntity.ok(rankedList);
-            
+            return ResponseEntity.ok(ranked);
+
         } catch (Exception e) {
-            // 혹시 모를 스트림 전체 예외가 발생하더라도 빈 배열로 안전하게 가드
             return ResponseEntity.ok(List.of());
         }
+    }
+
+    @GetMapping("/mini-charts")
+    public ResponseEntity<?> getMiniCharts(
+            @RequestParam(value = "limit", defaultValue = "40") int limit) {
+        return ResponseEntity.ok(stockMiniChartService.getMiniCharts(limit));
+    }
+
+    @PostMapping("/mini-charts/refresh")
+    public ResponseEntity<?> refreshMiniCharts(
+            @RequestParam(value = "limit", defaultValue = "40") int limit) {
+        return ResponseEntity.ok(stockMiniChartService.refreshTopMiniCharts(limit));
     }
     
     

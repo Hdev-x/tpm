@@ -58,6 +58,12 @@ public class CoinController {
 		return "coin/community";
 	}
 
+	@GetMapping("sample")
+	public String sample(@RequestParam(value = "symbol", required = false, defaultValue = "BTCUSDT") String symbol, Model model) throws Exception {
+		model.addAttribute("symbol", symbol);
+		return "coin/sample";
+	}
+
 	@GetMapping("chart3")
 	public void chart3() throws Exception {
 	}

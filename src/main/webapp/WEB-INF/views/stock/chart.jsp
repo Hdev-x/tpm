@@ -19,7 +19,8 @@
 	<div class="app-wrapper">
 
 		<div class="page">
-			<%@ include file="../common/nav.jsp"%>
+			<%@ include file="../common/nav.jsp"%> 
+			<!--  -->
 
 			<div class="price-header">
 				<div class="ph-left">

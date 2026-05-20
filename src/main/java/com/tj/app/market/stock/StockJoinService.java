@@ -48,4 +48,12 @@ public class StockJoinService {
             return Collections.emptyList();
         }
     }
+
+    public List<Map<String, Object>> getTop40Stocks() {
+        try {
+            return stockJoinMapper.findTop40Stocks();
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
+    }
 }

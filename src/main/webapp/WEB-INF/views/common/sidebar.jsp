@@ -219,44 +219,7 @@
                             <span class="si-group-main">주식</span>
                         </div>
                     </div>
-                    <div class="si-stock-list">
-                        <div class="si-stock-item">
-                            <div class="si-logo" style="background:#1428A0;">삼</div>
-                            <span class="si-stock-name">삼성전자</span>
-                            <div class="si-stock-price">
-                                <span class="si-price">293,000원</span>
-                                <span class="si-change up">+9,000원 (3.16%)</span>
-                            </div>
-                            <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-                        </div>
-                        <div class="si-stock-item">
-                            <div class="si-logo" style="background:#A50034;">G</div>
-                            <span class="si-stock-name">LG전자</span>
-                            <div class="si-stock-price">
-                                <span class="si-price">219,000원</span>
-                                <span class="si-change up">+27,600원 (14.42%)</span>
-                            </div>
-                            <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-                        </div>
-                        <div class="si-stock-item">
-                            <div class="si-logo" style="background:#E8001C;">SK</div>
-                            <span class="si-stock-name">SK하이닉스</span>
-                            <div class="si-stock-price">
-                                <span class="si-price">1,971,000원</span>
-                                <span class="si-change down">-5,000원 (0.25%)</span>
-                            </div>
-                            <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-                        </div>
-                        <div class="si-stock-item">
-                            <div class="si-logo" style="background:#76B900;">N</div>
-                            <span class="si-stock-name">엔비디아</span>
-                            <div class="si-stock-price">
-                                <span class="si-price">343,977원</span>
-                                <span class="si-change up">+6,339원 (1.87%)</span>
-                            </div>
-                            <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-                        </div>
-                    </div>
+                    <div class="si-stock-list" id="watchlist-stock-all-list"></div>
                 </div>
 
                 <!-- 코인 그룹 -->
@@ -277,48 +240,7 @@
             <div class="si-group-title">
                 <span class="si-group-main">관심 주식</span>
             </div>
-            <div class="si-stock-list">
-                <div class="si-stock-item">
-                    <div class="si-logo" style="background:#1428A0;">삼</div>
-                    <span class="si-stock-name">삼성전자</span>
-                    <div class="si-stock-price">
-                        <span class="si-price">293,000원</span>
-                        <span class="si-change up">+9,000원 (3.16%)</span>
-                    </div>
-                    <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-                </div>
-                <div class="si-stock-item">
-                    <div class="si-logo" style="background:#A50034;">G</div>
-                    <span class="si-stock-name">LG전자</span>
-                    <div class="si-stock-price">
-                        <span class="si-price">219,000원</span>
-                        <span class="si-change up">+27,600원 (14.42%)</span>
-                    </div>
-                    <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-                </div>
-                <div class="si-stock-item">
-                    <div class="si-logo" style="background:#E8001C;">SK</div>
-                    <span class="si-stock-name">SK하이닉스</span>
-                    <div class="si-stock-price">
-                        <span class="si-price">1,971,000원</span>
-                        <span class="si-change down">-5,000원 (0.25%)</span>
-                    </div>
-                    <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-                </div>
-                <div class="si-stock-item">
-                    <div class="si-logo" style="background:#76B900;">N</div>
-                    <span class="si-stock-name">엔비디아</span>
-                    <div class="si-stock-price">
-                        <span class="si-price">343,977원</span>
-                        <span class="si-change up">+6,339원 (1.87%)</span>
-                    </div>
-                    <button class="si-heart active"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg></button>
-                </div>
-                <div class="si-stock-item si-add-btn">
-                    <div class="si-logo si-add-logo">+</div>
-                    <span class="si-stock-name">추가하기</span>
-                </div>
-            </div>
+            <div class="si-stock-list" id="watchlist-stock-list"></div>
         </div>
 
         <!-- 코인 탭 -->
@@ -398,8 +320,8 @@
     <div class="sidebar-section" id="sidebar-live" style="display:none;">
 
         <div class="si-type-tabs">
-            <div class="si-type-tab active" onclick="switchLiveTab(this,'all')">전체</div>
-            <div class="si-type-tab" onclick="switchLiveTab(this,'stock')">주식</div>
+            <div class="si-type-tab" onclick="switchLiveTab(this,'all')">전체</div>
+            <div class="si-type-tab active" onclick="switchLiveTab(this,'stock')">주식</div>
             <div class="si-type-tab" onclick="switchLiveTab(this,'coin')">코인</div>
         </div>
 
@@ -415,26 +337,18 @@
                     <div class="wl-sort-item" onclick="setLiveSort('급하락')">급하락</div>
                 </div>
             </div>
-            <div class="wl-sort-wrap">
-                <button class="wl-sort-btn live-filter-btn" onclick="toggleLiveDropdown('time')">
-                    <span id="live-time-label">실시간</span>
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-                </button>
-                <div class="wl-sort-dropdown" id="live-time-dd">
-                    <div class="wl-sort-item active" onclick="setLiveTime('실시간')">실시간</div>
-                    <div class="wl-sort-item" onclick="setLiveTime('1일')">1일</div>
-                </div>
-            </div>
         </div>
 
         <!-- 전체 탭 -->
-        <div class="live-tab-panel" id="live-tab-all">
+        <div class="live-tab-panel" id="live-tab-all" style="display:none;">
             <div class="live-list" id="live-all-list"></div>
         </div>
 
         <!-- 주식 탭 -->
-        <div class="live-tab-panel" id="live-tab-stock" style="display:none;">
-            <div class="si-wl-empty" style="margin-top:40px;">준비 중입니다</div>
+        <div class="live-tab-panel" id="live-tab-stock">
+            <div class="live-list" id="live-stock-list">
+                <div class="si-wl-empty">데이터를 불러오는 중입니다</div>
+            </div>
         </div>
 
         <!-- 코인 탭 -->

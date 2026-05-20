@@ -3,6 +3,7 @@ package com.tj.app.market.stock;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.web.socket.CloseStatus;
@@ -12,6 +13,8 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 
+import jakarta.websocket.ContainerProvider;
+import jakarta.websocket.WebSocketContainer;
 import java.net.URI;
 
 import java.util.HashMap;
@@ -32,6 +35,9 @@ public class KisWebSocketService {
     @Autowired
     private StockJoinMapper stockJoinMapper;
 
+    @Value("${app.stock.websocket.enabled:false}")
+    private boolean stockWebSocketEnabled;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     // 종목코드 → 최신 시세 (price/rate/diff/high/low)
@@ -43,6 +49,11 @@ public class KisWebSocketService {
     public Map<String, String> getNameCache() { return nameCache; }
 
     public void connect() {
+        if (!stockWebSocketEnabled) {
+            log.info("주식 WebSocket 연결이 비활성화되어 있습니다.");
+            return;
+        }
+
         try {
             String approvalKey = webClientService.getApprovalKey();
 
@@ -50,10 +61,7 @@ public class KisWebSocketService {
             try {
                 stocks = stockJoinMapper.findTop40Stocks();
             } catch (Exception dbEx) {
-                log.warn("⚠️ DB 조회 실패, 5초 후 재시도: {}", dbEx.getMessage());
-                new Thread(() -> {
-                    try { Thread.sleep(5000); connect(); } catch (InterruptedException ignored) {}
-                }).start();
+                log.warn("⚠️ DB 조회 실패로 KIS WebSocket 연결을 중단합니다: {}", dbEx.getMessage());
                 return;
             }
 
@@ -64,7 +72,10 @@ public class KisWebSocketService {
             // 종목명 캐시 초기화
             stocks.forEach(s -> nameCache.put((String) s.get("code"), (String) s.get("name")));
 
-            StandardWebSocketClient client = new StandardWebSocketClient();
+            WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+            container.setDefaultMaxTextMessageBufferSize(1024 * 1024);
+            container.setDefaultMaxBinaryMessageBufferSize(1024 * 1024);
+            StandardWebSocketClient client = new StandardWebSocketClient(container);
             URI uri = URI.create("ws://ops.koreainvestment.com:31000");
             client.execute(new AbstractWebSocketHandler() {
 
@@ -89,7 +100,7 @@ public class KisWebSocketService {
                     new Thread(() -> {
                         try {
                             Thread.sleep(3000);
-                            connect();
+                            if (stockWebSocketEnabled) connect();
                         } catch (InterruptedException ignored) {}
                     }).start();
                 }

@@ -27,6 +27,9 @@ public class StockController {
     @Autowired
     private KisWebSocketService kisWebSocketService;
 
+    @Autowired
+    private StockMiniChartService stockMiniChartService;
+
     /**
      * 📊 1. 개별 종목 차트 데이터 조회 엔드포인트
      */
@@ -212,13 +215,33 @@ public class StockController {
     public ResponseEntity<?> getDbStockList(
             @RequestParam(value = "limit", defaultValue = "0") int limit) {
         if (limit == 40) {
-            return ResponseEntity.ok(stockJoinService.getTop40Stocks());
+            return ResponseEntity.ok(withCachedPrices(stockJoinService.getTop40Stocks()));
         }
         List<Map<String, Object>> stocks = stockJoinService.getAllStocks();
         if (limit > 0 && stocks.size() > limit) {
             stocks = stocks.subList(0, limit);
         }
-        return ResponseEntity.ok(stocks);
+        return ResponseEntity.ok(withCachedPrices(stocks));
+    }
+
+    private List<Map<String, Object>> withCachedPrices(List<Map<String, Object>> stocks) {
+        Map<String, Map<String, String>> priceCache = kisWebSocketService.getPriceCache();
+        return stocks.stream()
+                .map(stock -> {
+                    Map<String, Object> item = new HashMap<>(stock);
+                    String code = String.valueOf(item.get("code"));
+                    Map<String, String> price = priceCache.get(code);
+                    if (price != null) {
+                        item.put("price", price.get("price"));
+                        item.put("rate", price.get("rate"));
+                        item.put("diff", price.get("diff"));
+                        item.put("high", price.get("high"));
+                        item.put("low", price.get("low"));
+                        item.put("volume", price.get("volume"));
+                    }
+                    return item;
+                })
+                .toList();
     }
 
     @GetMapping("/rank")
@@ -260,6 +283,18 @@ public class StockController {
         } catch (Exception e) {
             return ResponseEntity.ok(List.of());
         }
+    }
+
+    @GetMapping("/mini-charts")
+    public ResponseEntity<?> getMiniCharts(
+            @RequestParam(value = "limit", defaultValue = "40") int limit) {
+        return ResponseEntity.ok(stockMiniChartService.getMiniCharts(limit));
+    }
+
+    @PostMapping("/mini-charts/refresh")
+    public ResponseEntity<?> refreshMiniCharts(
+            @RequestParam(value = "limit", defaultValue = "40") int limit) {
+        return ResponseEntity.ok(stockMiniChartService.refreshTopMiniCharts(limit));
     }
     
     

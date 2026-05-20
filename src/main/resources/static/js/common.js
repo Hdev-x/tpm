@@ -1156,7 +1156,15 @@ async function initSidebarStock() {
         if (!Array.isArray(data)) return;
         sidebarStockOrder = data.map(s => s.code).filter(Boolean);
         data.forEach(s => {
-            if (s.code) sidebarStockMap[s.code] = { name: s.name || '-', price: '-', rate: '-', diff: '-' };
+            if (s.code) {
+                sidebarStockMap[s.code] = {
+                    name: s.name || '-',
+                    price: s.price || '-',
+                    rate: s.rate || '-',
+                    diff: s.diff || '-',
+                    volume: s.volume || '0'
+                };
+            }
         });
         renderSidebarStockList();
         renderLiveAll();

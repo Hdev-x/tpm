@@ -7,6 +7,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -29,11 +30,18 @@ public class StockService {
     @Autowired
     private KisWebSocketService kisWebSocketService;
 
+    @Value("${app.stock.websocket.enabled:false}")
+    private boolean stockWebSocketEnabled;
+
     // 프론트엔드가 긁어갈 최종 인메모리 캐시 (0번: 네이버 코스피 지수, 1번~: 한투 100개 종목)
     private List<StockListOutput> top100Stocks = new CopyOnWriteArrayList<>();
 
     @PostConstruct
     public void init() {
+        if (!stockWebSocketEnabled) {
+            log.info("주식 WebSocket 자동 연결이 비활성화되어 있습니다.");
+            return;
+        }
         log.info("🚀 앱 시작 - KIS WebSocket 연결 초기화");
         kisWebSocketService.connect();
     }

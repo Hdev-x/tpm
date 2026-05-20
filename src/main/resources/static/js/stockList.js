@@ -5,6 +5,8 @@
 let allStocks = [];
 let currentFilter = '전체';
 let currentDetailCode = null;
+let detailChartTimer = null;
+let miniChartsLoaded = false;
 
 /* ── 관심종목 (로컬스토리지) ── */
 function toggleStockWatchlistRow(code) {
@@ -93,6 +95,9 @@ function normalizeStock(item) {
             price: item.price || '-',
             changeRate: item.rate || '-',
             changeDiff: item.diff || '-',
+            high: item.high || '-',
+            low: item.low || '-',
+            volume: item.volume || '0',
         };
     }
     // summary API 응답
@@ -129,7 +134,22 @@ async function loadStocks() {
 /* ── KIS WebSocket 실시간 연결 ── */
 let stockStompClient = null;
 
-function connectStockWs() {
+async function connectStockWs() {
+    if (typeof SockJS === 'undefined') {
+        if (typeof loadScriptAsync === 'function') {
+            await loadScriptAsync('https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js');
+        }
+    }
+    if (typeof Stomp === 'undefined') {
+        if (typeof loadScriptAsync === 'function') {
+            await loadScriptAsync('https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js');
+        }
+    }
+    if (typeof SockJS === 'undefined' || typeof Stomp === 'undefined') {
+        setTimeout(connectStockWs, 3000);
+        return;
+    }
+
     const socket = new SockJS('/ws-stock');
     stockStompClient = Stomp.over(socket);
     stockStompClient.debug = null;
@@ -192,6 +212,9 @@ function updateRowPrice(d) {
         stock.price      = d.price;
         stock.changeRate = d.rate;
         stock.changeDiff = d.diff;
+        stock.high       = d.high;
+        stock.low        = d.low;
+        stock.volume     = d.volume || '0';
     }
 }
 
@@ -233,8 +256,8 @@ function makeRow(stock, rank) {
         + '<td class="td-price">' + fmtPrice(stock.price) + '</td>'
         + '<td class="td-change"><span class="badge ' + rate.cls + '">' + rate.text + '</span></td>'
         + '<td class="td-diff">' + fmtDiff(stock.changeDiff) + '</td>'
-        + '<td class="td-high">-</td>'
-        + '<td class="td-low">-</td>';
+        + '<td class="td-high">' + fmtPrice(stock.high) + '</td>'
+        + '<td class="td-low">' + fmtPrice(stock.low) + '</td>';
 
     return tr;
 }
@@ -251,15 +274,10 @@ function renderTable(stocks) {
     stocks.forEach((s, i) => tbody.appendChild(makeRow(s, i + 1)));
 }
 
-let prefetchStarted = false;
-
 async function refresh() {
     const stocks = await loadStocks();
     renderTable(stocks);
-    if (!prefetchStarted) {
-        prefetchStarted = true;
-        prefetchCharts();
-    }
+    loadMiniCharts();
     // 필터 변경 후 현재 선택 종목이 새 목록에 없으면 리셋
     if (currentDetailCode && !stocks.find(s => (s.code || s.name) === currentDetailCode)) {
         currentDetailCode = null;
@@ -308,7 +326,10 @@ document.getElementById('stockTableBody').addEventListener('mouseover', function
     if (!row || row.classList.contains('active')) return;
     document.querySelectorAll('.stock-row').forEach(r => r.classList.remove('active'));
     row.classList.add('active');
-    loadDetailPanel(row.dataset.code, row.dataset.name);
+    clearTimeout(detailChartTimer);
+    detailChartTimer = setTimeout(() => {
+        loadDetailPanel(row.dataset.code, row.dataset.name);
+    }, 250);
 });
 
 /* ── 상세 패널 ── */
@@ -364,6 +385,25 @@ async function loadDetailPanel(code, name) {
 
 const chartCache = {};
 
+async function loadMiniCharts() {
+    if (miniChartsLoaded) return;
+    miniChartsLoaded = true;
+
+    try {
+        const res = await fetch('/stock/mini-charts?limit=40');
+        const data = await res.json();
+        Object.keys(data || {}).forEach(code => {
+            if (Array.isArray(data[code]) && data[code].length >= 2) {
+                chartCache[code] = data[code];
+            }
+        });
+
+        if (currentDetailCode && chartCache[currentDetailCode]) {
+            drawDetailChart(currentDetailCode, chartCache[currentDetailCode]);
+        }
+    } catch (e) {}
+}
+
 async function loadDetailChart(code, name) {
     // 코스피/코스닥 지수는 개별 차트 없음
     if (name === '코스피' || name === '코스닥') {
@@ -373,19 +413,21 @@ async function loadDetailChart(code, name) {
     }
     try {
         const searchKey = code || name;
-
-        // 캐시에 있으면 API 호출 없이 바로 사용
-        let candles;
-        if (chartCache[searchKey]) {
-            candles = chartCache[searchKey];
-        } else {
-            const res = await fetch('/stock/chart?code=' + encodeURIComponent(searchKey) + '&range=1y');
-            const json = await res.json();
-            candles = json.output2 || [];
-            if (candles.length >= 2) chartCache[searchKey] = candles;
+        const candles = chartCache[searchKey];
+        if (!candles || candles.length < 2) {
+            document.getElementById('detailChartArea').innerHTML =
+                '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:13px;">미니차트 데이터를 준비 중입니다</div>';
+            return;
         }
-        if (candles.length < 2) return;
 
+        drawDetailChart(searchKey, candles);
+    } catch (e) {}
+}
+
+function drawDetailChart(code, candles) {
+    if (code !== currentDetailCode || !candles || candles.length < 2) return;
+
+    try {
         const prices = candles.map(c => parseFloat(c.close) || 0).filter(p => p > 0);
         if (prices.length < 2) return;
 
@@ -467,20 +509,6 @@ async function loadMarketIndex() {
                 + '</div></div></div>';
         }).join('');
     } catch (e) {}
-}
-
-/* ── 초기화 ── */
-async function prefetchCharts() {
-    for (const stock of allStocks) {
-        if (!stock.code || chartCache[stock.code]) continue;
-        try {
-            const res = await fetch('/stock/chart?code=' + encodeURIComponent(stock.code) + '&range=1y');
-            const json = await res.json();
-            const candles = json.output2 || [];
-            if (candles.length >= 2) chartCache[stock.code] = candles;
-        } catch (e) {}
-        await new Promise(r => setTimeout(r, 100)); // 100ms 간격 (초당 10건)
-    }
 }
 
 document.addEventListener('DOMContentLoaded', function () {

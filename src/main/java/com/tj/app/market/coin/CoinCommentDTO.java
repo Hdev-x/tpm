@@ -17,4 +17,8 @@ public class CoinCommentDTO {
     private String username;
     private LocalDateTime createdAt;
     private String imageUrl;
+    private String profileFileName;
+    private long likeCount;
+    private boolean likedByMe;
+    private String type; // NEW / UPDATE / DELETE (broadcast only, not persisted)
 }

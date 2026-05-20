@@ -1149,7 +1149,7 @@ function connectChat(symbol) {
     stompClient.connect({}, () => {
         stompClient.subscribe('/topic/coin/' + symbol, msg => {
             const dto = JSON.parse(msg.body);
-            appendChatMsg(dto.username, dto.content, dto.createdAt, true, dto.imageUrl);
+            appendChatMsg(dto.username, dto.content, dto.createdAt, true, dto.imageUrl, dto.profileFileName);
         });
         loadChatHistory(symbol);
     });
@@ -1165,7 +1165,7 @@ function loadChatHistory(symbol) {
                 msgs.innerHTML = '<div class="chat-empty"><span class="chat-empty-icon">💬</span><span>첫 댓글을 남겨보세요</span></div>';
                 return;
             }
-            list.forEach(dto => appendChatMsg(dto.username, dto.content, dto.createdAt, false, dto.imageUrl));
+            list.forEach(dto => appendChatMsg(dto.username, dto.content, dto.createdAt, false, dto.imageUrl, dto.profileFileName));
         });
 }
 
@@ -1187,7 +1187,7 @@ function cmRelTime(createdAt) {
     return Math.floor(h / 24) + '일';
 }
 
-function appendChatMsg(username, content, createdAt, scroll = true, imageUrl = null) {
+function appendChatMsg(username, content, createdAt, scroll = true, imageUrl = null, profileFileName = null) {
     const msgs = document.getElementById('chat-messages');
     const empty = msgs.querySelector('.chat-empty');
     if (empty) empty.remove();
@@ -1195,6 +1195,9 @@ function appendChatMsg(username, content, createdAt, scroll = true, imageUrl = n
     const safe = s => s.replace(/</g, '&lt;');
     const color = cmAvatarColor(username);
     const initial = username.charAt(0).toUpperCase();
+    const avatarHtml = profileFileName
+        ? '<img src="/files/profile/' + profileFileName + '" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">'
+        : initial;
     const time = cmRelTime(createdAt);
     const MAX = 100;
     const isTrunc = content.length > MAX;
@@ -1206,7 +1209,7 @@ function appendChatMsg(username, content, createdAt, scroll = true, imageUrl = n
     div.className = 'chat-msg';
     div.innerHTML =
         '<div class="cm-left">' +
-            '<div class="cm-avatar" style="background:' + color + '">' + initial + '</div>' +
+            '<div class="cm-avatar" style="background:' + (profileFileName ? 'transparent' : color) + '">' + avatarHtml + '</div>' +
             '<span class="cm-rank">주주</span>' +
         '</div>' +
         '<div class="cm-right">' +
@@ -1220,7 +1223,8 @@ function appendChatMsg(username, content, createdAt, scroll = true, imageUrl = n
             '</div>' +
             imgHtml +
         '</div>';
-    msgs.prepend(div);
+    if (scroll) msgs.prepend(div);
+    else msgs.appendChild(div);
 }
 
 function cmToggleMore(btn) {

@@ -17,5 +17,7 @@ public class OrderStockDTO {
 	private Long orderCount;
 	private LocalDate orderDate;
 	private Long stockNo;
+	private String stockCode;
 	private String username;
+	private String status;
 }

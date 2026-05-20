@@ -509,14 +509,20 @@ function submitOrder(side) {
     const sideKr = sideText === 'BUY' ? '매수' : '매도';
 
     // 🔴 [수정 포인트 2] 팀원 템플릿 호환용 필드(status, targetPrice) 추가 및 주식코드 가공
-    const orderData = {
-        orderType: sideText,                             // 코인 템플릿 관례에 맞춰 "BUY" / "SELL" 문자열 토스
-        orderPrice: orderPrice,                          // 체결/주문 가격
-        orderCount: orderCount,                          // 주문 수량
-        stockNo: String(currentSymbol).trim(),           // 💡 parseInt 빼고 문자열 그대로 넘겨서 자바 Long 내부에서 0 파괴 방지 및 매퍼 LPAD 처리 유도
-        status: isLimitTab ? "PENDING" : "COMPLETED",   // 지정가면 PENDING(미체결), 시장가면 COMPLETED(즉시 체결)
-        targetPrice: isLimitTab ? orderPrice : 0         // 지정가일 때의 감시 가격 목표 설정
-    };
+	const formatStockCode = (code) => {
+	    return String(code).padStart(6, '0');
+	};
+
+	const orderData = {
+	    orderType: sideText,
+	    orderPrice: orderPrice,
+	    orderCount: orderCount,
+	    stockNo: parseInt(currentSymbol) || 0,
+	    // 🟢 핵심: String 변환 후 padStart로 6자리 강제 고정 ("660" -> "000660")
+	    stockCode: formatStockCode(currentSymbol), 
+	    status: isLimitTab ? "PENDING" : "COMPLETED",   
+	    targetPrice: isLimitTab ? orderPrice : 0         
+	};
 
     if (!confirm(`[주문 접수]\n종목번호: ${currentSymbol}\n가격: ${orderPrice.toLocaleString()}원\n수량: ${orderCount}주\n\n정말 ${sideKr}하시겠습니까?`)) {
         return;
@@ -731,13 +737,20 @@ function loadMyInvestmentStatus() {
             }
 
             stocks.forEach(stock => {
-                const count = stock.STOCK_COUNT;
-                const purchase = stock.STOCK_PURCHASE;
-                const stockNo = String(stock.STOCK_NO || '').trim();
-                const stockName = stock.STOCK_NAME || "보유 종목"; 
-                
-                const logoText = stockName.slice(0, 2);
-                const logoBg = "#343a40"; 
+				const normalizedStock = Object.keys(stock).reduce((acc, key) => {
+				        acc[key.toLowerCase()] = stock[key];
+				        return acc;
+				    }, {});
+
+				    const count = normalizedStock.stock_count || 0;
+				    const purchase = normalizedStock.stock_purchase || 0;
+				    
+				    // stock.js의 로직에 따라 stock_no 대신 asset_no를 사용하는 것이 DB 스키마상 정확합니다.
+				    const stockNo = String(normalizedStock.asset_no || normalizedStock.stock_no || '').trim();
+				    const stockName = normalizedStock.stock_name || "보유 종목"; 
+				    
+				    const logoText = stockName.slice(0, 2);
+				    const logoBg = "#343a40";
 
                 // 내가 지금 띄워놓은 종목 화면이면 실시간 시세(lastPrice) 반영, 타 종목이면 평단가 방어
                 const currentPrice = (stockNo === currentSymbol || stockNo === "5930") ? lastPrice : purchase;

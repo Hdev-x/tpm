@@ -15,7 +15,7 @@ public interface OrderStockMapper {
     int updateWallet(@Param("username") String username, @Param("cash") long cash);
 
     // 3. 보유 주식 단건 조회 (★ 서비스단의 getHolding(username, stockNoStr) 호출과 100% 일치)
-    Map<String, Object> getHolding(@Param("username") String username, @Param("stockNo") String stockNo);
+    Map<String, Object> getHolding(@Param("username") String username, @Param("stockCode") String stockCode);
     
     // 4. 우측 사이드바 보유 자산 목록 조회
     List<Map<String, Object>> getHoldingList(@Param("username") String username);
@@ -27,8 +27,8 @@ public interface OrderStockMapper {
     int updateHolding(OrderStockDTO dto);
 
     // 7. 보유 자산 전량 매도 시 행 삭제
-    int deleteHolding(@Param("username") String username, @Param("stockNo") String stockNo);
-
+    int deleteHolding(@Param("username") String username, @Param("stockCode") String stockCode);
+    
     // 8. 주식 트레이딩 거래 주문 이력 생성
     int insertOrder(OrderStockDTO dto);
 
@@ -40,4 +40,10 @@ public interface OrderStockMapper {
 
     // 11. 특정 주식 미체결 예약 주문 일괄 취소
     int cancelPendingByStock(@Param("orderNo") long orderNo);
+    
+    // 12. [스케줄러용] 전체 미체결 주문 목록 조회
+    List<OrderStockDTO> getAllPendingOrders();
+
+    // 13. [스케줄러용] 주문 상태 업데이트 (PENDING -> COMPLETED)
+    int updateOrderStatus(OrderStockDTO dto);
 }

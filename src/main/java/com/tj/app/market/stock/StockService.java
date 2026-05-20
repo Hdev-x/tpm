@@ -3,6 +3,7 @@ package com.tj.app.market.stock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.annotation.PostConstruct;
@@ -95,4 +96,43 @@ public class StockService {
             log.error("❌ 시세 캐시 엔진 스케줄러 루프 제어 장애: {}", e.getMessage());
         }
     }
+    
+    public long getCurrentPrice(String stockCode) {
+        // 1. 메모리(top100Stocks)에서 해당 종목 찾기
+        for (StockListOutput stock : top100Stocks) {
+            if (stock.getMkstat_shrn_iscd() != null && stock.getMkstat_shrn_iscd().equals(stockCode)) {
+                String priceStr = stock.getMkstat_prpr().replaceAll("[^0-9]", "");
+                return Long.parseLong(priceStr);
+            }
+        }
+        
+        // 2. 메모리에 없어서 API 호출 시 DTO에서 가격 추출
+        StockPriceDTO priceDto = webClientService.getCurrentPrice(stockCode);
+        
+        if (priceDto != null && priceDto.getOutput() != null) {
+            // DTO 내부의 현재가(stck_prpr)를 long으로 변환
+            String priceStr = priceDto.getOutput().getStck_prpr();
+            return Long.parseLong(priceStr);
+        }
+        
+        return 0L; // 조회 실패 시 0 반환
+    }
+    
+    private Map<String, StockChartDTO> chartCache = new ConcurrentHashMap<>();
+
+    public StockChartDTO getCachedDailyChart(String stockCode, String startDate, String endDate, String timeframe) {
+        String cacheKey = stockCode + "_" + startDate + "_" + endDate;
+        
+        if (chartCache.containsKey(cacheKey)) {
+            return chartCache.get(cacheKey);
+        }
+        
+        StockChartDTO dto = webClientService.getDailyChart(stockCode, startDate, endDate, timeframe);
+        
+        if (dto != null) {
+            chartCache.put(cacheKey, dto);
+        }
+        return dto;
+    }
+    
 }

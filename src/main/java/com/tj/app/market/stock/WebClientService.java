@@ -19,6 +19,8 @@ public class WebClientService {
     private final WebClient webClient;
     private String cachedToken;
     private LocalDateTime tokenExpireTime;
+    private String cachedApprovalKey;
+    private LocalDateTime approvalKeyExpireTime;
 
     @Value("${app.stock.appkey}")
     private String appkey;
@@ -90,7 +92,44 @@ public class WebClientService {
     }
 
     /**
-     * 2. 현재가 조회
+     * 2. WebSocket Approval Key 발급 및 캐싱
+     */
+    public synchronized String getApprovalKey() {
+        if (cachedApprovalKey != null && approvalKeyExpireTime != null &&
+            approvalKeyExpireTime.isAfter(LocalDateTime.now().plusMinutes(10))) {
+            return cachedApprovalKey;
+        }
+
+        log.info("🔑 WebSocket Approval Key 발급 시작");
+
+        Map<String, String> bodyMap = new HashMap<>();
+        bodyMap.put("grant_type", "client_credentials");
+        bodyMap.put("appkey", appkey);
+        bodyMap.put("secretkey", appsecret);
+
+        try {
+            Map<String, Object> response = webClient.post()
+                    .uri("/oauth2/Approval")
+                    .bodyValue(bodyMap)
+                    .retrieve()
+                    .bodyToMono(Map.class)
+                    .block(Duration.ofSeconds(10));
+
+            if (response != null && response.containsKey("approval_key")) {
+                this.cachedApprovalKey = (String) response.get("approval_key");
+                this.approvalKeyExpireTime = LocalDateTime.now().plusHours(24);
+                log.info("✅ Approval Key 발급 완료");
+                return this.cachedApprovalKey;
+            }
+        } catch (Exception e) {
+            log.error("❌ Approval Key 발급 실패: {}", e.getMessage());
+        }
+
+        throw new RuntimeException("WebSocket Approval Key 발급 실패");
+    }
+
+    /**
+     * 3. 현재가 조회
      */
     public StockPriceDTO getCurrentPrice(String stockCode) {
         try {

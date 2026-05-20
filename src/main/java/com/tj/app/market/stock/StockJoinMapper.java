@@ -29,4 +29,7 @@ public interface StockJoinMapper {
 
     @Select("SELECT \"STOCK_CODE\" AS code, \"STOCK_NAME\" AS name FROM \"STOCK\" ORDER BY \"STOCK_CODE\"")
     List<Map<String, Object>> findAllStocks();
+
+    @Select("SELECT \"STOCK_CODE\" AS code, \"STOCK_NAME\" AS name FROM \"STOCK\" LIMIT 40")
+    List<Map<String, Object>> findTop40Stocks();
 }

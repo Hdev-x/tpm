@@ -48,11 +48,13 @@ function fmtRate(val) {
 }
 
 function fmtDiff(val) {
-    if (!val || val === '-') return '-';
-    const n = parseFloat(val.toString().replace(/,/g, '').replace(/[^0-9.\-]/g, ''));
-    if (isNaN(n) || n === 0) return '-';
-    return (n > 0 ? '+' : '') + n.toLocaleString() + '원';
-}
+	if (!val || val === '-') return '-';
+	    const s = val.toString().replace(/,/g, '').replace(/[^0-9.\-]/g, '');
+	    const n = parseFloat(s);
+	    if (isNaN(n) || n === 0) return '-';
+		
+	    return (n > 0 ? '+' : '') + n.toLocaleString() + '원';
+	}
 
 /* ── API 데이터 정규화 ── */
 function normalizeStock(item) {
@@ -212,11 +214,11 @@ function makeRow(stock, rank) {
         + '</div>'
         + '</div>'
         + '</td>'
-        + '<td class="td-price">' + fmtPrice(stock.price) + '</td>'
-        + '<td class="td-change"><span class="badge ' + rate.cls + '">' + rate.text + '</span></td>'
-        + '<td class="td-diff">' + fmtDiff(stock.changeDiff) + '</td>'
-        + '<td class="td-high">-</td>'
-        + '<td class="td-low">-</td>';
+		+ '<td class="td-price">' + fmtPrice(stock.price) + '</td>'
+		+ '<td class="td-change"><span class="badge ' + rate.cls + '">' + rate.text + '</span></td>'
+		+ '<td class="td-diff">' + fmtDiff(stock.changeDiff) + '</td>' // 정규화된 키로 명확히 통일
+		+ '<td class="td-high">-</td>'
+		+ '<td class="td-low">-</td>';
 
     return tr;
 }

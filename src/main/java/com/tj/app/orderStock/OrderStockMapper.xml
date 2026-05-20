@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tj.app.orderStock.OrderStockMapper">
+
+	<select id="getWallet" resultType="long">
+		SELECT "CASH"
+		FROM "MEMBER"
+		WHERE "USERNAME" = #{username}
+	</select>
+
+	<update id="updateWallet">
+		UPDATE "MEMBER"
+		SET "CASH" = #{cash}
+		WHERE "USERNAME" =
+		#{username}
+	</update>
+
+	<select id="getHolding" resultType="map">
+		SELECT "STOCK_COUNT",
+		"STOCK_PURCHASE"
+		FROM "ASSETS"
+		WHERE "USERNAME" = #{username}
+		AND
+		"ASSET_NO" = #{stockNo, jdbcType=VARCHAR}
+	</select>
+
+	<select id="getHoldingList" resultType="map">
+		SELECT
+		A."ASSET_NO",
+		A."STOCK_COUNT",
+		A."STOCK_PURCHASE",
+		A."USERNAME",
+		S."STOCK_NO",
+		S."STOCK_CODE",
+		S."STOCK_NAME"
+		FROM "ASSETS" A
+		JOIN "STOCK" S ON
+		A."ASSET_NO" = S."STOCK_CODE"
+		WHERE
+		A."USERNAME" = #{username}
+	</select>
+
+	<insert id="insertHolding"
+		parameterType="com.tj.app.orderStock.OrderStockDTO">
+		INSERT INTO "ASSETS" ("ASSET_NO", "STOCK_COUNT",
+		"STOCK_PURCHASE", "USERNAME")
+		VALUES (#{stockNo, jdbcType=VARCHAR},
+		#{orderCount}, #{orderPrice}, #{username})
+	</insert>
+
+	<update id="updateHolding"
+		parameterType="com.tj.app.orderStock.OrderStockDTO">
+		UPDATE "ASSETS"
+		SET "STOCK_COUNT" = #{orderCount},   <!-- 전체 수량 (기존 + 신규) -->
+		"STOCK_PURCHASE" = #{orderPrice} <!-- 계산된 신규 평단가 -->
+		WHERE "USERNAME" = #{username}
+		AND "ASSET_NO" = #{stockNo,
+		jdbcType=VARCHAR}
+	</update>
+
+	<delete id="deleteHolding">
+		DELETE FROM "ASSETS"
+		WHERE "USERNAME" = #{username}
+		AND "ASSET_NO" = #{stockNo, jdbcType=VARCHAR}
+	</delete>
+
+	<insert id="insertOrder" parameterType="com.tj.app.orderStock.OrderStockDTO">
+    INSERT INTO "ORDER" (
+        "ORDER_ID", "ORDER_TYPE", "ORDER_PRICE", "ORDER_COUNT", "ORDER_DATE", 
+        "STOCK_NO", "STOCK_CODE", "USERNAME"
+    )
+    VALUES (
+        DEFAULT,
+        #{orderType},
+        #{orderPrice},
+        #{orderCount},
+        CURRENT_TIMESTAMP,
+        #{stockNo},     #{stockCode, jdbcType=VARCHAR}, #{username}
+    )
+</insert>
+
+	<select id="getOrderList" resultType="map">
+		SELECT
+		O."ORDER_ID",
+		O."ORDER_TYPE",
+		O."ORDER_PRICE",
+		O."ORDER_COUNT",
+		O."ORDER_DATE",
+		O."STOCK_NO",
+		O."STOCK_CODE",
+		O."USERNAME",
+		S."STOCK_NAME"
+		FROM "ORDER" O
+		JOIN "STOCK" S ON O."STOCK_NO" = S."STOCK_NO"
+		WHERE
+		O."USERNAME" =
+		#{username}
+		ORDER BY O."ORDER_DATE" DESC
+	</select>
+
+	<select id="getPendingOrders" resultType="map">
+		SELECT
+		O."ORDER_ID",
+		O."ORDER_TYPE",
+		O."ORDER_PRICE",
+		O."ORDER_COUNT",
+		O."ORDER_DATE",
+		O."STOCK_NO",
+		O."STOCK_CODE",
+		O."USERNAME",
+		S."STOCK_NAME"
+		FROM "ORDER" O
+		JOIN "STOCK" S ON O."STOCK_NO" = S."STOCK_NO"
+		WHERE
+		O."USERNAME" =
+		#{username}
+		ORDER BY O."ORDER_DATE" DESC
+	</select>
+
+	<update id="cancelPendingByStock">
+		UPDATE "ORDER"
+		SET "STOCK_CODE" = 'CANCELLED'
+		WHERE "ORDER_ID" = #{orderNo}
+	</update>
+
+</mapper>

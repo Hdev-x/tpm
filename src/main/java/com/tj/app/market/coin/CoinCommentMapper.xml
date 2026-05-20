@@ -11,16 +11,53 @@
 
     <select id="listBySymbol" resultType="com.tj.app.market.coin.CoinCommentDTO">
         SELECT
-            "COMMENT_NO"  AS commentNo,
-            "SYMBOL"      AS symbol,
-            "CONTENT"     AS content,
-            "USERNAME"    AS username,
-            "CREATED_AT"  AS createdAt,
-            "IMAGE_URL"   AS imageUrl
-        FROM "COIN_COMMENT"
-        WHERE "SYMBOL" = #{symbol}
-        ORDER BY "CREATED_AT" DESC
+            c."COMMENT_NO"                        AS commentNo,
+            c."SYMBOL"                            AS symbol,
+            c."CONTENT"                           AS content,
+            c."USERNAME"                          AS username,
+            c."CREATED_AT"                        AS createdAt,
+            c."IMAGE_URL"                         AS imageUrl,
+            p."FILE_NAME"                         AS profileFileName,
+            COUNT(l."COMMENT_NO")                 AS likeCount
+        FROM "COIN_COMMENT" c
+        LEFT JOIN "PROFILE" p ON c."USERNAME" = p."USERNAME"
+        LEFT JOIN "COIN_COMMENT_LIKE" l ON c."COMMENT_NO" = l."COMMENT_NO"
+        WHERE c."SYMBOL" = #{symbol}
+        GROUP BY c."COMMENT_NO", c."SYMBOL", c."CONTENT", c."USERNAME", c."CREATED_AT", c."IMAGE_URL", p."FILE_NAME"
+        ORDER BY c."CREATED_AT" DESC
         LIMIT 50
     </select>
+
+    <select id="listBySymbolPopular" resultType="com.tj.app.market.coin.CoinCommentDTO">
+        SELECT
+            c."COMMENT_NO"                        AS commentNo,
+            c."SYMBOL"                            AS symbol,
+            c."CONTENT"                           AS content,
+            c."USERNAME"                          AS username,
+            c."CREATED_AT"                        AS createdAt,
+            c."IMAGE_URL"                         AS imageUrl,
+            p."FILE_NAME"                         AS profileFileName,
+            COUNT(l."COMMENT_NO")                 AS likeCount
+        FROM "COIN_COMMENT" c
+        LEFT JOIN "PROFILE" p ON c."USERNAME" = p."USERNAME"
+        LEFT JOIN "COIN_COMMENT_LIKE" l ON c."COMMENT_NO" = l."COMMENT_NO"
+        WHERE c."SYMBOL" = #{symbol}
+        GROUP BY c."COMMENT_NO", c."SYMBOL", c."CONTENT", c."USERNAME", c."CREATED_AT", c."IMAGE_URL", p."FILE_NAME"
+        ORDER BY likeCount DESC, c."CREATED_AT" DESC
+        LIMIT 50
+    </select>
+
+
+    <update id="update">
+        UPDATE "COIN_COMMENT"
+        SET "CONTENT"   = #{content},
+            "IMAGE_URL" = #{imageUrl}
+        WHERE "COMMENT_NO" = #{commentNo} AND "USERNAME" = #{username}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM "COIN_COMMENT"
+        WHERE "COMMENT_NO" = #{commentNo} AND "USERNAME" = #{username}
+    </delete>
 
 </mapper>

@@ -1,6 +1,7 @@
 package com.tj.app.member;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -8,6 +9,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -17,6 +20,9 @@ public class MemberController {
 
     @Autowired
     private MemberService memberService;
+
+    @Autowired
+    private ProfileService profileService;
 
     @GetMapping("create")
     public String create() {
@@ -44,15 +50,24 @@ public class MemberController {
         
         MemberDTO result = memberService.read(user);
         model.addAttribute("dto", result);
-        
+        model.addAttribute("profile", profileService.getProfile(user.getUsername()));
+
         return "member/read";
     }
     
    
+    @GetMapping("update")
+    public String updateForm(HttpSession session, Model model) throws Exception {
+        MemberDTO user = (MemberDTO) session.getAttribute("member");
+        if (user == null) return "redirect:/member/login";
+        model.addAttribute("dto", memberService.read(user));
+        return "member/update";
+    }
+
     @PostMapping("update")
     public String update(MemberDTO memberDTO, HttpSession session) throws Exception {
         memberService.update(memberDTO);
-        
+
         return "redirect:/member/read";
     }
 
@@ -65,25 +80,45 @@ public class MemberController {
     }
     
     @GetMapping("login")
-    public String login() throws Exception {
+    public String login(@RequestParam(value = "redirect", required = false) String redirect, Model model) throws Exception {
+        model.addAttribute("redirect", redirect != null ? redirect : "/");
         return "member/login";
     }
-    
+
     @PostMapping("login")
-    public String login(MemberDTO memberDTO, HttpSession session) throws Exception {
+    public String login(MemberDTO memberDTO, HttpSession session,
+                        @RequestParam(value = "redirect", required = false, defaultValue = "/") String redirect) throws Exception {
         MemberDTO result = memberService.read(memberDTO);
-        
+
         if (result != null && result.getPassword().equals(memberDTO.getPassword())) {
             session.setAttribute("member", result);
-            return "redirect:/";
+            ProfileDTO profile = profileService.getProfile(result.getUsername());
+            session.setAttribute("profileFileName", profile != null ? profile.getFileName() : null);
+            return "redirect:" + redirect;
         } else {
             return "member/login";
         }
     }
     
+    @PostMapping("profile")
+    @ResponseBody
+    public ResponseEntity<?> uploadProfile(@RequestParam("file") MultipartFile file, HttpSession session) {
+        MemberDTO user = (MemberDTO) session.getAttribute("member");
+        if (user == null) return ResponseEntity.status(401).build();
+        try {
+            profileService.saveProfile(user.getUsername(), file);
+            ProfileDTO profile = profileService.getProfile(user.getUsername());
+            session.setAttribute("profileFileName", profile.getFileName());
+            return ResponseEntity.ok(profile.getFileName());
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body("업로드 실패");
+        }
+    }
+
     @GetMapping("logout")
-    public String logout(HttpSession session) {
+    public String logout(HttpSession session,
+                         @RequestParam(value = "redirect", required = false, defaultValue = "/") String redirect) {
         session.invalidate();
-        return "redirect:/";
+        return "redirect:" + redirect;
     }
 }

@@ -147,6 +147,106 @@ nav {
     opacity: 0.88;
 }
 
+/* ── 유저 아이콘 + 드롭다운 ── */
+.nav-user-wrap {
+    position: relative;
+}
+
+.nav-user-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    cursor: pointer;
+    color: var(--text2);
+    transition: border-color 0.15s, background 0.15s;
+    padding: 0;
+    overflow: hidden;
+}
+
+.nav-user-btn:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+}
+
+.nav-user-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 6px 0;
+    min-width: 170px;
+    z-index: 1200;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.38);
+}
+
+.nav-user-dropdown.open {
+    display: block;
+}
+
+.nav-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px 10px;
+}
+
+.nav-user-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--blue);
+    border-radius: 8px;
+    color: #fff;
+    flex-shrink: 0;
+    overflow: hidden;
+}
+
+.nav-user-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100px;
+}
+
+.nav-user-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 4px 0;
+}
+
+.nav-user-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    font-size: 14px;
+    color: var(--text2);
+    text-decoration: none;
+    transition: background 0.12s, color 0.12s;
+}
+
+.nav-user-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text1);
+}
+
+.nav-user-arrow {
+    color: var(--text3);
+    font-size: 16px;
+}
 
 /* ── 네비 드롭다운 ── */
 .dropdown { position: relative; }

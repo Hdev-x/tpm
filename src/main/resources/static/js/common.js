@@ -97,6 +97,16 @@ function toggleSidebar(tab) {
     });
 
     nextSection.style.display = '';
+
+    if (tab === 'interest') {
+        const firstTab = nextSection.querySelector('.si-type-tab');
+        if (firstTab) switchInterestTab(firstTab, 'all');
+    }
+    if (tab === 'recent') {
+        const firstTab = nextSection.querySelector('.si-type-tab');
+        if (firstTab) switchRecentTab(firstTab, 'all');
+    }
+
     if (sidebarReady) {
         void nextSection.offsetWidth;
         nextSection.classList.add('sb-entering');
@@ -106,6 +116,7 @@ function toggleSidebar(tab) {
 
 function closeSidebar() {
     lastSidebarTab = sidebarActiveTab;
+    if (sidebarActiveTab) localStorage.setItem('lastSidebarTab', sidebarActiveTab);
     sidebarActiveTab = null;
     document.getElementById('sidebar-panel').classList.remove('open');
     document.querySelectorAll('.si-btn').forEach(b => b.classList.remove('active'));
@@ -138,7 +149,7 @@ function toggleFold() {
     if (panel.classList.contains('open')) {
         closeSidebar();
     } else {
-        const tab = lastSidebarTab || localStorage.getItem('sidebar') || 'invest';
+        const tab = lastSidebarTab || localStorage.getItem('lastSidebarTab') || localStorage.getItem('sidebar') || 'live';
         toggleSidebar(tab);
     }
 }
@@ -161,10 +172,11 @@ function swapInterestGroups() {
 }
 
 function switchInterestTab(el, tab) {
-    document.querySelectorAll('.si-type-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#sidebar-interest .si-type-tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
     document.querySelectorAll('.si-tab-content').forEach(c => c.style.display = 'none');
     document.getElementById('interest-' + tab).style.display = '';
+    localStorage.setItem('interestTab2', tab);
 
     const container = document.getElementById('si-all-container');
     const stock = document.getElementById('si-group-stock');
@@ -481,6 +493,203 @@ let watchlistWs = null;
 let watchlistPrices = JSON.parse(localStorage.getItem('watchlistPrices') || '{}');
 let watchlistSort = '등록순';
 
+/* ── 주식 관심종목 ── */
+let watchlistStockPrices = JSON.parse(localStorage.getItem('watchlistStockPrices') || '{}');
+let watchlistStockTimer = null;
+
+function getStockWatchlist() {
+    return JSON.parse(localStorage.getItem('stock_watchlist') || '[]');
+}
+
+function watchlistStockItemHtml(code) {
+    const d = watchlistStockPrices[code] || {};
+    const name = d.name || code;
+    const price = d.price && d.price !== '-' ? Number(d.price).toLocaleString() + '원' : '-';
+    const n = parseFloat(d.rate);
+    const cls = isNaN(n) ? '' : (n > 0 ? 'up' : n < 0 ? 'down' : '');
+    const rateText = isNaN(n) ? '-' : (n > 0 ? '+' : '') + n.toFixed(2) + '%';
+    const initials = (name || '  ').slice(0, 2);
+    return '<div class="si-stock-item" data-watchlist-stock="' + code + '" onclick="location.href=\'/stock/chart?code=' + code + '\'">'
+        + '<div class="si-logo" style="overflow:hidden;cursor:pointer;">'
+        + '<img src="https://file.alphasquare.co.kr/media/images/stock_logo/kr/' + code + '.png"'
+        + ' style="width:100%;height:100%;object-fit:contain;"'
+        + ' onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'\';">'
+        + '<span style="display:none;font-size:9px;font-weight:700;color:#fff;">' + initials + '</span>'
+        + '</div>'
+        + '<span class="si-stock-name">' + name + '</span>'
+        + '<div class="si-stock-price">'
+        + '<span class="si-price">' + price + '</span>'
+        + '<span class="si-change ' + cls + '">' + rateText + '</span>'
+        + '</div>'
+        + '<button class="si-heart active" onclick="event.stopPropagation();toggleStockWatchlistSidebar(\'' + code + '\')">' + HEART_SVG + '</button>'
+        + '</div>';
+}
+
+function renderWatchlistStocks() {
+    const list = getStockWatchlist();
+    ['watchlist-stock-list', 'watchlist-stock-all-list'].forEach(listId => {
+        const el = document.getElementById(listId);
+        if (!el) return;
+        el.innerHTML = list.length === 0
+            ? '<div class="si-wl-empty">관심 주식이 없습니다</div>'
+            : list.map(watchlistStockItemHtml).join('');
+    });
+}
+
+async function loadWatchlistStocks() {
+    const list = getStockWatchlist();
+    if (list.length === 0) { clearInterval(watchlistStockTimer); watchlistStockTimer = null; renderWatchlistStocks(); return; }
+
+    renderWatchlistStocks();
+
+    for (const code of list) {
+        const cached = sidebarStockMap[code];
+        if (cached && cached.price !== '-') {
+            watchlistStockPrices[code] = { name: cached.name, price: cached.price, rate: cached.rate, diff: cached.diff };
+        } else {
+            try {
+                const res = await fetch('/stock/ticker?code=' + code).then(r => r.json());
+                if (res.output) {
+                    watchlistStockPrices[code] = {
+                        name: res.output.hts_kor_isnm || code,
+                        price: res.output.stck_prpr,
+                        rate: res.output.prdy_ctrt,
+                        diff: res.output.prdy_vrss
+                    };
+                }
+            } catch (e) {}
+        }
+    }
+    localStorage.setItem('watchlistStockPrices', JSON.stringify(watchlistStockPrices));
+    renderWatchlistStocks();
+
+    clearInterval(watchlistStockTimer);
+    watchlistStockTimer = setInterval(loadWatchlistStocks, 30000);
+}
+
+function updateStockWatchlistHeartBtn(code, inList) {
+    const rowBtn = document.querySelector('#stockTableBody tr[data-code="' + code + '"] .like-btn');
+    if (rowBtn) rowBtn.classList.toggle('liked', inList);
+    const detailBtn = document.getElementById('detail-watchlist-btn');
+    if (detailBtn && typeof currentDetailCode !== 'undefined' && currentDetailCode === code) {
+        detailBtn.classList.toggle('active', inList);
+    }
+}
+
+function toggleStockWatchlistSidebar(code) {
+    let list = getStockWatchlist();
+    const idx = list.indexOf(code);
+    if (idx >= 0) {
+        // 제거: 애니메이션 후 DOM 제거
+        list.splice(idx, 1);
+        localStorage.setItem('stock_watchlist', JSON.stringify(list));
+        let pending = 0;
+        ['watchlist-stock-list', 'watchlist-stock-all-list'].forEach(listId => {
+            const item = document.querySelector('#' + listId + ' [data-watchlist-stock="' + code + '"]');
+            if (!item) return;
+            pending++;
+            animateRemoveItem(item, () => {
+                item.remove();
+                pending--;
+                if (pending === 0) {
+                    ['watchlist-stock-list', 'watchlist-stock-all-list'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el && el.querySelectorAll('.si-stock-item').length === 0) {
+                            el.innerHTML = '<div class="si-wl-empty">관심 주식이 없습니다</div>';
+                        }
+                    });
+                }
+            });
+        });
+        delete watchlistStockPrices[code];
+        localStorage.setItem('watchlistStockPrices', JSON.stringify(watchlistStockPrices));
+        updateStockWatchlistHeartBtn(code, false);
+    } else {
+        // 추가: interest 탭 오픈 + DOM 즉시 append
+        list.push(code);
+        localStorage.setItem('stock_watchlist', JSON.stringify(list));
+        if (sidebarActiveTab !== 'interest') toggleSidebar('interest');
+        ['watchlist-stock-list', 'watchlist-stock-all-list'].forEach(listId => {
+            const el = document.getElementById(listId);
+            if (!el) return;
+            const empty = el.querySelector('.si-wl-empty');
+            if (empty) empty.remove();
+            const div = document.createElement('div');
+            div.innerHTML = watchlistStockItemHtml(code);
+            el.append(div.firstElementChild);
+        });
+        // 가격 데이터 로딩
+        const cached = sidebarStockMap[code];
+        if (cached && cached.price !== '-') {
+            watchlistStockPrices[code] = { ...cached };
+            localStorage.setItem('watchlistStockPrices', JSON.stringify(watchlistStockPrices));
+            renderWatchlistStocks();
+        } else {
+            fetch('/stock/ticker?code=' + code).then(r => r.json()).then(res => {
+                if (res.output) {
+                    watchlistStockPrices[code] = {
+                        name: res.output.hts_kor_isnm || code,
+                        price: res.output.stck_prpr,
+                        rate: res.output.prdy_ctrt,
+                        diff: res.output.prdy_vrss
+                    };
+                    localStorage.setItem('watchlistStockPrices', JSON.stringify(watchlistStockPrices));
+                    renderWatchlistStocks();
+                }
+            }).catch(() => {});
+        }
+        updateStockWatchlistHeartBtn(code, true);
+    }
+}
+
+/* ── 최근 본 주식 ── */
+let recentStockPrices = JSON.parse(localStorage.getItem('recentStockPrices') || '{}');
+
+function recentStockItemHtml(code) {
+    const d = recentStockPrices[code] || {};
+    const name = d.name || code;
+    const price = d.price && d.price !== '-' ? Number(d.price).toLocaleString() + '원' : '-';
+    const n = parseFloat(d.rate);
+    const cls = isNaN(n) ? '' : (n > 0 ? 'up' : n < 0 ? 'down' : '');
+    const rateText = isNaN(n) ? '-' : (n > 0 ? '+' : '') + n.toFixed(2) + '%';
+    const initials = (name || '  ').slice(0, 2);
+    return '<div class="si-stock-item" data-recent="' + code + '" onclick="location.href=\'/stock/chart?code=' + code + '\'">'
+        + '<div class="si-logo" style="overflow:hidden;cursor:pointer;">'
+        + '<img src="https://file.alphasquare.co.kr/media/images/stock_logo/kr/' + code + '.png"'
+        + ' style="width:100%;height:100%;object-fit:contain;"'
+        + ' onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'\';">'
+        + '<span style="display:none;font-size:9px;font-weight:700;color:#fff;">' + initials + '</span>'
+        + '</div>'
+        + '<span class="si-stock-name">' + name + '</span>'
+        + '<div class="si-stock-price">'
+        + '<span class="si-price">' + price + '</span>'
+        + '<span class="si-change ' + cls + '">' + rateText + '</span>'
+        + '</div>'
+        + '<button onclick="event.stopPropagation();removeFromRecent(\'' + code + '\')" style="background:none;border:none;color:var(--text3);font-size:14px;cursor:pointer;padding:4px;flex-shrink:0;">✕</button>'
+        + '</div>';
+}
+
+async function loadRecentStocks(stockList) {
+    for (const code of stockList) {
+        const cached = sidebarStockMap[code];
+        if (cached && cached.price !== '-') {
+            recentStockPrices[code] = { name: cached.name, price: cached.price, rate: cached.rate };
+        } else {
+            try {
+                const res = await fetch('/stock/ticker?code=' + code).then(r => r.json());
+                if (res.output) {
+                    recentStockPrices[code] = {
+                        name: res.output.hts_kor_isnm || code,
+                        price: res.output.stck_prpr,
+                        rate: res.output.prdy_ctrt
+                    };
+                }
+            } catch (e) {}
+        }
+    }
+    localStorage.setItem('recentStockPrices', JSON.stringify(recentStockPrices));
+}
+
 const WATCHLIST_SORT_FNS = {
     '등록순':     (a, b) => 0,
     '이름순':     (a, b) => a.localeCompare(b),
@@ -633,7 +842,7 @@ function renderWatchlistCoins(listId, coins) {
     const el = document.getElementById(listId);
     if (!el) return;
     if (coins.length === 0) {
-        el.innerHTML = '<div class="si-wl-empty">♡ 버튼으로 추가하세요</div>';
+        el.innerHTML = '<div class="si-wl-empty">관심 코인이 없습니다</div>';
         return;
     }
     el.innerHTML = getSortedCoins(coins).map(watchlistItemHtml).join('');
@@ -733,13 +942,20 @@ function switchRecentTab(el, tab) {
     el.classList.add('active');
     document.querySelectorAll('.si-recent-tab').forEach(c => c.style.display = 'none');
     document.getElementById('recent-tab-' + tab).style.display = 'flex';
+    localStorage.setItem('recentTab', tab);
 }
 
 function addToRecent(symbol) {
     let list = JSON.parse(localStorage.getItem('recentCoins') || '[]');
     list = list.filter(s => s !== symbol);
     list.unshift(symbol);
-    if (list.length > RECENT_MAX) list = list.slice(0, RECENT_MAX);
+    // 타입별 최대 20개 제한
+    const addedIsCoin = isCoinSymbol(symbol);
+    let typeCount = 0;
+    list = list.filter(s => {
+        if (isCoinSymbol(s) === addedIsCoin) { typeCount++; return typeCount <= RECENT_MAX; }
+        return true;
+    });
     localStorage.setItem('recentCoins', JSON.stringify(list));
     recentCoins = list;
     if (sidebarActiveTab === 'recent') loadRecent();
@@ -749,14 +965,20 @@ function clearRecent(type) {
     if (!type || type === 'all') {
         recentCoins = [];
         recentPrices = {};
+        recentStockPrices = {};
         localStorage.removeItem('recentCoins');
         localStorage.removeItem('recentPrices');
+        localStorage.removeItem('recentStockPrices');
     } else {
         const isCoin = type === 'coin';
-        recentCoins.filter(s => isCoin ? isCoinSymbol(s) : !isCoinSymbol(s)).forEach(s => delete recentPrices[s]);
+        recentCoins.filter(s => isCoin ? isCoinSymbol(s) : !isCoinSymbol(s)).forEach(s => {
+            delete recentPrices[s];
+            delete recentStockPrices[s];
+        });
         recentCoins = recentCoins.filter(s => isCoin ? !isCoinSymbol(s) : isCoinSymbol(s));
         localStorage.setItem('recentCoins', JSON.stringify(recentCoins));
         localStorage.setItem('recentPrices', JSON.stringify(recentPrices));
+        localStorage.setItem('recentStockPrices', JSON.stringify(recentStockPrices));
     }
     if (recentWs) { recentWs.close(); recentWs = null; }
     renderRecentCoins(recentCoins);
@@ -770,7 +992,9 @@ function removeFromRecent(symbol) {
             recentCoins = recentCoins.filter(s => s !== symbol);
             localStorage.setItem('recentCoins', JSON.stringify(recentCoins));
             delete recentPrices[symbol];
+            delete recentStockPrices[symbol];
             localStorage.setItem('recentPrices', JSON.stringify(recentPrices));
+            localStorage.setItem('recentStockPrices', JSON.stringify(recentStockPrices));
             renderRecentCoins(recentCoins);
         });
     }
@@ -810,10 +1034,26 @@ function renderRecentCoins(coins) {
     const coinList = coins.filter(isCoinSymbol);
     const stockList = coins.filter(s => !isCoinSymbol(s));
 
-    renderRecentList('recent-coin-all', coinList, '최근 본 코인이 없습니다');
+    // 전체 탭: 각 10개 제한
+    renderRecentList('recent-coin-all', coinList.slice(0, 10), '최근 본 코인이 없습니다');
+    // 코인 탭: 최대 20개
     renderRecentList('recent-coin-only', coinList, '최근 본 코인이 없습니다');
-    renderRecentList('recent-stock-all', stockList, '최근 본 주식이 없습니다');
-    renderRecentList('recent-stock-only', stockList, '최근 본 주식이 없습니다');
+
+    // 전체 탭 주식: 10개 제한
+    const el = document.getElementById('recent-stock-all');
+    if (el) {
+        const limited = stockList.slice(0, 10);
+        el.innerHTML = limited.length === 0
+            ? '<div class="si-wl-empty">최근 본 주식이 없습니다</div>'
+            : limited.map(recentStockItemHtml).join('');
+    }
+    // 주식 탭: 최대 20개
+    const el2 = document.getElementById('recent-stock-only');
+    if (el2) {
+        el2.innerHTML = stockList.length === 0
+            ? '<div class="si-wl-empty">최근 본 주식이 없습니다</div>'
+            : stockList.map(recentStockItemHtml).join('');
+    }
 
     const coinGroup = document.getElementById('recent-group-coin');
     const stockGroup = document.getElementById('recent-group-stock');
@@ -824,6 +1064,11 @@ function renderRecentCoins(coins) {
 async function loadRecent() {
     recentCoins = JSON.parse(localStorage.getItem('recentCoins') || '[]');
     if (recentCoins.length === 0) { renderRecentCoins([]); return; }
+
+    renderRecentCoins(recentCoins);
+
+    const stockList = recentCoins.filter(s => !isCoinSymbol(s));
+    if (stockList.length > 0) await loadRecentStocks(stockList);
 
     renderRecentCoins(recentCoins);
 
@@ -870,19 +1115,137 @@ function connectRecentWs() {
         const change = openUtc > 0 ? (price - openUtc) / openUtc * 100 : (recentPrices[symbol]?.change ?? 0);
         recentPrices[symbol] = { price, change };
         localStorage.setItem('recentPrices', JSON.stringify(recentPrices));
-        const item = document.querySelector('#recent-coin-list [data-recent="' + symbol + '"]');
-        if (!item) return;
-        const cls = change >= 0 ? 'up' : 'down';
-        item.querySelector('.si-price').textContent = fmtCoinPrice(price);
-        const changeEl = item.querySelector('.si-change');
-        changeEl.textContent = fmtCoinChange(price, change);
-        changeEl.className = 'si-change ' + cls;
+        ['recent-coin-all', 'recent-coin-only'].forEach(listId => {
+            const item = document.querySelector('#' + listId + ' [data-recent="' + symbol + '"]');
+            if (!item) return;
+            const cls = change >= 0 ? 'up' : 'down';
+            item.querySelector('.si-price').textContent = fmtCoinPrice(price);
+            const changeEl = item.querySelector('.si-change');
+            changeEl.textContent = fmtCoinChange(price, change);
+            changeEl.className = 'si-change ' + cls;
+        });
     };
     ws.onclose = () => {
         if (ws === recentWs && recentCoins.length > 0) setTimeout(connectRecentWs, 3000);
     };
 }
 
+
+/* ====================================================
+   실시간 주식 사이드바
+   ==================================================== */
+let sidebarStockMap = {};   // code → {name, price, rate, diff}
+let sidebarStockOrder = []; // 시가총액 순 코드 배열
+let sidebarStompClient = null;
+
+function loadScriptAsync(url) {
+    return new Promise(resolve => {
+        if (document.querySelector('script[src="' + url + '"]')) { resolve(); return; }
+        const s = document.createElement('script');
+        s.src = url;
+        s.onload = resolve;
+        s.onerror = resolve;
+        document.head.appendChild(s);
+    });
+}
+
+async function initSidebarStock() {
+    try {
+        const res = await fetch('/stock/db-list?limit=40');
+        const data = await res.json();
+        if (!Array.isArray(data)) return;
+        sidebarStockOrder = data.map(s => s.code).filter(Boolean);
+        data.forEach(s => {
+            if (s.code) sidebarStockMap[s.code] = { name: s.name || '-', price: '-', rate: '-', diff: '-' };
+        });
+        renderSidebarStockList();
+        renderLiveAll();
+    } catch (e) {}
+    connectSidebarStockWs();
+}
+
+async function connectSidebarStockWs() {
+    if (typeof SockJS === 'undefined') {
+        await loadScriptAsync('https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js');
+    }
+    if (typeof Stomp === 'undefined') {
+        await loadScriptAsync('https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js');
+    }
+    const socket = new SockJS('/ws-stock');
+    sidebarStompClient = Stomp.over(socket);
+    sidebarStompClient.debug = null;
+    sidebarStompClient.connect({}, () => {
+        sidebarStompClient.subscribe('/topic/stock/price', msg => {
+            const d = JSON.parse(msg.body);
+            if (!sidebarStockMap[d.code]) return;
+            sidebarStockMap[d.code].price  = d.price;
+            sidebarStockMap[d.code].rate   = d.rate;
+            sidebarStockMap[d.code].diff   = d.diff;
+            sidebarStockMap[d.code].volume = d.volume || '0';
+            updateSidebarStockItem(d);
+        });
+    }, () => setTimeout(connectSidebarStockWs, 3000));
+}
+
+function updateSidebarStockItem(d) {
+    const n = parseFloat(d.rate);
+    const cls = isNaN(n) ? '' : (n > 0 ? 'up' : n < 0 ? 'down' : '');
+    const rateText = isNaN(n) ? '-' : (n > 0 ? '+' : '') + n.toFixed(2) + '%';
+    const priceText = d.price ? Number(d.price).toLocaleString() + '원' : '-';
+
+    ['live-stock-list', 'live-all-list'].forEach(listId => {
+        const item = document.querySelector('#' + listId + ' [data-live-stock="' + d.code + '"]');
+        if (!item) return;
+        item.querySelector('.live-pr').textContent = priceText;
+        const chEl = item.querySelector('.live-ch');
+        chEl.textContent = rateText;
+        chEl.className = 'live-ch ' + cls;
+    });
+}
+
+function getSidebarStockSorted() {
+    if (liveSort === '급상승') {
+        return [...sidebarStockOrder].sort((a, b) =>
+            (parseFloat(sidebarStockMap[b]?.rate) || 0) - (parseFloat(sidebarStockMap[a]?.rate) || 0));
+    }
+    if (liveSort === '급하락') {
+        return [...sidebarStockOrder].sort((a, b) =>
+            (parseFloat(sidebarStockMap[a]?.rate) || 0) - (parseFloat(sidebarStockMap[b]?.rate) || 0));
+    }
+    // 거래대금 순 (기본)
+    return [...sidebarStockOrder].sort((a, b) =>
+        (parseFloat(sidebarStockMap[b]?.volume) || 0) - (parseFloat(sidebarStockMap[a]?.volume) || 0));
+}
+
+function liveStockItemHtml(code, d, rank) {
+    const n = parseFloat(d.rate);
+    const cls = isNaN(n) ? '' : (n > 0 ? 'up' : n < 0 ? 'down' : '');
+    const rateText = isNaN(n) ? '-' : (n > 0 ? '+' : '') + n.toFixed(2) + '%';
+    const priceText = d.price && d.price !== '-' ? Number(d.price).toLocaleString() + '원' : '-';
+    const initials = (d.name || '  ').slice(0, 2);
+    return '<div class="live-item" data-live-stock="' + code + '" onclick="location.href=\'/stock/chart?code=' + code + '\'">'
+        + '<span class="live-rank">' + rank + '</span>'
+        + '<div class="si-logo" style="overflow:hidden;flex-shrink:0;">'
+        + '<img src="https://file.alphasquare.co.kr/media/images/stock_logo/kr/' + code + '.png"'
+        + ' style="width:100%;height:100%;object-fit:contain;"'
+        + ' onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'\';">'
+        + '<span style="display:none;font-size:9px;font-weight:700;color:#fff;">' + initials + '</span>'
+        + '</div>'
+        + '<span class="live-name">' + d.name + '</span>'
+        + '<div class="live-price-col">'
+        + '<span class="live-pr">' + priceText + '</span>'
+        + '<span class="live-ch ' + cls + '">' + rateText + '</span>'
+        + '</div></div>';
+}
+
+function renderSidebarStockList() {
+    const el = document.getElementById('live-stock-list');
+    if (!el) return;
+    const sorted = getSidebarStockSorted();
+    el.innerHTML = sorted.length === 0
+        ? '<div class="si-wl-empty">데이터를 불러오는 중입니다</div>'
+        : sorted.map((code, i) => liveStockItemHtml(code, sidebarStockMap[code] || { name: '-', price: '-', rate: '-' }, i + 1)).join('');
+}
 
 /* ====================================================
    실시간 TOP 50 코인
@@ -892,12 +1255,16 @@ let livePrices = JSON.parse(localStorage.getItem('livePrices') || '{}');
 let liveWs = null;
 let liveSort = '거래대금';
 let liveTime = '실시간';
+let currentLiveTab = 'stock';
 
 function switchLiveTab(el, tab) {
+    currentLiveTab = tab;
+    localStorage.setItem('liveTab', tab);
     document.querySelectorAll('#sidebar-live .si-type-tab').forEach(t => t.classList.remove('active'));
     el.classList.add('active');
     document.querySelectorAll('.live-tab-panel').forEach(c => c.style.display = 'none');
     document.getElementById('live-tab-' + tab).style.display = '';
+    if (tab === 'all') renderLiveAll();
 }
 
 function toggleLiveDropdown(key) {
@@ -914,6 +1281,8 @@ function setLiveSort(sort) {
     document.querySelectorAll('#live-sort-dd .wl-sort-item').forEach(i => i.classList.toggle('active', i.textContent === sort));
     document.getElementById('live-sort-dd').classList.remove('open');
     renderLiveCoins();
+    renderSidebarStockList();
+    renderLiveAll();
 }
 
 function setLiveTime(time) {
@@ -957,15 +1326,97 @@ function liveItemHtml(symbol, rank) {
     </div>`;
 }
 
+function liveAllItemHtml(item, rank) {
+    const cls = item.rate > 0 ? 'up' : item.rate < 0 ? 'down' : '';
+    const rateText = (item.rate > 0 ? '+' : '') + item.rate.toFixed(2) + '%';
+
+    if (item.type === 'coin') {
+        const color = coinLogoColor(item.name);
+        const logoUrl = 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/' + item.name.toLowerCase() + '.png';
+        return '<div class="live-item" data-live="' + item.id + '" onclick="location.href=\'/coin/chart?symbol=' + item.id + '\'">'
+            + '<span class="live-rank">' + rank + '</span>'
+            + '<div class="si-logo" style="overflow:hidden;flex-shrink:0;">'
+            + '<img src="' + logoUrl + '" style="width:100%;height:100%;object-fit:contain;border-radius:50%;"'
+            + ' onerror="this.parentElement.style.background=\'' + color + '\';this.parentElement.style.fontSize=\'10px\';this.parentElement.textContent=\'' + item.name.slice(0, 3) + '\'">'
+            + '</div>'
+            + '<div style="flex:1;min-width:0;overflow:hidden;margin-left:8px;">'
+            + '<div style="font-size:16px;font-weight:400;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + item.name + '</div>'
+            + '<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600;background:rgba(139,92,246,0.12);color:#8B5CF6;border:1px solid rgba(139,92,246,0.25);">코인</span>'
+            + '</div>'
+            + '<div class="live-price-col">'
+            + '<span class="live-pr">' + (item.price !== null ? fmtCoinPrice(item.price) : '-') + '</span>'
+            + '<span class="live-ch ' + cls + '">' + rateText + '</span>'
+            + '</div></div>';
+    }
+
+    const initials = (item.name || '  ').slice(0, 2);
+    const priceText = item.price && item.price !== '-' ? Number(item.price).toLocaleString() + '원' : '-';
+    return '<div class="live-item" data-live-stock="' + item.id + '" onclick="location.href=\'/stock/chart?code=' + item.id + '\'">'
+        + '<span class="live-rank">' + rank + '</span>'
+        + '<div class="si-logo" style="overflow:hidden;flex-shrink:0;">'
+        + '<img src="https://file.alphasquare.co.kr/media/images/stock_logo/kr/' + item.id + '.png"'
+        + ' style="width:100%;height:100%;object-fit:contain;"'
+        + ' onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'\';">'
+        + '<span style="display:none;font-size:9px;font-weight:700;color:#fff;">' + initials + '</span>'
+        + '</div>'
+        + '<div style="flex:1;min-width:0;overflow:hidden;margin-left:8px;">'
+        + '<div style="font-size:16px;font-weight:400;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + item.name + '</div>'
+        + '<span style="display:inline-block;padding:1px 5px;border-radius:3px;font-size:10px;font-weight:600;background:rgba(13,148,136,0.12);color:#0D9488;border:1px solid rgba(13,148,136,0.25);">주식</span>'
+        + '</div>'
+        + '<div class="live-price-col">'
+        + '<span class="live-pr">' + priceText + '</span>'
+        + '<span class="live-ch ' + cls + '">' + rateText + '</span>'
+        + '</div></div>';
+}
+
+function renderLiveAll() {
+    const el = document.getElementById('live-all-list');
+    if (!el) return;
+
+    const coinItems = liveCoins.map(symbol => {
+        const ticker = symbol.replace(/USDT$/, '').replace('_SPBL', '');
+        const p = livePrices[symbol];
+        return {
+            type: 'coin',
+            id: symbol,
+            name: ticker,
+            price: p?.price ?? null,
+            rate: p?.change ?? 0,
+            volumeKrw: (p?.volume ?? 0) * usdToKrw
+        };
+    });
+
+    const stockItems = sidebarStockOrder.map(code => {
+        const d = sidebarStockMap[code];
+        return {
+            type: 'stock',
+            id: code,
+            name: d?.name || '-',
+            price: d?.price ?? '-',
+            rate: parseFloat(d?.rate) || 0,
+            volumeKrw: parseFloat(d?.volume) || 0
+        };
+    });
+
+    const all = [...coinItems, ...stockItems];
+
+    if (liveSort === '급상승') all.sort((a, b) => b.rate - a.rate);
+    else if (liveSort === '급하락') all.sort((a, b) => a.rate - b.rate);
+    else all.sort((a, b) => b.volumeKrw - a.volumeKrw);
+
+    el.innerHTML = all.length === 0
+        ? '<div class="si-wl-empty">데이터를 불러오는 중입니다</div>'
+        : all.map((item, i) => liveAllItemHtml(item, i + 1)).join('');
+}
+
 function renderLiveCoins() {
     const sorted = getSortedLiveCoins();
-    ['live-all-list', 'live-coin-list'].forEach(listId => {
-        const el = document.getElementById(listId);
-        if (!el) return;
+    const el = document.getElementById('live-coin-list');
+    if (el) {
         el.innerHTML = sorted.length === 0
             ? '<div class="si-wl-empty">데이터를 불러오는 중입니다</div>'
             : sorted.map((s, i) => liveItemHtml(s, i + 1)).join('');
-    });
+    }
 }
 
 async function loadLiveCoins() {
@@ -989,6 +1440,7 @@ async function loadLiveCoins() {
         }
     } catch (e) { }
     renderLiveCoins();
+    renderLiveAll();
     connectLiveWs();
 }
 
@@ -1044,6 +1496,7 @@ document.addEventListener('DOMContentLoaded', () => {
     sessionStorage.setItem('sidebarInit', '1');
 
     if (isFirstLoad) {
+        localStorage.setItem('liveTab', 'stock');
         requestAnimationFrame(() => requestAnimationFrame(() => { sidebarReady = true; toggleSidebar('live'); }));
     } else {
         /* 페이지 이동: sidebar-icons.jsp 인라인 스크립트가 이미 복원함 */
@@ -1054,6 +1507,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (investTab) {
         const tabEl = document.querySelector(`.si-type-tab[onclick*="switchInvestTab"][onclick*="${investTab}"]`);
         if (tabEl) switchInvestTab(tabEl, investTab);
+    }
+
+    if (!isFirstLoad) {
+        const interestTab2 = localStorage.getItem('interestTab2');
+        if (interestTab2) {
+            const tabEl = document.querySelector(`#sidebar-interest .si-type-tab[onclick*="switchInterestTab"][onclick*="'${interestTab2}'"]`);
+            if (tabEl) switchInterestTab(tabEl, interestTab2);
+        }
+
+        const recentTab = localStorage.getItem('recentTab');
+        if (recentTab) {
+            const tabEl = document.querySelector(`#sidebar-recent .si-type-tab[onclick*="switchRecentTab"][onclick*="'${recentTab}'"]`);
+            if (tabEl) switchRecentTab(tabEl, recentTab);
+        }
+
+        const liveTab = localStorage.getItem('liveTab');
+        if (liveTab) {
+            const tabEl = document.querySelector(`#sidebar-live .si-type-tab[onclick*="switchLiveTab"][onclick*="'${liveTab}'"]`);
+            if (tabEl) switchLiveTab(tabEl, liveTab);
+        }
     }
 
     const groupOrder = localStorage.getItem('interestGroupOrder');
@@ -1074,8 +1547,10 @@ document.addEventListener('DOMContentLoaded', () => {
     loadHoldings();
     loadOrders();
     loadWatchlist();
+    loadWatchlistStocks();
     loadRecent();
     loadLiveCoins();
+    initSidebarStock();
 });
 
 function cmOpenImage(img) {

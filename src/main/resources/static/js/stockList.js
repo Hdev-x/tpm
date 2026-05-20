@@ -7,15 +7,44 @@ let currentFilter = '전체';
 let currentDetailCode = null;
 
 /* ── 관심종목 (로컬스토리지) ── */
-function getWatchlist() {
-    try { return JSON.parse(localStorage.getItem('stock_watchlist') || '[]'); } catch { return []; }
-}
-function toggleWatchlist(code) {
-    const list = getWatchlist();
+function toggleStockWatchlistRow(code) {
+    const list = getStockWatchlist();
     const idx = list.indexOf(code);
+    const isAdding = idx < 0;
     if (idx >= 0) list.splice(idx, 1);
     else list.push(code);
     localStorage.setItem('stock_watchlist', JSON.stringify(list));
+
+    if (typeof updateStockWatchlistHeartBtn === 'function') updateStockWatchlistHeartBtn(code, isAdding);
+    if (isAdding) {
+        if (typeof toggleSidebar === 'function' && sidebarActiveTab !== 'interest') toggleSidebar('interest');
+        if (typeof sidebarStockMap !== 'undefined' && sidebarStockMap[code]) {
+            watchlistStockPrices[code] = { ...sidebarStockMap[code] };
+        }
+        if (typeof renderWatchlistStocks === 'function') renderWatchlistStocks();
+    } else {
+        if (typeof watchlistStockPrices !== 'undefined') delete watchlistStockPrices[code];
+        let pending = 0;
+        ['watchlist-stock-list', 'watchlist-stock-all-list'].forEach(listId => {
+            const item = document.querySelector('#' + listId + ' [data-watchlist-stock="' + code + '"]');
+            if (!item) return;
+            pending++;
+            if (typeof animateRemoveItem === 'function') {
+                animateRemoveItem(item, () => {
+                    item.remove();
+                    pending--;
+                    if (pending === 0) {
+                        ['watchlist-stock-list', 'watchlist-stock-all-list'].forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el && el.querySelectorAll('.si-stock-item').length === 0) {
+                                el.innerHTML = '<div class="si-wl-empty">관심 주식이 없습니다</div>';
+                            }
+                        });
+                    }
+                });
+            }
+        });
+    }
 }
 
 /* ── 포맷 헬퍼 ── */
@@ -56,24 +85,14 @@ function fmtDiff(val) {
 
 /* ── API 데이터 정규화 ── */
 function normalizeStock(item) {
-    if (item.hts_kor_isnm !== undefined) {
-        // rank API 응답
-        return {
-            name: item.hts_kor_isnm || '-',
-            code: item.mkstat_shrn_iscd || '',
-            price: item.mkstat_prpr || '-',
-            changeRate: item.prdy_ctrt || '-',
-            changeDiff: item.prdy_vrss || '-',
-        };
-    }
     if (item.code !== undefined) {
-        // db-list API 응답
+        // db-list 및 rank API 응답
         return {
             name: item.name || '-',
             code: item.code || '',
-            price: '-',
-            changeRate: '-',
-            changeDiff: '-',
+            price: item.price || '-',
+            changeRate: item.rate || '-',
+            changeDiff: item.diff || '-',
         };
     }
     // summary API 응답
@@ -99,7 +118,7 @@ async function loadStocks() {
             const data = await res.json();
             return (Array.isArray(data) ? data : []).map(normalizeStock);
         }
-        const res = await fetch('/stock/db-list');
+        const res = await fetch('/stock/db-list?limit=40');
         const data = await res.json();
         return (Array.isArray(data) ? data : []).map(normalizeStock);
     } catch (e) {
@@ -107,87 +126,79 @@ async function loadStocks() {
     }
 }
 
-/* ── 보이는 행 현재가 조회 ── */
-let priceObserver = null;
-const fetchingCodes = new Set();
+/* ── KIS WebSocket 실시간 연결 ── */
+let stockStompClient = null;
 
-function observeVisibleRows() {
-    if (priceObserver) priceObserver.disconnect();
-    fetchingCodes.clear();
+function connectStockWs() {
+    const socket = new SockJS('/ws-stock');
+    stockStompClient = Stomp.over(socket);
+    stockStompClient.debug = null;
 
-    priceObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (!entry.isIntersecting) return;
-            const row = entry.target;
-            const code = row.dataset.code;
-            if (!code || fetchingCodes.has(code)) return;
-            fetchingCodes.add(code);
-            fetchRowPrice(row, code);
+    stockStompClient.connect({}, () => {
+        stockStompClient.subscribe('/topic/stock/price', msg => {
+            const d = JSON.parse(msg.body);
+            updateRowPrice(d);
         });
-    }, { threshold: 0.1 });
-
-    document.querySelectorAll('#stockTableBody .stock-row').forEach(row => {
-        priceObserver.observe(row);
+    }, () => {
+        // 연결 끊기면 3초 후 재연결
+        setTimeout(connectStockWs, 3000);
     });
 }
 
-async function fetchRowPrice(row, code) {
-    try {
-        const res = await fetch('/stock/ticker?code=' + encodeURIComponent(code));
-        if (!res.ok) return;
-        const json = await res.json();
-        const out = json.output;
-        if (!out) return;
+function updateRowPrice(d) {
+    const row = document.querySelector('tr[data-code="' + d.code + '"]');
+    if (!row) return;
 
-        const priceCell = row.querySelector('.td-price');
-        const changeCell = row.querySelector('.td-change .badge');
-        const diffCell = row.querySelector('.td-diff');
+    const priceCell  = row.querySelector('.td-price');
+    const badge      = row.querySelector('.td-change .badge');
+    const diffCell   = row.querySelector('.td-diff');
+    const highCell   = row.querySelector('.td-high');
+    const lowCell    = row.querySelector('.td-low');
 
-        // 1. 현재가 반영
-        if (priceCell) priceCell.textContent = fmtPrice(out.stck_prpr);
+    if (priceCell) priceCell.textContent = fmtPrice(d.price);
+    if (diffCell)  diffCell.textContent  = fmtDiff(d.diff);
+    if (highCell)  highCell.textContent  = fmtPrice(d.high);
+    if (lowCell)   lowCell.textContent   = fmtPrice(d.low);
 
-        // 2. 부호 처리 정밀화 (prdy_vrss_sign 기준 또는 prdy_ctrt 자체 부호 기준)
-        let rateVal = out.prdy_ctrt || '0';
-        let diffVal = out.prdy_vrss || '0';
-        
-        // API에 따라 prdy_vrss_sign이 '3', '4', '5' 이면 하락/보합 세팅
-        const sign = out.prdy_vrss_sign;
-        const isDown = (sign === '4' || sign === '5' || parseFloat(rateVal) < 0);
-
-        // 만약 하락인데 데이터에 마이너스 부호가 없다면 강제로 붙여줌
-        if (isDown) {
-            if (!rateVal.toString().startsWith('-')) rateVal = '-' + rateVal;
-            if (!diffVal.toString().startsWith('-')) diffVal = '-' + diffVal;
+    if (badge) {
+        const rate = fmtRate(d.rate);
+        const prev = badge.textContent;
+        badge.textContent = rate.text;
+        badge.className = 'badge ' + rate.cls;
+        // 변동 시 배지 깜빡 효과
+        if (prev !== rate.text) {
+            badge.style.transition = 'none';
+            badge.style.background = rate.cls === 'up'
+                ? 'rgba(240,68,82,0.15)' : 'rgba(37,99,235,0.15)';
+            void badge.offsetWidth;
+            badge.style.transition = 'background 2s ease-out';
+            clearTimeout(badge._flash);
+            badge._flash = setTimeout(() => { badge.style.background = ''; }, 200);
         }
+    }
 
-        // 3. 등락률 UI 반영
-        if (changeCell && out.prdy_ctrt) {
-            const rate = fmtRate(rateVal);
-            changeCell.textContent = rate.text;
-            changeCell.className = 'badge ' + rate.cls;
-        }
+    // 상세 패널도 같은 종목이면 함께 갱신
+    if (d.code === currentDetailCode) {
+        const rate = fmtRate(d.rate);
+        document.getElementById('detailPrice').textContent = fmtPrice(d.price);
+        const changeEl = document.getElementById('detailChange');
+        changeEl.textContent = rate.text;
+        changeEl.className = 'hc-main-pnl ' + rate.cls;
+    }
 
-        // 4. 전일대비 금액 UI 반영 (+6,130원 오류 해결 지점)
-        if (diffCell && out.prdy_vrss) {
-            diffCell.textContent = fmtDiff(diffVal);
-        }
-
-        // allStocks 캐시 데이터도 동동 동기화
-        const stock = allStocks.find(s => s.code === code);
-        if (stock) {
-            stock.price = out.stck_prpr;
-            stock.changeRate = rateVal;
-            stock.changeDiff = diffVal;
-        }
-    } catch (e) {
-        console.error("실시간 시세 파싱 에러:", e);
+    // allStocks 캐시 동기화
+    const stock = allStocks.find(s => s.code === d.code);
+    if (stock) {
+        stock.price      = d.price;
+        stock.changeRate = d.rate;
+        stock.changeDiff = d.diff;
     }
 }
 
 /* ── 테이블 행 생성 ── */
 function makeRow(stock, rank) {
     const rate = fmtRate(stock.changeRate);
-    const isLiked = getWatchlist().includes(stock.code || stock.name);
+    const isLiked = getStockWatchlist().includes(stock.code || stock.name);
     const key = stock.code || stock.name;
     const initials = (stock.name || '  ').slice(0, 2);
 
@@ -196,6 +207,13 @@ function makeRow(stock, rank) {
     tr.dataset.code = key;
     tr.dataset.name = stock.name;
 
+    const logoHtml = stock.code
+        ? '<img src="https://file.alphasquare.co.kr/media/images/stock_logo/kr/' + stock.code + '.png"'
+            + ' style="width:100%;height:100%;object-fit:contain;"'
+            + ' onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'\';">'
+            + '<span style="display:none;font-size:9px;font-weight:700;color:#fff;">' + initials + '</span>'
+        : '<span style="font-size:9px;font-weight:700;color:#fff;">' + initials + '</span>';
+
     tr.innerHTML =
         '<td class="td-rank">'
         + '<div class="rank-inner">'
@@ -203,8 +221,8 @@ function makeRow(stock, rank) {
         + '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
         + '</button>'
         + '<span class="rank-num">' + rank + '</span>'
-        + '<div class="coin-logo" style="background:#3a3a4a;">'
-        + '<span style="font-size:9px;font-weight:700;color:#fff;">' + initials + '</span>'
+        + '<div class="coin-logo" style="background:#3a3a4a;overflow:hidden;">'
+        + logoHtml
         + '</div>'
         + '<div class="coin-name-col">'
         + '<span class="coin-ticker">' + (stock.name || '-') + '</span>'
@@ -233,10 +251,19 @@ function renderTable(stocks) {
     stocks.forEach((s, i) => tbody.appendChild(makeRow(s, i + 1)));
 }
 
+let prefetchStarted = false;
+
 async function refresh() {
     const stocks = await loadStocks();
     renderTable(stocks);
-    if (currentFilter === '전체') observeVisibleRows();
+    if (!prefetchStarted) {
+        prefetchStarted = true;
+        prefetchCharts();
+    }
+    // 필터 변경 후 현재 선택 종목이 새 목록에 없으면 리셋
+    if (currentDetailCode && !stocks.find(s => (s.code || s.name) === currentDetailCode)) {
+        currentDetailCode = null;
+    }
     if (currentDetailCode) {
         const row = document.querySelector('tr[data-code="' + currentDetailCode + '"]');
         if (row) row.classList.add('active');
@@ -265,12 +292,13 @@ document.getElementById('stockTableBody').addEventListener('click', function (e)
     if (likeBtn) {
         e.stopPropagation();
         const code = likeBtn.dataset.code;
-        toggleWatchlist(code);
-        likeBtn.classList.toggle('liked', getWatchlist().includes(code));
+        toggleStockWatchlistRow(code);
+        likeBtn.classList.toggle('liked', getStockWatchlist().includes(code));
         return;
     }
     const row = e.target.closest('.stock-row');
     if (!row) return;
+    if (typeof addToRecent === 'function') addToRecent(row.dataset.code);
     location.href = '/stock/view?code=' + encodeURIComponent(row.dataset.code);
 });
 
@@ -295,15 +323,29 @@ async function loadDetailPanel(code, name) {
 
     const logoWrap = document.getElementById('detailLogoWrap');
     const logoImg = document.getElementById('detailLogoImg');
-    if (logoImg) logoImg.style.display = 'none';
     logoWrap.style.background = '#3a3a4a';
     const existingFb = logoWrap.querySelector('.logo-fb');
     if (existingFb) existingFb.remove();
-    const fb = document.createElement('span');
-    fb.className = 'logo-fb';
-    fb.style.cssText = 'color:#fff;font-size:13px;font-weight:700;';
-    fb.textContent = (name || '  ').slice(0, 2);
-    logoWrap.appendChild(fb);
+
+    if (code && logoImg) {
+        logoImg.src = 'https://file.alphasquare.co.kr/media/images/stock_logo/kr/' + code + '.png';
+        logoImg.style.cssText = 'display:block;width:100%;height:100%;object-fit:contain;';
+        logoImg.onerror = function () {
+            this.style.display = 'none';
+            const fb = document.createElement('span');
+            fb.className = 'logo-fb';
+            fb.style.cssText = 'color:#fff;font-size:13px;font-weight:700;';
+            fb.textContent = (name || '  ').slice(0, 2);
+            logoWrap.appendChild(fb);
+        };
+    } else {
+        if (logoImg) logoImg.style.display = 'none';
+        const fb = document.createElement('span');
+        fb.className = 'logo-fb';
+        fb.style.cssText = 'color:#fff;font-size:13px;font-weight:700;';
+        fb.textContent = (name || '  ').slice(0, 2);
+        logoWrap.appendChild(fb);
+    }
 
     const stock = allStocks.find(s => (s.code || s.name) === code);
     if (stock) {
@@ -315,10 +357,12 @@ async function loadDetailPanel(code, name) {
     }
 
     const wlBtn = document.getElementById('detail-watchlist-btn');
-    if (wlBtn) wlBtn.classList.toggle('active', getWatchlist().includes(code));
+    if (wlBtn) wlBtn.classList.toggle('active', getStockWatchlist().includes(code));
 
     loadDetailChart(code, name);
 }
+
+const chartCache = {};
 
 async function loadDetailChart(code, name) {
     // 코스피/코스닥 지수는 개별 차트 없음
@@ -329,9 +373,17 @@ async function loadDetailChart(code, name) {
     }
     try {
         const searchKey = code || name;
-        const res = await fetch('/stock/chart?code=' + encodeURIComponent(searchKey) + '&range=1y');
-        const json = await res.json();
-        const candles = json.output2 || [];
+
+        // 캐시에 있으면 API 호출 없이 바로 사용
+        let candles;
+        if (chartCache[searchKey]) {
+            candles = chartCache[searchKey];
+        } else {
+            const res = await fetch('/stock/chart?code=' + encodeURIComponent(searchKey) + '&range=1y');
+            const json = await res.json();
+            candles = json.output2 || [];
+            if (candles.length >= 2) chartCache[searchKey] = candles;
+        }
         if (candles.length < 2) return;
 
         const prices = candles.map(c => parseFloat(c.close) || 0).filter(p => p > 0);
@@ -418,10 +470,23 @@ async function loadMarketIndex() {
 }
 
 /* ── 초기화 ── */
+async function prefetchCharts() {
+    for (const stock of allStocks) {
+        if (!stock.code || chartCache[stock.code]) continue;
+        try {
+            const res = await fetch('/stock/chart?code=' + encodeURIComponent(stock.code) + '&range=1y');
+            const json = await res.json();
+            const candles = json.output2 || [];
+            if (candles.length >= 2) chartCache[stock.code] = candles;
+        } catch (e) {}
+        await new Promise(r => setTimeout(r, 100)); // 100ms 간격 (초당 10건)
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     refresh();
     loadMarketIndex();
-    setInterval(refresh, 15000);
+    connectStockWs();
     setInterval(loadMarketIndex, 30000);
 
     const tickerBtn = document.getElementById('tickerArrowBtn');

@@ -85,7 +85,7 @@
                                             <span class="hc-main-sub" id="detailSub">-</span>
                                         </div>
                                         <button class="ph-like-btn" id="detail-watchlist-btn"
-                                            onclick="if(currentDetailCode){toggleWatchlist(currentDetailCode);this.classList.toggle('active',getWatchlist().includes(currentDetailCode));}"
+                                            onclick="if(currentDetailCode){toggleStockWatchlistRow(currentDetailCode);this.classList.toggle('active',getStockWatchlist().includes(currentDetailCode));}"
                                             style="padding:4px 10px;font-size:12px;border-radius:8px;">
                                             <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
                                             관심
@@ -128,6 +128,8 @@
 
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <script src="/js/common.js"></script>
     <script src="/js/stockList.js"></script>
 </body>

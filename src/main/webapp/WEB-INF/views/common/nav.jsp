@@ -23,11 +23,13 @@
             <a href="/coin/list" class="nav-item">코인</a>
         </div>
     </div>
+    <a href="/news/list" class="nav-item">뉴스</a>
     <a href="/board/list" class="nav-item">커뮤니티</a>
     <a href="/notice/list" class="nav-item">공지사항</a>
-    <c:if test="${not empty member}">
+    <a href="/notice/list" class="nav-item">내 계좌</a>
+    <%-- <c:if test="${not empty member}">
         <span class="nav-item">내 계좌</span>
-    </c:if>
+    </c:if> --%>
 
     <!-- 오른쪽 영역: margin-left:auto 로 오른쪽 끝에 밀려남 -->
     <div class="nav-right">

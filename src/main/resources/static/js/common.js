@@ -18,7 +18,7 @@ async function fetchExchangeRate() {
     try {
         const res = await fetch('https://open.er-api.com/v6/latest/USD').then(r => r.json());
         if (res && res.rates && res.rates.KRW) usdToKrw = res.rates.KRW;
-    } catch (e) { }
+    } catch (e) {}
 }
 
 function setCurrency(mode) {
@@ -109,6 +109,9 @@ function toggleSidebar(tab) {
     if (tab === 'recent') {
         const firstTab = nextSection.querySelector('.si-type-tab');
         if (firstTab) switchRecentTab(firstTab, 'all');
+    }
+    if (tab === 'invest') {
+        updateExchangeUI();
     }
 
     if (sidebarReady) {
@@ -221,13 +224,13 @@ function switchBpTab(el, tab) {
     if (targetPanel) {
         targetPanel.classList.add('active', 'active-panel');
         targetPanel.style.display = 'flex'; // 혹은 필요한 display 속성
-        
+
         const table = targetPanel.querySelector('.sb-table');
         if (table) {
             table.classList.add('active');
             table.style.display = 'table';
         }
-        
+
         // 3. 데이터 갱신
         if (typeof loadMyInvestmentStatus === 'function') {
             loadMyInvestmentStatus();
@@ -237,8 +240,124 @@ function switchBpTab(el, tab) {
 
 
 /* ====================================================
-   보유 내역 로드 + 실시간 가격 WebSocket (모든 페이지)
+   환전 (Exchange) 엔진
    ==================================================== */
+let exchangeDirection = 'krw-to-usdt'; // 'krw-to-usdt' or 'usdt-to-krw'
+
+function toggleExchangeDirection() {
+    const fromLabel = document.getElementById('ex-from-label');
+    const toLabel = document.getElementById('ex-to-label');
+    const fromUnit = document.getElementById('ex-from-unit');
+    const toUnit = document.getElementById('ex-to-unit');
+    const submitBtn = document.getElementById('ex-submit-btn');
+
+    if (exchangeDirection === 'krw-to-usdt') {
+        exchangeDirection = 'usdt-to-krw';
+        fromLabel.textContent = '보낼 금액 (USDT)';
+        toLabel.textContent = '받을 금액 (KRW)';
+        fromUnit.textContent = 'USDT';
+        toUnit.textContent = '원';
+    } else {
+        exchangeDirection = 'krw-to-usdt';
+        fromLabel.textContent = '보낼 금액 (KRW)';
+        toLabel.textContent = '받을 금액 (USDT)';
+        fromUnit.textContent = '원';
+        toUnit.textContent = 'USDT';
+    }
+
+    document.getElementById('ex-amount-input').value = '';
+    document.getElementById('ex-result-display').value = '0.00';
+    calculateExchange();
+}
+
+function calculateExchange() {
+    const input = document.getElementById('ex-amount-input');
+    const display = document.getElementById('ex-result-display');
+    const amount = parseFloat(input.value) || 0;
+
+    if (exchangeDirection === 'krw-to-usdt') {
+        display.value = (amount / usdToKrw).toFixed(2);
+    } else {
+        display.value = Math.floor(amount * usdToKrw).toLocaleString() + ' 원';
+    }
+}
+
+async function executeExchange() {
+    const amount = parseFloat(document.getElementById('ex-amount-input').value);
+    if (!amount || amount <= 0) { alert('환전할 금액을 입력하세요.'); return; }
+
+    const url = exchangeDirection === 'krw-to-usdt' ? '/api/exchange/krw-to-usdt' : '/api/exchange/usdt-to-krw';
+    const params = new URLSearchParams();
+
+    if (exchangeDirection === 'krw-to-usdt') {
+        params.append('krwAmount', amount);
+    } else {
+        params.append('usdtAmount', amount);
+    }
+    params.append('rate', usdToKrw);
+
+    try {
+        const res = await fetch(url, { method: 'POST', body: params }).then(r => r.json());
+        if (res.success) {
+            alert('환전이 완료되었습니다.');
+            document.getElementById('ex-amount-input').value = '';
+            loadMyInvestmentStatus();
+            updateAccountBalanceUI();
+            loadWallet(); // chart-toss-coin.js에 정의된 경우 대비
+        } else {
+            alert('환전 실패: ' + res.message);
+        }
+    } catch (e) {
+        console.error('환전 에러', e);
+        alert('환전 처리 중 오류가 발생했습니다.');
+    }
+}
+
+function updateExchangeUI() {
+    const rateEl = document.getElementById('ex-current-rate');
+    // usdToKrw 변수가 정의되어 있는지 안전하게 확인 후 출력
+    if (rateEl && typeof usdToKrw !== 'undefined') {
+        rateEl.textContent = `현재 환율: 1$ = ${usdToKrw.toLocaleString()}원`;
+    }
+
+    const availKrwEl = document.getElementById('ex-avail-krw');
+    const availUsdtEl = document.getElementById('ex-avail-usdt');
+
+    // 1. 예수금 (KRW) 업데이트
+    fetch('/stock/account-balance')
+        .then(r => {
+            if (!r.ok) throw new Error('KRW 잔액 조회 실패');
+            return r.text(); // json() 대신 text()로 먼저 받기
+        })
+        .then(text => text ? JSON.parse(text) : {}) // 비어있으면 빈 객체 반환
+        .then(data => {
+            if (availKrwEl && data && typeof data.balance !== 'undefined') {
+                availKrwEl.textContent = Math.floor(data.balance).toLocaleString() + ' 원';
+            } else if (availKrwEl) {
+                availKrwEl.textContent = '0 원';
+            }
+        })
+        .catch(err => console.error("예수금 조회 오류:", err));
+
+    // 2. 투자금 (USDT) 업데이트
+    fetch('/coin/wallet') // 👈 깔끔하게 파라미터(?username=...)를 제거했습니다!
+        .then(r => {
+            if (!r.ok) throw new Error('USDT 잔액 조회 실패');
+            return r.text(); // 빈 응답 체크를 위해 text()로 먼저 받기
+        })
+        .then(text => text ? JSON.parse(text) : {}) // 서버 응답이 비어있으면 빈 객체({}) 반환
+        .then(data => {
+            // 성공적으로 데이터를 받았고, usdtBalance 필드가 존재하는 경우
+            if (availUsdtEl && data && typeof data.usdtBalance !== 'undefined') {
+                availUsdtEl.textContent = Number(data.usdtBalance).toFixed(2) + ' USDT';
+            } else if (availUsdtEl) {
+                // 데이터가 없거나 로그아웃 상태일 때 기본값 처리
+                availUsdtEl.textContent = '0.00 USDT';
+            }
+        })
+        .catch(err => console.error("코인 지갑 조회 오류:", err));
+}
+
 let holdingsData = [];
 let holdingsWs = null;
 let cachedPrices = JSON.parse(localStorage.getItem('holdingPrices') || '{}');
@@ -271,7 +390,7 @@ function skeletonCard() {
 function coinLogoColor(code) {
     const colors = ['#F7931A', '#627EEA', '#00AAC1', '#E84142', '#2775CA', '#26A17B', '#9945FF', '#E6007A'];
     let h = 0;
-    for (let i = 0; i < code.length; i++) h = (h * 31 + code.charCodeAt(i)) & 0xffff;
+    for (let i = 0;i < code.length;i++) h = (h * 31 + code.charCodeAt(i)) & 0xffff;
     return colors[h % colors.length];
 }
 
@@ -387,78 +506,94 @@ async function loadOrders() {
     const container = document.getElementById('history-cards');
     if (!container) return;
 
-    const res = await fetch('/coin/orders?username=testuser').then(r => r.json());
-    const emptyEl = document.getElementById('history-empty');
+    try {
+        // 1. [수정] 세션 방식을 사용하므로 파라미터(?username=testuser)를 지우고 호출합니다.
+        const res = await fetch('/coin/orders').then(r => r.json());
+        const emptyEl = document.getElementById('history-empty');
 
-    if (!res || res.length === 0) {
-        emptyEl.style.display = '';
-        return;
-    }
-
-    emptyEl.style.display = 'none';
-    container.className = 'history-list';
-    container.innerHTML = res.map(o => {
-        const ticker = o.coinCode.replace(/USDT$/, '').replace('_SPBL', '');
-        const typeLabel = o.orderType === 'BUY' ? '매수' : '매도';
-        const typeCls = o.orderType === 'BUY' ? 'up' : 'down';
-        const total = (o.orderPrice * o.orderCount).toLocaleString(undefined, {maximumFractionDigits: 2});
-        const date = o.orderDate.slice(0, 16).replace('T', ' ');
-
-        let rightHtml = '';
-        if (o.orderType === 'SELL' && o.avgPrice) {
-            const pnl = (o.orderPrice - o.avgPrice) * o.orderCount;
-            const pct = (o.orderPrice - o.avgPrice) / o.avgPrice * 100;
-            const pnlCls = pnl >= 0 ? 'up' : 'down';
-            const sign = pnl >= 0 ? '+' : '';
-            rightHtml = `<div class="hr-right">
-                <span class="hr-total ${pnlCls}">${sign}${pnl.toFixed(2)} USDT</span>
-                <span class="hr-pnl ${pnlCls}">${sign}${pct.toFixed(2)}%</span>
-            </div>`;
-        } else {
-            rightHtml = `<div class="hr-right">
-                <span class="hr-total">${total} USDT</span>
-                <span class="hr-pnl ${typeCls}">${typeLabel}</span>
-            </div>`;
+        if (!res || res.length === 0) {
+            if (emptyEl) emptyEl.style.display = '';
+            container.innerHTML = ''; // 기존 카드 비우기
+            return;
         }
 
-        const pnlDetailRow = (o.orderType === 'SELL' && o.avgPrice) ? `
-            <div class="hr-detail-row">
-                <span class="hr-dlabel">평균단가</span>
-                <span class="hr-dvalue">${Number(o.avgPrice).toLocaleString(undefined, {maximumFractionDigits: 6})}</span>
-            </div>
-            <div class="hr-detail-row">
-                <span class="hr-dlabel">총금액</span>
-                <span class="hr-dvalue">${total} USDT</span>
-            </div>` : `
-            <div class="hr-detail-row">
-                <span class="hr-dlabel">총금액</span>
-                <span class="hr-dvalue">${total} USDT</span>
-            </div>`;
+        if (emptyEl) emptyEl.style.display = 'none';
+        container.className = 'history-list';
+        
+        container.innerHTML = res.map(o => {
+            // 코인 코드 안전 장치 (혹시나 코인 코드도 안 넘어올 경우를 대비)
+            const coinCode = o.coinCode || 'UNKNOWN';
+            const ticker = coinCode.replace(/USDT$/, '').replace('_SPBL', '');
+            
+            const typeLabel = o.orderType === 'BUY' ? '매수' : '매도';
+            const typeCls = o.orderType === 'BUY' ? 'up' : 'down';
+            const total = (o.orderPrice * o.orderCount).toLocaleString(undefined, { maximumFractionDigits: 2 });
+            
+            // 2. [문제 해결 핵심] orderDate가 null이거나 비어있을 때 터지지 않도록 안전망을 씌웁니다.
+            const date = o.orderDate ? o.orderDate.slice(0, 16).replace('T', ' ') : '날짜 없음';
 
-        return `<div class="history-card hc-${o.orderType.toLowerCase()}" onclick="if(this.classList.contains('open')){this.classList.add('closing');this.classList.remove('open');setTimeout(()=>this.classList.remove('closing'),250);}else{this.classList.remove('closing');this.classList.add('open');}">
-            <div class="hr-header">
-                <div class="hr-left">
-                    ${coinLogoHtml(ticker)}
-                    <div class="hr-info">
-                        <span class="hr-ticker">${ticker}</span>
-                        <span class="hr-meta">${date} · ${typeLabel}</span>
+            let rightHtml = '';
+            if (o.orderType === 'SELL' && o.avgPrice) {
+                const pnl = (o.orderPrice - o.avgPrice) * o.orderCount;
+                const pct = (o.orderPrice - o.avgPrice) / o.avgPrice * 100;
+                const pnlCls = pnl >= 0 ? 'up' : 'down';
+                const sign = pnl >= 0 ? '+' : '';
+                rightHtml = `<div class="hr-right">
+                    <span class="hr-total ${pnlCls}">${sign}${pnl.toFixed(2)} USDT</span>
+                    <span class="hr-pnl ${pnlCls}">${sign}${pct.toFixed(2)}%</span>
+                </div>`;
+            } else {
+                rightHtml = `<div class="hr-right">
+                    <span class="hr-total">${total} USDT</span>
+                    <span class="hr-pnl ${typeCls}">${typeLabel}</span>
+                </div>`;
+            }
+
+            const pnlDetailRow = (o.orderType === 'SELL' && o.avgPrice) ? `
+                <div class="hr-detail-row">
+                    <span class="hr-dlabel">평균단가</span>
+                    <span class="hr-dvalue">${Number(o.avgPrice).toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
+                </div>
+                <div class="hr-detail-row">
+                    <span class="hr-dlabel">총금액</span>
+                    <span class="hr-dvalue">${total} USDT</span>
+                </div>` : `
+                <div class="hr-detail-row">
+                    <span class="hr-dlabel">총금액</span>
+                    <span class="hr-dvalue">${total} USDT</span>
+                </div>`;
+
+            // orderType이 없을 때 클래스 오류 방지용 기본값 처리
+            const orderTypeLower = o.orderType ? o.orderType.toLowerCase() : 'buy';
+
+            return `<div class="history-card hc-${orderTypeLower}" onclick="if(this.classList.contains('open')){this.classList.add('closing');this.classList.remove('open');setTimeout(()=>this.classList.remove('closing'),250);}else{this.classList.remove('closing');this.classList.add('open');}">
+                <div class="hr-header">
+                    <div class="hr-left">
+                        ${coinLogoHtml(ticker)}
+                        <div class="hr-info">
+                            <span class="hr-ticker">${ticker}</span>
+                            <span class="hr-meta">${date} · ${typeLabel}</span>
+                        </div>
                     </div>
+                    ${rightHtml}
                 </div>
-                ${rightHtml}
-            </div>
-            <div class="hr-detail">
-                <div class="hr-detail-row">
-                    <span class="hr-dlabel">체결가</span>
-                    <span class="hr-dvalue">${Number(o.orderPrice).toLocaleString(undefined, {maximumFractionDigits: 6})}</span>
+                <div class="hr-detail">
+                    <div class="hr-detail-row">
+                        <span class="hr-dlabel">체결가</span>
+                        <span class="hr-dvalue">${Number(o.orderPrice).toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
+                    </div>
+                    <div class="hr-detail-row">
+                        <span class="hr-dlabel">수량</span>
+                        <span class="hr-dvalue">${o.orderCount}</span>
+                    </div>
+                    ${pnlDetailRow}
                 </div>
-                <div class="hr-detail-row">
-                    <span class="hr-dlabel">수량</span>
-                    <span class="hr-dvalue">${o.orderCount}</span>
-                </div>
-                ${pnlDetailRow}
-            </div>
-        </div>`;
-    }).join('');
+            </div>`;
+        }).join('');
+        
+    } catch (err) {
+        console.error("주문 목록을 그리는 중 오류가 발생했습니다:", err);
+    }
 }
 
 
@@ -723,12 +858,12 @@ async function loadRecentStocks(stockList) {
 }
 
 const WATCHLIST_SORT_FNS = {
-    '등록순':     (a, b) => 0,
-    '이름순':     (a, b) => a.localeCompare(b),
+    '등록순': (a, b) => 0,
+    '이름순': (a, b) => a.localeCompare(b),
     '등락률 높은순': (a, b) => (watchlistPrices[b]?.change ?? -Infinity) - (watchlistPrices[a]?.change ?? -Infinity),
-    '등락률 낮은순': (a, b) => (watchlistPrices[a]?.change ?? Infinity)  - (watchlistPrices[b]?.change ?? Infinity),
-    '가격 높은순':  (a, b) => (watchlistPrices[b]?.price ?? 0) - (watchlistPrices[a]?.price ?? 0),
-    '가격 낮은순':  (a, b) => (watchlistPrices[a]?.price ?? 0) - (watchlistPrices[b]?.price ?? 0),
+    '등락률 낮은순': (a, b) => (watchlistPrices[a]?.change ?? Infinity) - (watchlistPrices[b]?.change ?? Infinity),
+    '가격 높은순': (a, b) => (watchlistPrices[b]?.price ?? 0) - (watchlistPrices[a]?.price ?? 0),
+    '가격 낮은순': (a, b) => (watchlistPrices[a]?.price ?? 0) - (watchlistPrices[b]?.price ?? 0),
 };
 
 const HEART_SVG = '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
@@ -892,7 +1027,7 @@ async function loadWatchlist() {
     renderWatchlistCoins('watchlist-coin-all-list', watchlistCoins);
 
     try {
-        const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers').then(r => r.json());
+        const res = await fetch('/coin/api/tickers').then(r => r.json());
         if (res.code === '00000' && res.data) {
             watchlistCoins.forEach(symbol => {
                 const d = res.data.find(t => t.symbol === symbol);
@@ -905,7 +1040,7 @@ async function loadWatchlist() {
             });
             localStorage.setItem('watchlistPrices', JSON.stringify(watchlistPrices));
         }
-    } catch (e) { }
+    } catch (e) {}
 
     renderWatchlistCoins('watchlist-coin-list', watchlistCoins);
     renderWatchlistCoins('watchlist-coin-all-list', watchlistCoins);
@@ -1105,7 +1240,7 @@ async function loadRecent() {
     renderRecentCoins(recentCoins);
 
     try {
-        const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers').then(r => r.json());
+        const res = await fetch('/coin/api/tickers').then(r => r.json());
         if (res.code === '00000' && res.data) {
             recentCoins.forEach(symbol => {
                 const d = res.data.find(t => t.symbol === symbol);
@@ -1118,7 +1253,7 @@ async function loadRecent() {
             });
             localStorage.setItem('recentPrices', JSON.stringify(recentPrices));
         }
-    } catch (e) { }
+    } catch (e) {}
 
     renderRecentCoins(recentCoins);
     connectRecentWs();
@@ -1218,9 +1353,9 @@ async function connectSidebarStockWs() {
         sidebarStompClient.subscribe('/topic/stock/price', msg => {
             const d = JSON.parse(msg.body);
             if (!sidebarStockMap[d.code]) return;
-            sidebarStockMap[d.code].price  = d.price;
-            sidebarStockMap[d.code].rate   = d.rate;
-            sidebarStockMap[d.code].diff   = d.diff;
+            sidebarStockMap[d.code].price = d.price;
+            sidebarStockMap[d.code].rate = d.rate;
+            sidebarStockMap[d.code].diff = d.diff;
             sidebarStockMap[d.code].volume = d.volume || '0';
             updateSidebarStockItem(d);
         });
@@ -1356,7 +1491,7 @@ function liveItemHtml(symbol, rank) {
         <span class="live-rank">${rank}</span>
         <div class="si-logo" style="overflow:hidden;flex-shrink:0;">
             <img src="${logoUrl}" alt="${ticker}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;"
-                onerror="this.parentElement.style.background='${color}';this.parentElement.style.fontSize='10px';this.parentElement.textContent='${ticker.slice(0,3)}'">
+                onerror="this.parentElement.style.background='${color}';this.parentElement.style.fontSize='10px';this.parentElement.textContent='${ticker.slice(0, 3)}'">
         </div>
         <span class="live-name">${ticker}</span>
         <div class="live-price-col">
@@ -1462,7 +1597,7 @@ function renderLiveCoins() {
 async function loadLiveCoins() {
     if (liveCoins.length > 0) renderLiveCoins();
     try {
-        const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers').then(r => r.json());
+        const res = await fetch('/coin/api/tickers').then(r => r.json());
         if (res.code === '00000' && res.data) {
             const filtered = res.data.filter(t => t.symbol.endsWith('USDT') && !t.symbol.includes('_'));
             filtered.sort((a, b) => parseFloat(b.usdtVolume) - parseFloat(a.usdtVolume));
@@ -1478,7 +1613,7 @@ async function loadLiveCoins() {
             localStorage.setItem('liveCoins', JSON.stringify(liveCoins));
             localStorage.setItem('livePrices', JSON.stringify(livePrices));
         }
-    } catch (e) { }
+    } catch (e) {}
     renderLiveCoins();
     renderLiveAll();
     connectLiveWs();
@@ -1591,7 +1726,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadRecent();
     loadLiveCoins();
     initSidebarStock();
-    
+
     // 주식/코인 통합 투자현황 초기화
     updateAccountBalanceUI();
     loadMyInvestmentStatus();
@@ -1619,7 +1754,7 @@ async function loadCoinHoldings() {
             // 키 정규화
             return Object.keys(h).reduce((acc, k) => { acc[k.toLowerCase().replace(/_/g, '')] = h[k]; return acc; }, {});
         });
-        
+
         // holdingsData 필드명 보정 (renderHoldings에서 사용)
         holdingsData.forEach(h => {
             h.coinCode = h.coincode;
@@ -1687,7 +1822,7 @@ async function loadCoinHistory() {
             const ticker = (o.coincode || "").replace(/USDT$/, '').replace('_SPBL', '');
             const typeLabel = o.ordertype === 'BUY' ? '매수' : '매도';
             const typeCls = o.ordertype === 'BUY' ? 'up' : 'down';
-            const total = (o.orderprice * o.ordercount).toLocaleString(undefined, {maximumFractionDigits: 2});
+            const total = (o.orderprice * o.ordercount).toLocaleString(undefined, { maximumFractionDigits: 2 });
             const date = (o.orderdate || "").slice(0, 16).replace('T', ' ');
 
             let rightHtml = '';
@@ -1710,7 +1845,7 @@ async function loadCoinHistory() {
             const pnlDetailRow = (o.ordertype === 'SELL' && o.avgprice) ? `
                 <div class="hr-detail-row">
                     <span class="hr-dlabel">평균단가</span>
-                    <span class="hr-dvalue">${Number(o.avgprice).toLocaleString(undefined, {maximumFractionDigits: 6})}</span>
+                    <span class="hr-dvalue">${Number(o.avgprice).toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
                 </div>
                 <div class="hr-detail-row">
                     <span class="hr-dlabel">총금액</span>
@@ -1735,7 +1870,7 @@ async function loadCoinHistory() {
                 <div class="hr-detail">
                     <div class="hr-detail-row">
                         <span class="hr-dlabel">체결가</span>
-                        <span class="hr-dvalue">${Number(o.orderprice).toLocaleString(undefined, {maximumFractionDigits: 6})}</span>
+                        <span class="hr-dvalue">${Number(o.orderprice).toLocaleString(undefined, { maximumFractionDigits: 6 })}</span>
                     </div>
                     <div class="hr-detail-row">
                         <span class="hr-dlabel">수량</span>
@@ -1763,7 +1898,7 @@ function loadMyInvestmentStatus() {
             stocks.forEach(stock => {
                 // 키 정규화: 소문자 + 언더바 제거
                 const d = Object.keys(stock).reduce((acc, k) => { acc[k.toLowerCase().replace(/_/g, '')] = stock[k]; return acc; }, {});
-                
+
                 const count = d.stockcount || 0;
                 const purchase = d.stockpurchase || 0;
                 const stockNo = String(d.assetno || d.stockno || '').trim();
@@ -1776,7 +1911,7 @@ function loadMyInvestmentStatus() {
                 const pnlRate = buyAmount > 0 ? ((pnl / buyAmount) * 100).toFixed(2) : "0.00";
                 let pnlClass = ""; let pnlSign = "";
                 if (pnl > 0) { pnlClass = "up"; pnlSign = "▲"; } else if (pnl < 0) { pnlClass = "down"; pnlSign = "▼"; }
-                const html = `<div class="holding-card hc-main"><div class="hc-main-header"><div class="hc-main-id"><div class="hc-logo" style="background:#343a40;">${stockName.slice(0,2)}</div><div class="hc-main-name-col"><span class="hc-main-ticker">${stockName}</span><span class="hc-main-sub">${stockNo} | 현금 ${count}주</span></div></div><div class="hc-main-right"><span class="hc-main-eval">${evalAmount.toLocaleString()} 원</span><span class="hc-main-pnl ${pnlClass}">${pnlSign}${Math.abs(pnl).toLocaleString()} (${pnlRate}%)</span></div></div><div class="hc-divider"></div><div class="hc-main-grid"><div class="hc-main-row"><span class="hc-label">매수금액</span><span class="hc-value">${buyAmount.toLocaleString()} 원</span></div><div class="hc-main-row"><span class="hc-label">평균단가</span><span class="hc-value">${purchase.toLocaleString()} 원</span></div><div class="hc-main-row"><span class="hc-label">평가금액</span><span class="hc-value">${evalAmount.toLocaleString()} 원</span></div><div class="hc-main-row"><span class="hc-label">현재가</span><span class="hc-value">${currentPrice.toLocaleString()} 원</span></div></div></div>`;
+                const html = `<div class="holding-card hc-main"><div class="hc-main-header"><div class="hc-main-id"><div class="hc-logo" style="background:#343a40;">${stockName.slice(0, 2)}</div><div class="hc-main-name-col"><span class="hc-main-ticker">${stockName}</span><span class="hc-main-sub">${stockNo} | 현금 ${count}주</span></div></div><div class="hc-main-right"><span class="hc-main-eval">${evalAmount.toLocaleString()} 원</span><span class="hc-main-pnl ${pnlClass}">${pnlSign}${Math.abs(pnl).toLocaleString()} (${pnlRate}%)</span></div></div><div class="hc-divider"></div><div class="hc-main-grid"><div class="hc-main-row"><span class="hc-label">매수금액</span><span class="hc-value">${buyAmount.toLocaleString()} 원</span></div><div class="hc-main-row"><span class="hc-label">평균단가</span><span class="hc-value">${purchase.toLocaleString()} 원</span></div><div class="hc-main-row"><span class="hc-label">평가금액</span><span class="hc-value">${evalAmount.toLocaleString()} 원</span></div><div class="hc-main-row"><span class="hc-label">현재가</span><span class="hc-value">${currentPrice.toLocaleString()} 원</span></div></div></div>`;
                 container.insertAdjacentHTML('beforeend', html);
             });
         }).catch(err => console.error('주식 보유 로드 에러:', err));
@@ -1824,7 +1959,7 @@ function loadMyInvestmentStatus() {
             tbody.innerHTML = history.map(h_raw => {
                 const h = Object.keys(h_raw).reduce((acc, k) => { acc[k.toLowerCase().replace(/_/g, '')] = h_raw[k]; return acc; }, {});
                 const sideCls = h.ordertype === 'BUY' ? 'up' : 'down'; const sideText = h.ordertype === 'BUY' ? '매수' : '매도'; const total = Math.floor(h.orderprice * h.ordercount);
-                const date = new Date(h.orderdate).toLocaleDateString('ko-KR', {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'});
+                const date = new Date(h.orderdate).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
                 return `<tr><td style="font-size:11px; color:var(--text3);">${date}</td><td class="${sideCls}">${sideText}</td><td>${h.stockname || '주식'}</td><td>${Math.floor(h.orderprice).toLocaleString()}원</td><td>${h.ordercount}주</td><td><b>${total.toLocaleString()}원</b></td></tr>`;
             }).join('');
         }).catch(e => console.warn("주식 거래내역 로드 에러"));
@@ -1837,13 +1972,13 @@ function loadMyInvestmentStatus() {
 
 function cancelStockOrder(orderId) {
     if (!confirm("해당 지정가 예약 주문을 취소하시겠습니까?")) return;
-    
+
     fetch(`/stock/cancel-order?orderNo=${orderId}`, { method: 'POST' })
         .then(r => r.json())
         .then(data => {
             if (data.success === true || data.success === "true") {
                 alert("주문이 정상적으로 취소되었습니다.");
-                loadMyInvestmentStatus(); 
+                loadMyInvestmentStatus();
                 updateAccountBalanceUI();
             } else {
                 alert("취소 실패: " + (data.message || "알 수 없는 오류"));
@@ -1857,7 +1992,7 @@ function cancelStockOrder(orderId) {
 
 function cancelCoinOrder(orderNo) {
     if (!confirm("해당 코인 미체결 주문을 취소하시겠습니까?")) return;
-    
+
     fetch(`/coin/cancelOrder?orderNo=${orderNo}`, { method: 'POST' })
         .then(r => r.text())
         .then(res => {
@@ -1876,7 +2011,7 @@ function updateAccountBalanceUI() {
         .then(response => response.json())
         .then(data => {
             const balanceEl = document.getElementById('ph-user-balance') || document.querySelector('.user-cash-val');
-            const tradeAvailEl = document.getElementById('avail-balance'); 
+            const tradeAvailEl = document.getElementById('avail-balance');
 
             if (data && data.balance !== undefined) {
                 const formattedBalance = Math.floor(data.balance).toLocaleString() + ' 원';

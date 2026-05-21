@@ -272,9 +272,9 @@ async function loadData() {
         updateAllSeries(allData);
     }
 
-    /* API 호출 */
+    /* API 호출 (로컬 프록시 사용으로 CORS/429 해결) */
     const res = await fetch(
-        'https://api.bitget.com/api/v2/spot/market/candles?symbol=' + window.currentSymbol + '&granularity=' + currentGranularity + '&limit=200'
+        '/coin/api/candles?symbol=' + window.currentSymbol + '&granularity=' + currentGranularity + '&limit=200'
     ).then(r => r.json());
     if (res.code !== '00000') return;
 
@@ -308,10 +308,10 @@ function loadMoreData() {
         isLoadingMore = true;
         try {
             const oldestTime = allData[0].time;
-            const endTimeMs = (oldestTime - 32400) * 1000 - 1; // 현재 가장 오래된 봉 바로 이전 시간 (KST→UTC 변환)
+            const endTimeMs = (oldestTime - 32400) * 1000 - 1;
 
             const res = await fetch(
-                'https://api.bitget.com/api/v2/spot/market/candles?symbol=' + window.currentSymbol + '&granularity=' + currentGranularity + '&limit=200&endTime=' + endTimeMs
+                '/coin/api/candles?symbol=' + window.currentSymbol + '&granularity=' + currentGranularity + '&limit=200&endTime=' + endTimeMs
             ).then(r => r.json());
 
             if (res.code === '00000' && res.data && res.data.length > 0) {
@@ -746,67 +746,61 @@ function updateHoldingsPnl() {
 
 
 /* ====================================================
-   24h 티커 로드 (Bitget REST API)
-   현재가·변동률·고가·저가·거래량 정보 가져오기
+   24h 티커 로드 (로컬 프록시 사용)
    ==================================================== */
 async function loadTicker() {
     try {
-        const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + window.currentSymbol).then(r => r.json());
+        const res = await fetch('/coin/api/tickers?symbol=' + window.currentSymbol).then(r => r.json());
         if (res.code === '00000' && res.data && res.data[0]) {
             const d = res.data[0];
             const price = parseFloat(d.lastPr);
 
-            /* 전일 마감가 계산: price = prevClose × (1 + change24h)
-               → prevClose = price / (1 + change24h) */
-            // 변경 (전날 종가를 일봉 API에서 직접 가져옴)
-            const candleRes = await fetch('https://api.bitget.com/api/v2/spot/market/candles?symbol=' + window.currentSymbol + '&granularity=1Dutc&limit=2').then(r => r.json());
-            prevClose = parseFloat(candleRes.data[0][4]); // [0]번 캔들(어제)의 close (오름차순)
-            const todayOpen = parseFloat(candleRes.data[1][1]); // [1]번 캔들(오늘)의 시가
-            const absChange = price - prevClose;
-            const chgPct = (absChange / prevClose) * 100;
+            // 전날 종가를 로컬 프록시를 통해 가져옴
+            const candleRes = await fetch('/coin/api/candles?symbol=' + window.currentSymbol + '&granularity=1Dutc&limit=2').then(r => r.json());
+            
+            if (candleRes.data && candleRes.data.length >= 1) {
+                // [0]번이 과거 데이터 (limit=2인 경우)
+                prevClose = parseFloat(candleRes.data[0][4]); 
+                const todayOpen = candleRes.data[1] ? parseFloat(candleRes.data[1][1]) : price;
+                
+                const absChange = price - prevClose;
+                const chgPct = (absChange / prevClose) * 100;
 
-            lastPrice = price;
-            updatePriceHeader(price);
+                lastPrice = price;
+                updatePriceHeader(price);
 
-            /* 가격은 항상 흰색 고정 (up/down 클래스 미적용) */
-            document.getElementById('ph-price').className = 'ph-price';
+                const absEl = document.getElementById('ph-change-abs');
+                absEl.textContent = (chgPct >= 0 ? '+' : '') + absChange.toFixed(2) + ' USDT';
+                absEl.className = 'ph-change ' + (chgPct >= 0 ? 'up' : 'down');
 
-            /* 전일대비 절대금액 (+1234.56 USDT) */
-            const absEl = document.getElementById('ph-change-abs');
-            absEl.textContent = (chgPct >= 0 ? '+' : '') + absChange.toFixed(2) + ' USDT';
-            absEl.className = 'ph-change ' + (chgPct >= 0 ? 'up' : 'down');
+                const cEl = document.getElementById('ph-change');
+                cEl.textContent = '(' + (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%)';
+                cEl.className = 'ph-change ' + (chgPct >= 0 ? 'up' : 'down');
 
-            /* 전일대비 퍼센트 (+8.28%) */
-            const cEl = document.getElementById('ph-change');
-            cEl.textContent = '(' + (chgPct >= 0 ? '+' : '') + chgPct.toFixed(2) + '%)';
-            cEl.className = 'ph-change ' + (chgPct >= 0 ? 'up' : 'down');
-
-            const prevCloseEl = document.getElementById('ph-prev-close');
-            if (prevCloseEl) prevCloseEl.textContent = '$' + prevClose.toLocaleString();
-            const openEl = document.getElementById('ph-open');
-            if (openEl) openEl.textContent = '$' + todayOpen.toLocaleString();
-            document.getElementById('ph-high').textContent = '$' + parseFloat(d.high24h).toLocaleString();
-            document.getElementById('ph-low').textContent = '$' + parseFloat(d.low24h).toLocaleString();
-            document.getElementById('ph-vol').textContent = parseFloat(d.baseVolume).toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' ' + tickerName;
-            document.getElementById('ph-turnover').textContent = fmtNum(parseFloat(d.quoteVolume)) + ' USDT';
-
+                if (document.getElementById('ph-prev-close')) document.getElementById('ph-prev-close').textContent = '$' + prevClose.toLocaleString();
+                if (document.getElementById('ph-open')) document.getElementById('ph-open').textContent = '$' + todayOpen.toLocaleString();
+                document.getElementById('ph-high').textContent = '$' + parseFloat(d.high24h).toLocaleString();
+                document.getElementById('ph-low').textContent = '$' + parseFloat(d.low24h).toLocaleString();
+                document.getElementById('ph-vol').textContent = parseFloat(d.baseVolume).toLocaleString(undefined, { maximumFractionDigits: 0 }) + ' ' + tickerName;
+                document.getElementById('ph-turnover').textContent = fmtNum(parseFloat(d.quoteVolume)) + ' USDT';
+            }
         }
-    } catch (e) { }
+    } catch (e) { console.warn("티커 로드 실패", e); }
 }
 
 async function loadExtraStats() {
     try {
         const ticker = window.currentSymbol.replace('USDT', '').replace('USDC', '').replace('_SPBL', '').toLowerCase();
-        const res = await fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&symbols=${ticker}&order=market_cap_desc&per_page=1&page=1&sparkline=false`)
-            .then(r => r.json());
+        const res = await fetch('/coin/api/extra-stats?ticker=' + ticker).then(r => r.json());
 
         if (res && res[0]) {
             const data = res[0];
             const mktcap = data.market_cap;
-            document.getElementById('ph-mktcap').textContent = '$' + fmtNum(mktcap);
+            const el = document.getElementById('ph-mktcap');
+            if (el) el.textContent = '$' + fmtNum(mktcap);
         }
     } catch (e) {
-        console.error("추가 정보 로드 실패", e);
+        console.warn("추가 정보 로드 실패 (프록시 캐시 대기 중)", e);
     }
 }
 
@@ -1048,16 +1042,16 @@ function submitOrder(side) {
 /* 서버에서 USDT 잔고 가져오기 */
 async function loadWallet() {
     try {
-        // 1. 서버에 지갑 정보 요청
-        const r = await fetch('/coin/wallet?username=testuser');
+        // 1. [수정] 세션 방식을 사용하므로 파라미터(?username=testuser)를 지우고 깔끔하게 호출합니다.
+        const r = await fetch('/coin/wallet');
         
-        // 2. 서버 응답이 정상(200 OK)이 아니면(예: 500 에러 등) 즉시 중단
+        // 2. 서버 응답이 정상(200 OK)이 아니면 즉시 중단
         if (!r.ok) {
             console.error(`서버 에러 발생 (상태코드: ${r.status})`);
             return;
         }
         
-        // 3. 응답 문자열이 비어있는지 2차 체크 (공백 에러 방지)
+        // 3. 응답 문자열이 비어있는지 체크
         const text = await r.text();
         if (!text || text.trim() === "") {
             console.warn("서버에서 빈 응답을 보냈습니다.");
@@ -1067,12 +1061,20 @@ async function loadWallet() {
         // 4. 검증이 끝난 데이터만 JSON으로 안전하게 변환
         const res = JSON.parse(text);
         
-        // 5. 화면에 데이터 반영
-        if (res && res.usdtBalance !== undefined) {
-            walletBalance = res.usdtBalance;
+        // 5. [수정] res가 null이 아니고, usdtBalance가 존재하며 null도 아닐 때만 안전하게 처리합니다.
+        if (res && res.usdtBalance !== undefined && res.usdtBalance !== null) {
+            walletBalance = Number(res.usdtBalance); // 안전하게 숫자로 변환
+            
             const targetEl = document.querySelector('.order-avail span');
             if (targetEl) {
-                targetEl.textContent = res.usdtBalance.toFixed(2) + ' USDT';
+                targetEl.textContent = walletBalance.toFixed(2) + ' USDT';
+            }
+        } else {
+            // 지갑 정보가 비어있거나 로그아웃 상태일 때 기본값 설정
+            walletBalance = 0.0;
+            const targetEl = document.querySelector('.order-avail span');
+            if (targetEl) {
+                targetEl.textContent = '0.00 USDT';
             }
         }
     } catch (error) {
@@ -1080,7 +1082,6 @@ async function loadWallet() {
         console.error("지갑 로드 중 오류 발생:", error);
     }
 }
-
 /* loadHoldings()는 common.js로 이동 */
 
 
@@ -1327,9 +1328,9 @@ async function initSearchMenu() {
     document.addEventListener('click', () => dropdown.classList.remove('active'));
     dropdown.addEventListener('click', (e) => e.stopPropagation());
 
-    // 3. 전체 코인 데이터 로드 (인기 순위용)
+    // 3. 전체 코인 데이터 로드 (인기 순위용 - 로컬 프록시 사용)
     try {
-        const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers');
+        const res = await fetch('/coin/api/tickers');
         const json = await res.json();
         if (json.data) {
             allCoinList = json.data.filter(c => c.symbol.endsWith('USDT'));
@@ -1411,7 +1412,7 @@ window.addEventListener('resize', () => {
 const TICKER_SYMBOLS = [window.currentSymbol, 'ETHUSDT', 'XRPUSDT', 'SOLUSDT', 'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT'];
 
 async function loadTickerBar() {
-    const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers')
+    const res = await fetch('/coin/api/tickers')
         .then(r => r.json()).catch(() => null);
     if (!res || !res.data) return;
 

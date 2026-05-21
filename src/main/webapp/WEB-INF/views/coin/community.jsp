@@ -566,7 +566,7 @@
     async function loadCmMarketCap() {
         const ticker = currentSymbol.replace(/USDT$/, '').replace(/USDC$/, '').replace(/_SPBL$/, '').toLowerCase();
         try {
-            const res = await fetch('https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&symbols=' + encodeURIComponent(ticker) + '&order=market_cap_desc&per_page=1&page=1&sparkline=false').then(r => r.json());
+            const res = await fetch('/coin/api/extra-stats?ticker=' + ticker).then(r => r.json());
             const mktcap = Array.isArray(res) && res[0] ? Number(res[0].market_cap) : NaN;
             document.getElementById('ph-mktcap').textContent = Number.isFinite(mktcap) ? '$' + fmtNum(mktcap) : '-';
         } catch (e) {
@@ -579,11 +579,11 @@
 
     async function loadCmTicker() {
         try {
-            const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers?symbol=' + encodeURIComponent(currentSymbol)).then(r => r.json());
+            const res = await fetch('/coin/api/tickers?symbol=' + encodeURIComponent(currentSymbol)).then(r => r.json());
             const d = res && res.data && res.data[0];
             if (!d) return;
             const price = parseFloat(d.lastPr);
-            const candleRes = await fetch('https://api.bitget.com/api/v2/spot/market/candles?symbol=' + encodeURIComponent(currentSymbol) + '&granularity=1Dutc&limit=2').then(r => r.json());
+            const candleRes = await fetch('/coin/api/candles?symbol=' + encodeURIComponent(currentSymbol) + '&granularity=1Dutc&limit=2').then(r => r.json());
             cmPrevClose = parseFloat(candleRes.data[0][4]);
             const todayOpen = parseFloat(candleRes.data[1][1]);
             const tickerName = currentSymbol.replace(/USDT$/, '').replace(/USDC$/, '').replace(/_SPBL$/, '');
@@ -674,7 +674,7 @@
         dropdown.addEventListener('click', e => e.stopPropagation());
 
         try {
-            const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers').then(r => r.json());
+            const res = await fetch('/coin/api/tickers').then(r => r.json());
             if (res.data) {
                 allCoinList = res.data.filter(c => c.symbol.endsWith('USDT'));
                 popularCoins = [...allCoinList].sort((a, b) => parseFloat(b.quoteVolume) - parseFloat(a.quoteVolume)).slice(0, 5);
@@ -698,7 +698,7 @@
     let cmTickerX = 0, cmTickerPaused = false, cmTickerHalfWidth = 0, cmTickerTrackEl = null;
 
     async function loadCmTickerBar() {
-        const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers').then(r => r.json()).catch(() => null);
+        const res = await fetch('/coin/api/tickers').then(r => r.json()).catch(() => null);
         if (!res || !res.data) return;
         const filtered = res.data.filter(d => CM_TICKER_SYMBOLS.includes(d.symbol));
         const track = document.getElementById('ticker-track');

@@ -32,6 +32,7 @@
 
         <!-- 주식 탭 -->
         <div class="sb-content" id="invest-stock" style="flex-direction:column; flex:1;">
+            <!-- ... (기존 주식 내용) ... -->
             <div class="sb-tabs sb-subtabs">
                 <div class="sb-tab active" onclick="switchBpTab(this,'stock-holdings')">보유</div>
                 <div class="sb-tab" onclick="switchBpTab(this,'stock-pending')">미체결</div>
@@ -94,6 +95,45 @@
                     <span>거래 내역이 없습니다.</span>
                 </div>
                 <div class="holding-cards" id="history-cards"></div>
+            </div>
+        </div>
+
+        <!-- 환전 탭 -->
+        <div class="sb-content" id="invest-exchange" style="display:none; flex-direction:column; flex:1; padding:20px 14px;">
+            <div class="exchange-card">
+                <div class="ex-header" style="display:flex; justify-content:space-between; margin-bottom:20px;">
+                    <span style="font-weight:700; font-size:16px;">환전하기</span>
+                    <span id="ex-current-rate" style="font-size:13px; color:var(--text3);">환율 정보 로딩중...</span>
+                </div>
+
+                <div class="ex-input-group">
+                    <label id="ex-from-label" style="font-size:12px; color:var(--text3); margin-bottom:8px; display:block;">보낼 금액 (KRW)</label>
+                    <div style="position:relative;">
+                        <input type="number" id="ex-amount-input" placeholder="0" oninput="calculateExchange()" style="width:100%; height:44px; padding:0 12px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text);">
+                        <span id="ex-from-unit" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:14px; color:var(--text3);">원</span>
+                    </div>
+                </div>
+
+                <div style="display:flex; justify-content:center; margin:15px 0;">
+                    <button class="si-swap-btn" onclick="toggleExchangeDirection()" style="width:36px; height:36px; border-radius:50%; padding:0; justify-content:center; background:var(--surface2);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><path d="M7 16V4m0 0L3 8m4-4l4 4"/><path d="M17 8v12m0 0l4-4m-4 4l-4-4"/></svg>
+                    </button>
+                </div>
+
+                <div class="ex-input-group">
+                    <label id="ex-to-label" style="font-size:12px; color:var(--text3); margin-bottom:8px; display:block;">받을 금액 (USDT)</label>
+                    <div style="position:relative;">
+                        <input type="text" id="ex-result-display" placeholder="0.00" readonly style="width:100%; height:44px; padding:0 12px; border-radius:8px; border:1px solid var(--border); background:var(--surface2); color:var(--text);">
+                        <span id="ex-to-unit" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); font-size:14px; color:var(--text3);">USDT</span>
+                    </div>
+                </div>
+
+                <div class="ex-info" style="margin-top:20px; font-size:13px; background:var(--surface); padding:15px; border-radius:12px; display:flex; flex-direction:column; gap:8px;">
+                    <div style="display:flex; justify-content:space-between;"><span style="color:var(--text3);">주식 예수금</span><span id="ex-avail-krw">- 원</span></div>
+                    <div style="display:flex; justify-content:space-between;"><span style="color:var(--text3);">코인 투자금</span><span id="ex-avail-usdt">- USDT</span></div>
+                </div>
+
+                <button class="btn-buy" id="ex-submit-btn" onclick="executeExchange()" style="width:100%; margin-top:24px; height:50px; background:var(--blue); font-weight:700; border:none; border-radius:12px; color:#fff; cursor:pointer;">환전 완료</button>
             </div>
         </div>
 

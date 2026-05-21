@@ -11,6 +11,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.reactive.function.client.WebClient;
+
+import com.tj.app.member.MemberDTO;
+
+import jakarta.servlet.http.HttpSession;
+
 import org.springframework.web.bind.annotation.PostMapping;
 import java.util.List;
 
@@ -29,6 +34,41 @@ public class CoinController {
 
 	@Autowired
 	private CoinService coinService;
+
+	@Autowired
+	private CoinMarketService marketService;
+
+	/** Bitget Tickers 프록시 */
+	@GetMapping("api/tickers")
+	@ResponseBody
+	public Object getTickers() {
+		return marketService.getTickers();
+	}
+
+	/** Bitget Candles 프록시 */
+	@GetMapping("api/candles")
+	@ResponseBody
+	public Object getCandles(@RequestParam("symbol") String symbol,
+							 @RequestParam("granularity") String granularity,
+							 @RequestParam(value = "limit", defaultValue = "200") String limit,
+							 @RequestParam(value = "endTime", required = false) String endTime) {
+		return marketService.getCandles(symbol, granularity, limit, endTime);
+	}
+
+	/** CoinGecko 추가 정보 프록시 (429 방지용 캐시 적용됨) */
+	@GetMapping("api/extra-stats")
+	@ResponseBody
+	public Object getExtraStats(@RequestParam("ticker") String ticker) {
+		return marketService.getExtraStats(ticker);
+	}
+
+	/** Bithumb Ticker 프록시 */
+	@GetMapping("api/bithumb/ticker")
+	@ResponseBody
+	public Object getBithumbTicker(@RequestParam(value="order", defaultValue="BTC") String order,
+								   @RequestParam(value="payment", defaultValue="KRW") String payment) {
+		return marketService.getBithumbTicker(order, payment);
+	}
 
 	@GetMapping("chart")
 	public String chart(@RequestParam(value = "symbol", required = false) String symbol, Model model) throws Exception {
@@ -130,70 +170,103 @@ public class CoinController {
 
 	/** 매수 주문 */
 	@PostMapping("buy")
-	@ResponseBody
-	public String buy(CoinOrdersDTO order) throws Exception {
-		coinService.buy(order);
-		return "success";
-	}
+    @ResponseBody
+    public String buy(CoinOrdersDTO order, HttpSession session) throws Exception {
+        // 세션에서 "member" Key로 MemberDTO 객체를 꺼냅니다.
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
+        if (member == null) return "fail_login_required";
+        
+        order.setUsername(member.getUsername()); // DTO에서 실제 유저 ID 추출
+        coinService.buy(order);
+        return "success";
+    }
 
 	/** 매도 주문 */
 	@PostMapping("sell")
-	@ResponseBody
-	public String sell(CoinOrdersDTO order) throws Exception {
-		coinService.sell(order);
-		return "success";
-	}
+    @ResponseBody
+    public String sell(CoinOrdersDTO order, HttpSession session) throws Exception {
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
+        if (member == null) return "fail_login_required";
+        
+        order.setUsername(member.getUsername());
+        coinService.sell(order);
+        return "success";
+    }
 
 	/** 지갑 잔고 조회 */
-	@GetMapping("wallet")
-	@ResponseBody
-	public CoinWalletDTO getWallet(@RequestParam("username") String username) throws Exception {
-		return coinService.getWallet(username);
-	}
+    @GetMapping("wallet")
+    @ResponseBody
+    public CoinWalletDTO getWallet(HttpSession session) throws Exception {
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
+        if (member == null) {
+            CoinWalletDTO emptyWallet = new CoinWalletDTO();
+            emptyWallet.setUsdtBalance(0.0);
+            return emptyWallet;
+        }
+        return coinService.getWallet(member.getUsername());
+    }
 
-	/** 보유 코인 목록 조회 */
-	@GetMapping("holdings")
-	@ResponseBody
-	public List<CoinHoldingsDTO> getHoldings(@RequestParam("username") String username) throws Exception {
-		return coinService.getHoldingList(username);
-	}
+    /** 보유 코인 목록 조회 */
+    @GetMapping("holdings")
+    @ResponseBody
+    public List<CoinHoldingsDTO> getHoldings(HttpSession session) throws Exception {
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
+        if (member == null) return List.of();
+        return coinService.getHoldingList(member.getUsername());
+    }
 
-	/** 주문 내역 조회 (체결 완료) */
-	@GetMapping("orders")
-	@ResponseBody
-	public List<CoinOrdersDTO> getOrders(@RequestParam("username") String username) throws Exception {
-		return coinService.getOrderList(username);
-	}
+    /** 주문 내역 조회 (체결 완료) */
+    @GetMapping("orders")
+    @ResponseBody
+    public List<CoinOrdersDTO> getOrders(HttpSession session) throws Exception {
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
+        if (member == null) return List.of();
+        return coinService.getOrderList(member.getUsername());
+    }
 
-	/** 미체결 주문 조회 */
-	@GetMapping("pending")
-	@ResponseBody
-	public List<CoinOrdersDTO> getPendingOrders(@RequestParam("username") String username) throws Exception {
-		return coinService.getPendingOrders(username);
-	}
+    /** 미체결 주문 조회 */
+    @GetMapping("pending")
+    @ResponseBody
+    public List<CoinOrdersDTO> getPendingOrders(HttpSession session) throws Exception {
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
+        if (member == null) return List.of();
+        return coinService.getPendingOrders(member.getUsername());
+    }
 
-	/** 지정가 주문 등록 */
-	@PostMapping("limitOrder")
-	@ResponseBody
-	public String limitOrder(CoinOrdersDTO order) throws Exception {
-		coinService.limitOrder(order);
-		return "success";
-	}
+    /** 지정가 주문 등록 */
+    @PostMapping("limitOrder")
+    @ResponseBody
+    public String limitOrder(CoinOrdersDTO order, HttpSession session) throws Exception {
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
+        if (member == null) return "fail_login_required";
+        
+        order.setUsername(member.getUsername());
+        coinService.limitOrder(order);
+        return "success";
+    }
 
-	/** 미체결 주문 취소 */
-	@PostMapping("cancelOrder")
-	@ResponseBody
-	public String cancelOrder(CoinOrdersDTO order) throws Exception {
-		coinService.cancelOrder(order);
-		return "success";
-	}
+    /** 미체결 주문 취소 */
+    @PostMapping("cancelOrder")
+    @ResponseBody
+    public String cancelOrder(CoinOrdersDTO order, HttpSession session) throws Exception {
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
+        if (member == null) return "fail_login_required";
+        
+        order.setUsername(member.getUsername());
+        coinService.cancelOrder(order);
+        return "success";
+    }
 
-	/** 지정가 체결 처리 */
-	@PostMapping("executePending")
-	@ResponseBody
-	public String executePendingOrder(CoinOrdersDTO order) throws Exception {
-		coinService.executePendingOrder(order);
-		return "success";
-	}
+    /** 지정가 체결 처리 */
+    @PostMapping("executePending")
+    @ResponseBody
+    public String executePendingOrder(CoinOrdersDTO order, HttpSession session) throws Exception {
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
+        if (member == null) return "fail_login_required";
+        
+        order.setUsername(member.getUsername());
+        coinService.executePendingOrder(order);
+        return "success";
+    }
 
 }

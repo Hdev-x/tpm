@@ -66,16 +66,9 @@ function fmtNum(n) {
  * @return {Promise<void>} logoMap 전역 객체를 갱신합니다.
  */
 async function loadLogoMap() {
-    const pages = [1, 2, 3];
-    const results = await Promise.all(
-        pages.map(p => fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&per_page=250&page=${p}`)
-            .then(r => r.json()).catch(() => []))
-    );
-    results.flat().forEach(coin => {
-        if (coin && coin.symbol && coin.image) {
-            logoMap[coin.symbol.toUpperCase()] = coin.image;
-        }
-    });
+    // 429 에러 방지를 위해 CoinGecko 전수 조사를 중단합니다.
+    // 로고는 렌더링 시점에 개별적으로 처리되거나 대체 수단을 사용합니다.
+    return;
 }
 
 /**
@@ -86,7 +79,7 @@ async function loadLogoMap() {
  * @return {Promise<Array>} Bitget ticker 배열
  */
 async function loadTickers() {
-    const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers');
+    const res = await fetch('/coin/api/tickers');
     const json = await res.json();
     return json.data || [];
 }
@@ -385,7 +378,7 @@ async function loadDetailChart(symbol) {
     currentDetailSymbol = symbol;
     const ticker = symbol.replace(/USDT$/, '').replace(/USDC$/, '') || symbol;
 
-    const res = await fetch(`https://api.bitget.com/api/v2/spot/market/candles?symbol=${symbol}&granularity=1Wutc&limit=52`);
+    const res = await fetch(`/coin/api/candles?symbol=${symbol}&granularity=1Wutc&limit=52`);
     const json = await res.json();
     if (!json.data || json.data.length === 0) return;
 

@@ -135,9 +135,9 @@ async function initDashboardData() {
         console.warn("⚠️ 네이버 기반 백엔드 요약 시세 수급 실패");
     }
 
-    // C. 비트코인 빗썸 퍼블릭 API 단독 호출 전개
+    // C. 비트코인 빗썸 퍼블릭 API 로컬 프록시 호출 전개
     try {
-        const response = await fetch('https://api.bithumb.com/public/ticker/BTC_KRW');
+        const response = await fetch('/coin/api/bithumb/ticker?order=BTC&payment=KRW');
         const resData = await response.json();
 
         if (resData && resData.status === "0000" && resData.data) {
@@ -191,9 +191,9 @@ async function startRealTimeEngine() {
     kospiSeries.update({ time: currentTime, value: currentKospiPrice });
     document.getElementById('idx-kospi-price').textContent = currentKospiPrice.toLocaleString(undefined, { minimumFractionDigits: 2 });
 
-    // 비트코인 실시간 루틴
+    // 비트코인 실시간 루틴 (로컬 프록시 사용)
     try {
-        const response = await fetch('https://api.bithumb.com/public/ticker/BTC_KRW');
+        const response = await fetch('/coin/api/bithumb/ticker?order=BTC&payment=KRW');
         const resData = await response.json();
 
         if (resData && resData.status === "0000" && resData.data) {

@@ -197,59 +197,89 @@ public class OrderStockService {
 	}
 	
 	// OrderStockService.java
+	@Autowired
+	private com.tj.app.market.index.MarketIndexService indexService;
+	
+	@Autowired
+	private com.tj.app.market.coin.CoinService coinService;
+
 	public long calculateTotalAsset(MemberDTO member) {
-	    long cash = orderStockMapper.getWallet(member.getUsername());
-	    List<Map<String, Object>> holdingList = orderStockMapper.getHoldingList(member.getUsername());
+	    if (member == null) return 0;
+	    
+	    // 1. 주식 자산 계산 (예수금 + 보유 주식 평가액)
+	    long stockCash = orderStockMapper.getWallet(member.getUsername());
+	    List<Map<String, Object>> stockHoldings = orderStockMapper.getHoldingList(member.getUsername());
 	    
 	    long stockValue = 0;
-	    for (Map<String, Object> holding : holdingList) {
-	        String stockCode = (String) holding.get("STOCK_CODE");
+	    for (Map<String, Object> holding : stockHoldings) {
+	        String code = (String) holding.get("STOCK_CODE");
 	        long count = ((Number) holding.get("STOCK_COUNT")).longValue();
-	        
-	        // 💡 중요: 이제 API 호출(getCurrentPrice) 대신 캐시를 읽습니다!
-	        long currentPrice = stockService.getPriceFromCache(stockCode); 
-	        
-	        // 캐시에 없으면(0이면) 어쩔 수 없이 API를 한 번만 호출
-	        if (currentPrice <= 0) {
-	            currentPrice = stockService.getCurrentPrice(stockCode);
-	        }
-	        
-	        stockValue += (count * currentPrice);
+	        long price = stockService.getPriceFromCache(code);
+	        if (price <= 0) price = stockService.getCurrentPrice(code);
+	        stockValue += (count * price);
 	    }
-	    return cash + stockValue;
+
+	    return stockCash + stockValue;
 	}
 	
 	public List<Map<String, Object>> getAssetDetails(MemberDTO member) {
-        // 1. 현재 유저의 보유 종목을 DB에서 가져옴 (기존 매핑 활용)
-        List<Map<String, Object>> holdings = orderStockMapper.getHoldingList(member.getUsername());
-        List<Map<String, Object>> details = new ArrayList<>();
-        
-        for (Map<String, Object> h : holdings) {
-            String code = (String) h.get("STOCK_CODE");
-            long count = ((Number) h.get("STOCK_COUNT")).longValue();
-            long avgPrice = ((Number) h.get("STOCK_PURCHASE")).longValue();
-            
-            // 2. StockService(메모리 캐시)에서 실시간 가격 가져오기
-            long currentPrice = stockService.getPriceFromCache(code);
-            
-            // 3. 수익률 및 평가금액 계산 (currentPrice가 0이면 데이터 없음 처리)
-            long totalBuy = avgPrice * count;
-            long totalEval = (currentPrice > 0) ? (currentPrice * count) : totalBuy; // 가격 없으면 원금 기준
-            
-            double profitRate = (totalBuy == 0) ? 0 : ((double)(totalEval - totalBuy) / totalBuy) * 100;
-            
-            // 4. 결과 맵에 담기
-            Map<String, Object> map = new HashMap<>();
-            map.put("name", h.get("STOCK_NAME"));      // 종목명
-            map.put("count", count);                   // 보유 수량
-            map.put("buyPrice", avgPrice);             // 매수 단가
-            map.put("currentPrice", currentPrice);     // 현재가
-            map.put("eval", totalEval);                // 평가금액
-            map.put("rate", String.format("%.2f", profitRate)); // 수익률
-            
-            details.add(map);
-        }
-        return details;
-    }
+	    List<Map<String, Object>> details = new ArrayList<>();
+	    if (member == null) return details;
+
+	    // 1. 주식 자산 상세
+	    List<Map<String, Object>> stockHoldings = orderStockMapper.getHoldingList(member.getUsername());
+	    for (Map<String, Object> h : stockHoldings) {
+	        String code = (String) h.get("STOCK_CODE");
+	        long count = ((Number) h.get("STOCK_COUNT")).longValue();
+	        long avgPrice = ((Number) h.get("STOCK_PURCHASE")).longValue();
+	        long currentPrice = stockService.getPriceFromCache(code);
+	        if (currentPrice <= 0) currentPrice = stockService.getCurrentPrice(code);
+
+	        long totalBuy = avgPrice * count;
+	        long totalEval = (currentPrice > 0) ? (currentPrice * count) : totalBuy;
+	        double profitRate = (totalBuy == 0) ? 0 : ((double) (totalEval - totalBuy) / totalBuy) * 100;
+
+	        Map<String, Object> map = new HashMap<>();
+	        map.put("type", "stock");
+	        map.put("name", h.get("STOCK_NAME"));
+	        map.put("count", count);
+	        map.put("buyPrice", avgPrice);
+	        map.put("currentPrice", currentPrice);
+	        map.put("eval", totalEval);
+	        map.put("rate", String.format("%.2f", profitRate));
+	        details.add(map);
+	    }
+
+	    // 2. 코인 자산 상세
+	    try {
+	        var coinHoldings = coinService.getHoldingList(member.getUsername());
+	        for (var ch : coinHoldings) {
+	            double count = ch.getCoinCount();
+	            double avgPrice = ch.getAvgPrice();
+	            
+	            // 서버측 코인 현재가 캐시가 없으므로 일단 평단가 기준 (수익률 0%) 또는 
+	            // 간단한 외부 API 연동이 필요하나, 여기서는 구조만 잡습니다.
+	            double currentPrice = avgPrice; // 실시간 연동 전까지는 평단가로 표시
+	            
+	            double totalBuy = avgPrice * count;
+	            double totalEval = currentPrice * count;
+	            double profitRate = 0; // 실시간가 연동 시 계산 가능
+
+	            Map<String, Object> map = new HashMap<>();
+	            map.put("type", "coin");
+	            map.put("name", ch.getCoinCode().replace("USDT", ""));
+	            map.put("count", count);
+	            map.put("buyPrice", avgPrice);
+	            map.put("currentPrice", currentPrice);
+	            map.put("eval", totalEval); // USDT 기준
+	            map.put("rate", String.format("%.2f", profitRate));
+	            details.add(map);
+	        }
+	    } catch (Exception e) {
+	        log.error("코인 자산 상세 조회 실패", e);
+	    }
+
+	    return details;
+	}
 	
 }

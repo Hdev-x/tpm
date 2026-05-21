@@ -1136,6 +1136,7 @@ async function cancelPendingOrder(orderNo) {
    실시간 댓글 - WebSocket(STOMP)
    ==================================================== */
 let stompClient = null;
+let currentChatSort = 'latest';
 
 function connectChat(symbol) {
     if (stompClient && stompClient.connected) {
@@ -1149,14 +1150,16 @@ function connectChat(symbol) {
     stompClient.connect({}, () => {
         stompClient.subscribe('/topic/coin/' + symbol, msg => {
             const dto = JSON.parse(msg.body);
-            appendChatMsg(dto.username, dto.content, dto.createdAt, true, dto.imageUrl, dto.profileFileName);
+            appendChatMsg(dto.username, dto.content, dto.createdAt, true, dto.imageUrl, dto.profileFileName, dto.commentNo, dto.likeCount, dto.likedByMe);
         });
-        loadChatHistory(symbol);
     });
+
+    loadChatHistory(symbol);
 }
 
-function loadChatHistory(symbol) {
-    fetch('/coin/comments/' + symbol)
+function loadChatHistory(symbol, sort) {
+    const s = sort || currentChatSort;
+    fetch('/coin/comments/' + symbol + '?sort=' + s)
         .then(r => r.json())
         .then(list => {
             const msgs = document.getElementById('chat-messages');
@@ -1165,7 +1168,7 @@ function loadChatHistory(symbol) {
                 msgs.innerHTML = '<div class="chat-empty"><span class="chat-empty-icon">💬</span><span>첫 댓글을 남겨보세요</span></div>';
                 return;
             }
-            list.forEach(dto => appendChatMsg(dto.username, dto.content, dto.createdAt, false, dto.imageUrl, dto.profileFileName));
+            list.forEach(dto => appendChatMsg(dto.username, dto.content, dto.createdAt, false, dto.imageUrl, dto.profileFileName, dto.commentNo, dto.likeCount, dto.likedByMe));
         });
 }
 
@@ -1187,7 +1190,7 @@ function cmRelTime(createdAt) {
     return Math.floor(h / 24) + '일';
 }
 
-function appendChatMsg(username, content, createdAt, scroll = true, imageUrl = null, profileFileName = null) {
+function appendChatMsg(username, content, createdAt, scroll = true, imageUrl = null, profileFileName = null, commentNo = null, likeCount = 0, likedByMe = false) {
     const msgs = document.getElementById('chat-messages');
     const empty = msgs.querySelector('.chat-empty');
     if (empty) empty.remove();
@@ -1204,6 +1207,14 @@ function appendChatMsg(username, content, createdAt, scroll = true, imageUrl = n
     const preview = isTrunc ? safe(content.slice(0, MAX)) + '...' : safe(content);
     const full = safe(content);
     const imgHtml = imageUrl ? '<img class="cm-image" src="' + imageUrl + '" alt="" onclick="cmOpenImage(this)">' : '';
+    const heartFill   = likedByMe ? '#e91e63' : 'none';
+    const heartStroke = likedByMe ? '#e91e63' : 'currentColor';
+    const likeHtml = commentNo
+        ? '<div class="cm-actions"><button class="cm-like-btn' + (likedByMe ? ' liked' : '') + '" data-comment-no="' + commentNo + '">' +
+              '<svg viewBox="0 0 24 24" fill="' + heartFill + '" stroke="' + heartStroke + '" stroke-width="1.8" width="16" height="16"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>' +
+              '<span class="cm-like-count">' + (likeCount || 0) + '</span>' +
+          '</button></div>'
+        : '';
 
     const div = document.createElement('div');
     div.className = 'chat-msg';
@@ -1222,6 +1233,7 @@ function appendChatMsg(username, content, createdAt, scroll = true, imageUrl = n
                 (isTrunc ? ' <button class="cm-more-btn" onclick="cmToggleMore(this)">더 보기</button>' : '') +
             '</div>' +
             imgHtml +
+            likeHtml +
         '</div>';
     if (scroll) msgs.prepend(div);
     else msgs.appendChild(div);
@@ -1243,10 +1255,33 @@ function cmToggleLess(btn) {
 
 connectChat(currentSymbol);
 
+document.querySelectorAll('.chat-sort-tabs .chat-sort-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+        if (this.dataset.sort === currentChatSort) return;
+        document.querySelectorAll('.chat-sort-tabs .chat-sort-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+        currentChatSort = this.dataset.sort;
+        loadChatHistory(currentSymbol);
+    });
+});
+
 const _chatMsgs = document.getElementById('chat-messages');
 if (_chatMsgs) {
     _chatMsgs.addEventListener('mouseenter', () => _chatMsgs.classList.add('scrollbar-visible'));
     _chatMsgs.addEventListener('mouseleave', () => _chatMsgs.classList.remove('scrollbar-visible'));
+    _chatMsgs.addEventListener('click', e => {
+        const btn = e.target.closest('.cm-like-btn');
+        if (!btn) return;
+        const commentNo = btn.dataset.commentNo;
+        fetch('/api/coin/comment/' + commentNo + '/like', { method: 'POST' })
+            .then(r => r.json())
+            .then(data => {
+                const svg = btn.querySelector('svg');
+                svg.style.fill   = data.liked ? '#e91e63' : 'none';
+                svg.style.stroke = data.liked ? '#e91e63' : 'currentColor';
+                btn.querySelector('.cm-like-count').textContent = data.count;
+            });
+    });
 }
 
 

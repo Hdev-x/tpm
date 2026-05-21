@@ -688,8 +688,8 @@
                     <div class="panel-title-row">
                         <span class="panel-title">실시간 댓글</span>
                         <div class="chat-sort-tabs">
-                            <button class="chat-sort-btn active">인기순</button>
-                            <button class="chat-sort-btn">최신순</button>
+                            <button class="chat-sort-btn active" data-sort="latest">최신순</button>
+                            <button class="chat-sort-btn" data-sort="popular">인기순</button>
                         </div>
                     </div>
 

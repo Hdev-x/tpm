@@ -216,6 +216,7 @@ function switchBpTab(el, tab) {
    ==================================================== */
 let holdingsData = [];
 let holdingsWs = null;
+let holdingsPingTimer = null;
 let cachedPrices = JSON.parse(localStorage.getItem('holdingPrices') || '{}');
 
 function skeletonCard() {
@@ -431,6 +432,7 @@ async function loadOrders() {
 
 
 function connectHoldingsWs() {
+    if (holdingsPingTimer) { clearInterval(holdingsPingTimer); holdingsPingTimer = null; }
     if (holdingsWs) holdingsWs.close();
     const ws = new WebSocket('wss://ws.bitget.com/v2/ws/public');
     holdingsWs = ws;
@@ -440,7 +442,7 @@ function connectHoldingsWs() {
             instType: 'SPOT', channel: 'ticker', instId: h.coinCode
         }));
         ws.send(JSON.stringify({ op: 'subscribe', args }));
-        setInterval(() => ws.readyState === 1 && ws.send('ping'), 20000);
+        holdingsPingTimer = setInterval(() => ws.readyState === 1 && ws.send('ping'), 20000);
     };
 
     ws.onmessage = (event) => {
@@ -490,6 +492,7 @@ function updateHoldingPrice(coinCode, price) {
    ==================================================== */
 let watchlistCoins = [];
 let watchlistWs = null;
+let watchlistPingTimer = null;
 let watchlistPrices = JSON.parse(localStorage.getItem('watchlistPrices') || '{}');
 let watchlistSort = '등록순';
 
@@ -881,6 +884,7 @@ async function loadWatchlist() {
 }
 
 function connectWatchlistWs() {
+    if (watchlistPingTimer) { clearInterval(watchlistPingTimer); watchlistPingTimer = null; }
     if (watchlistWs) watchlistWs.close();
     if (watchlistCoins.length === 0) return;
 
@@ -892,7 +896,7 @@ function connectWatchlistWs() {
             op: 'subscribe',
             args: watchlistCoins.map(s => ({ instType: 'SPOT', channel: 'ticker', instId: s }))
         }));
-        setInterval(() => ws.readyState === 1 && ws.send('ping'), 20000);
+        watchlistPingTimer = setInterval(() => ws.readyState === 1 && ws.send('ping'), 20000);
     };
 
     ws.onmessage = (event) => {
@@ -931,6 +935,7 @@ function connectWatchlistWs() {
 const RECENT_MAX = 20;
 let recentCoins = [];
 let recentWs = null;
+let recentPingTimer = null;
 let recentPrices = JSON.parse(localStorage.getItem('recentPrices') || '{}');
 
 function isCoinSymbol(symbol) {
@@ -1093,6 +1098,7 @@ async function loadRecent() {
 }
 
 function connectRecentWs() {
+    if (recentPingTimer) { clearInterval(recentPingTimer); recentPingTimer = null; }
     if (recentWs) recentWs.close();
     if (recentCoins.length === 0) return;
     const ws = new WebSocket('wss://ws.bitget.com/v2/ws/public');
@@ -1102,7 +1108,7 @@ function connectRecentWs() {
             op: 'subscribe',
             args: recentCoins.map(s => ({ instType: 'SPOT', channel: 'ticker', instId: s }))
         }));
-        setInterval(() => ws.readyState === 1 && ws.send('ping'), 20000);
+        recentPingTimer = setInterval(() => ws.readyState === 1 && ws.send('ping'), 20000);
     };
     ws.onmessage = (event) => {
         if (event.data === 'pong') return;
@@ -1261,6 +1267,7 @@ function renderSidebarStockList() {
 let liveCoins = JSON.parse(localStorage.getItem('liveCoins') || '[]');
 let livePrices = JSON.parse(localStorage.getItem('livePrices') || '{}');
 let liveWs = null;
+let livePingTimer = null;
 let liveSort = '거래대금';
 let liveTime = '실시간';
 let currentLiveTab = 'stock';
@@ -1453,6 +1460,7 @@ async function loadLiveCoins() {
 }
 
 function connectLiveWs() {
+    if (livePingTimer) { clearInterval(livePingTimer); livePingTimer = null; }
     if (liveWs) liveWs.close();
     if (liveCoins.length === 0) return;
     const ws = new WebSocket('wss://ws.bitget.com/v2/ws/public');
@@ -1462,7 +1470,7 @@ function connectLiveWs() {
             op: 'subscribe',
             args: liveCoins.map(s => ({ instType: 'SPOT', channel: 'ticker', instId: s }))
         }));
-        setInterval(() => ws.readyState === 1 && ws.send('ping'), 20000);
+        livePingTimer = setInterval(() => ws.readyState === 1 && ws.send('ping'), 20000);
     };
     ws.onmessage = (event) => {
         if (event.data === 'pong') return;

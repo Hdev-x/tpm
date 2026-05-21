@@ -370,7 +370,13 @@
                                      [COMMUNITY COMMENTS] .detail-chat
                                      ==================================================== -->
                                 <div class="card panel-chat" id="panel-chat">
-                                    <div class="panel-title">실시간 댓글</div>
+                                    <div class="panel-title-row">
+                                        <div class="panel-title">실시간 댓글</div>
+                                        <div class="chat-sort-group">
+                                            <button class="chat-sort-btn active" data-sort="latest">최신순</button>
+                                            <button class="chat-sort-btn" data-sort="popular">인기순</button>
+                                        </div>
+                                    </div>
                                     <div class="chat-messages" id="chat-messages">
                                         <div class="chat-empty">
                                             <span class="chat-empty-icon">💬</span>

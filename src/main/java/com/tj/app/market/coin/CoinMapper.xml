@@ -43,8 +43,8 @@
 
     <!-- 주문 내역 추가 -->
     <insert id="insertOrder">
-        INSERT INTO "COIN_ORDERS" ("USERNAME", "COIN_CODE", "ORDER_TYPE", "ORDER_PRICE", "ORDER_COUNT", "AVG_PRICE", "STATUS", "TARGET_PRICE")
-        VALUES (#{username}, #{coinCode}, #{orderType}, #{orderPrice}, #{orderCount}, #{avgPrice}, #{status}, #{targetPrice})
+        INSERT INTO "COIN_ORDERS" ("USERNAME", "COIN_CODE", "ORDER_TYPE", "ORDER_PRICE", "ORDER_COUNT", "AVG_PRICE", "STATUS", "TARGET_PRICE", "ORDER_DATE")
+        VALUES (#{username}, #{coinCode}, #{orderType}, #{orderPrice}, #{orderCount}, #{avgPrice}, #{status}, #{targetPrice}, CURRENT_TIMESTAMP)
     </insert>
 
     <!-- 주문 내역 조회 (체결 완료만) -->

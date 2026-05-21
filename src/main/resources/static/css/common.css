@@ -204,7 +204,7 @@ nav {
     justify-content: center;
     width: 32px;
     height: 32px;
-    background: var(--blue);
+    background: var(--surface2);
     border-radius: 8px;
     color: #fff;
     flex-shrink: 0;
@@ -1784,6 +1784,31 @@ nav {
 }
 .cm-more-btn:hover {
     text-decoration: underline;
+}
+
+.cm-actions {
+    margin-top: 6px;
+}
+
+.cm-like-btn {
+    background: none;
+    border: none;
+    color: var(--text3);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 6px 2px 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    transition: color 0.12s;
+}
+
+.cm-like-btn:hover {
+    color: #e9516a;
+}
+
+.cm-like-btn.liked {
+    color: #e9516a;
 }
 
 .chat-messages::-webkit-scrollbar {

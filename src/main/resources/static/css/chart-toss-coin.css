@@ -1102,7 +1102,6 @@
     align-items: center;
     justify-content: space-between;
     padding: 13px 16px;
-    border-bottom: 1px solid var(--border);
     flex-shrink: 0;
 }
 
@@ -1143,7 +1142,6 @@
     font-weight: 500;
     color: var(--text3);
     cursor: pointer;
-    border-top: 1px solid var(--border);
     text-align: center;
     transition: color 0.12s;
     flex-shrink: 0;

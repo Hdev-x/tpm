@@ -126,9 +126,9 @@ public class BoardController {
 			int result = boardService.delete(boardDTO);
 			return "redirect:./list";
 		}else {
-			model.addAttribute("url", "작성자가 아님");
+			model.addAttribute("msg", "작성자가 아닙니다.");
 			model.addAttribute("url", "./list");
-			return "commons/result";
+			return "common/result";
 		}
 		
     }

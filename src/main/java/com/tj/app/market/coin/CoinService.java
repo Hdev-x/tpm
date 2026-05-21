@@ -2,9 +2,12 @@ package com.tj.app.market.coin;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 
 @Service
+@Transactional
 public class CoinService {
 
     @Autowired
@@ -26,6 +29,11 @@ public class CoinService {
     public void buy(CoinOrdersDTO order) throws Exception {
         // 지갑 잔고 조회
         CoinWalletDTO wallet = coinMapper.getWallet(order.getUsername());
+        
+     // [수정된 부분] 지갑이 없는 경우에 대한 예외 처리 추가
+        if (wallet == null) {
+            throw new Exception("지갑 정보를 찾을 수 없습니다. 먼저 지갑을 생성해주세요.");
+        }
 
         // 잔고 부족 체크
         double totalPrice = order.getOrderPrice() * order.getOrderCount();
@@ -93,6 +101,10 @@ public class CoinService {
 
         // 잔고 추가
         CoinWalletDTO wallet = coinMapper.getWallet(order.getUsername());
+        if (wallet == null) {
+            throw new Exception("지갑 정보를 찾을 수 없습니다.");
+        }
+        
         wallet.setUsdtBalance(wallet.getUsdtBalance() + order.getOrderPrice() * order.getOrderCount());
         coinMapper.updateWallet(wallet);
 
@@ -198,5 +210,9 @@ public class CoinService {
         }
         order.setStatus("COMPLETED");
         coinMapper.updateOrderStatus(order);
+    }
+
+    public void updateWallet(CoinWalletDTO wallet) throws Exception {
+        coinMapper.updateWallet(wallet);
     }
 }

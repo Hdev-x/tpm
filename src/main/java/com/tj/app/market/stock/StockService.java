@@ -7,6 +7,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import jakarta.annotation.PostConstruct;
+
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -29,13 +31,7 @@ public class StockService {
     private WebClientService webClientService;
 
     @Autowired
-    private KisWebSocketService kisWebSocketService;
-
-    @Value("${app.stock.websocket.enabled:false}")
-    private boolean stockWebSocketEnabled;
-
-    // 프론트엔드가 긁어갈 최종 인메모리 캐시 (0번: 네이버 코스피 지수, 1번~: 한투 100개 종목)
-    private List<StockListOutput> top100Stocks = new CopyOnWriteArrayList<>();
+    private ObjectProvider<KisWebSocketService> kisWebSocketProvider;
 
     @PostConstruct
     public void init() {
@@ -44,8 +40,17 @@ public class StockService {
             return;
         }
         log.info("🚀 앱 시작 - KIS WebSocket 연결 초기화");
-        kisWebSocketService.connect();
+        
+        // ObjectProvider를 통해 안전하게 객체를 가져와서 연결합니다.
+        kisWebSocketProvider.getObject().connect();
     }
+
+    @Value("${app.stock.websocket.enabled:false}")
+    private boolean stockWebSocketEnabled;
+
+    // 프론트엔드가 긁어갈 최종 인메모리 캐시 (0번: 네이버 코스피 지수, 1번~: 한투 100개 종목)
+    private List<StockListOutput> top100Stocks = new CopyOnWriteArrayList<>();
+
 
     /**
      * 📊 [API 컨트롤러용] 현재 메모리에 동기화된 지수 + 종목 리스트 반환
@@ -98,41 +103,60 @@ public class StockService {
     }
     
     public long getCurrentPrice(String stockCode) {
-        // 1. 메모리(top100Stocks)에서 해당 종목 찾기
+        // 1. [메모리 탐색] 이미 캐싱된 데이터가 있는지 먼저 확인
         for (StockListOutput stock : top100Stocks) {
             if (stock.getMkstat_shrn_iscd() != null && stock.getMkstat_shrn_iscd().equals(stockCode)) {
                 String priceStr = stock.getMkstat_prpr().replaceAll("[^0-9]", "");
-                return Long.parseLong(priceStr);
+                long price = Long.parseLong(priceStr);
+                return (price > 0) ? price : -1;
             }
         }
-        
-        // 2. 메모리에 없어서 API 호출 시 DTO에서 가격 추출
-        StockPriceDTO priceDto = webClientService.getCurrentPrice(stockCode);
-        
-        if (priceDto != null && priceDto.getOutput() != null) {
-            // DTO 내부의 현재가(stck_prpr)를 long으로 변환
-            String priceStr = priceDto.getOutput().getStck_prpr();
-            return Long.parseLong(priceStr);
+
+        // 2. [메모리에 없을 때] API 호출
+        try {
+            StockPriceDTO dto = webClientService.getCurrentPrice(stockCode);
+            
+            // 🚨 널 체크와 성공 코드(rt_cd == "0") 확인
+            if (dto != null && "0".equals(dto.getRt_cd()) && dto.getOutput() != null) {
+                String priceStr = dto.getOutput().getStck_prpr();
+                if (priceStr != null && !priceStr.isEmpty()) {
+                    long price = Long.parseLong(priceStr);
+                    return (price > 0) ? price : -1;
+                }
+            }
+        } catch (Exception e) {
+            log.error("❌ API 조회 중 예외 발생 - 종목: {}", stockCode);
         }
         
-        return 0L; // 조회 실패 시 0 반환
+        return -1; // 실패/데이터 없음 시 -1 반환
     }
     
     private Map<String, StockChartDTO> chartCache = new ConcurrentHashMap<>();
 
     public StockChartDTO getCachedDailyChart(String stockCode, String startDate, String endDate, String timeframe) {
-        String cacheKey = stockCode + "_" + startDate + "_" + endDate;
-        
-        if (chartCache.containsKey(cacheKey)) {
-            return chartCache.get(cacheKey);
-        }
-        
-        StockChartDTO dto = webClientService.getDailyChart(stockCode, startDate, endDate, timeframe);
-        
-        if (dto != null) {
-            chartCache.put(cacheKey, dto);
-        }
-        return dto;
+        // 분봉은 캐시하지 않거나 별도 처리 (여기서는 일봉 이상만 캐시)
+        if ("min".equals(timeframe)) return null;
+
+        String cacheKey = stockCode + "_" + startDate + "_" + endDate + "_" + timeframe;
+        return chartCache.get(cacheKey);
+    }
+
+    public void putChartCache(String stockCode, String startDate, String endDate, String timeframe, StockChartDTO dto) {
+        if (dto == null || "min".equals(timeframe)) return;
+        String cacheKey = stockCode + "_" + startDate + "_" + endDate + "_" + timeframe;
+        chartCache.put(cacheKey, dto);
+    }
+
+    public long getPriceFromCache(String stockCode) {
+        // WebSocket 등으로 유입된 최신 실시간가 리턴
+        return this.latestPriceMap.getOrDefault(stockCode, 0L);
     }
     
+ // 실시간 가격을 저장하는 맵
+    private Map<String, Long> latestPriceMap = new ConcurrentHashMap<>();
+
+    // 웹소켓으로부터 가격을 받아 업데이트하는 메서드 (KisWebSocketService에서 호출하게 만드세요)
+    public void updatePrice(String stockCode, long price) {
+        latestPriceMap.put(stockCode, price);
+    }
 }

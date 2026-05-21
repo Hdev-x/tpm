@@ -14,6 +14,7 @@
 <div class="app-wrapper">
     <div class="page">
         <%@ include file="common/nav.jsp" %>
+        
 
         <div class="main-content">
             <main class="main-layout">
@@ -122,8 +123,8 @@ let currentKospiPrice = 7500.00;
 </script>
 
 <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
-<script src="/js/common.js"></script>
 <script src="/js/index.js"></script>
+<script src="/js/common.js"></script>
 
 </body>
 </html>

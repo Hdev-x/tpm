@@ -1926,3 +1926,15 @@ nav {
     border-radius: 8px;
     object-fit: contain;
 }
+
+.sb-content.active-panel {
+    display: flex !important;
+}
+
+.sb-content.active {
+    display: flex !important;
+}
+
+.sb-table.active {
+    display: table !important;
+}

@@ -6,6 +6,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import com.tj.app.member.MemberDTO;
+import com.tj.app.orderStock.OrderStockService;
+import jakarta.servlet.http.HttpSession;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -14,6 +18,9 @@ import java.util.*;
 @RestController
 @RequestMapping("/stock")
 public class StockController {
+	
+	@Autowired
+    private OrderStockService orderStockService;
 
     @Autowired
     private WebClientService webClientService;
@@ -38,6 +45,7 @@ public class StockController {
             @RequestParam(name = "code", defaultValue = "005930") String keyword,
             @RequestParam(name = "range", defaultValue = "1y") String range) {
 
+        // 1. 코드 및 이름 확정
         String stockCode = keyword;
         String stockName = "";
         if (!keyword.matches("\\d{6}")) { 
@@ -45,47 +53,50 @@ public class StockController {
             stockCode = stockJoinService.getCode(cleanKeyword);
             stockName = stockJoinService.getName(stockCode); 
         } else {
-            stockCode = keyword;
             stockName = stockJoinService.getName(stockCode); 
         }
 
-        if (stockName == null || stockName.equals("알 수 없는 종목")) {
-            stockName = "종목명 없음";
-        }
-
+        // 2. 기간 계산
         Map<String, String> periodMap = calculatePeriod(range);
         String startDate = periodMap.get("start");
         String endDate = periodMap.get("end");
         String timeframe = periodMap.get("timeframe");
-
-        StockChartDTO data = null;
         boolean isMinute = "min".equals(timeframe);
 
-        if (isMinute) {
-            log.info("📊 개별 종목 [{}] 순정 당일 분봉 API 직통 호출", stockName);
-            data = webClientService.getMinuteChart(stockCode);
-        } else {
-            log.info("📊 개별 종목 [{}] 순정 기간별 시세 API 직통 호출 ({} ~ {})", stockName, startDate, endDate);
-            data = webClientService.getDailyChart(stockCode, startDate, endDate, timeframe);
+        // 3. 캐시 조회 (변수 선언 후에 실행!)
+        StockChartDTO cachedData = stockService.getCachedDailyChart(stockCode, startDate, endDate, timeframe);
+        if (cachedData != null) {
+            log.info("📊 개별 종목 [{}] 캐시 데이터 반환", stockName);
+            return buildResponse(cachedData, stockCode, stockName, isMinute);
+        }
+        
+        // 4. 캐시가 없을 때만 API 호출
+        log.info("📊 개별 종목 [{}] 순정 API 직통 호출", stockName);
+        StockChartDTO data = isMinute ? webClientService.getMinuteChart(stockCode) 
+                                      : webClientService.getDailyChart(stockCode, startDate, endDate, timeframe);
+
+        if (data != null && data.getOutput2() != null && !data.getOutput2().isEmpty()) {
+            // 조회 성공 시 캐시에 저장 (일봉 이상만)
+            if (!isMinute) {
+                stockService.putChartCache(stockCode, startDate, endDate, timeframe, data);
+            }
+            return buildResponse(data, stockCode, stockName, isMinute);
         }
 
+        log.warn("⚠️ [인프라 통신 공백 확인] API 데이터 없음");
+        Map<String, Object> errorResult = new HashMap<>();
+        errorResult.put("message", "시세 데이터를 제공하지 않는 구간입니다.");
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResult);
+    }
+
+    // 응답 생성 공통 메서드 추가 (코드 중복 방지)
+    private ResponseEntity<Map<String, Object>> buildResponse(StockChartDTO data, String stockCode, String stockName, boolean isMinute) {
         Map<String, Object> result = new HashMap<>();
         result.put("stockCode", stockCode);
         result.put("stockName", stockName);
-
-        if (data != null && data.getOutput2() != null && !data.getOutput2().isEmpty()) {
-            List<Map<String, Object>> refinedCandles = transformToCandles(data.getOutput2(), isMinute);
-            if (!refinedCandles.isEmpty()) {
-                result.put("output2", refinedCandles);
-                result.put("rt_cd", data.getRt_cd());
-                return ResponseEntity.ok(result);
-            }
-        }
-
-        log.warn("⚠️ [인프라 통신 공백 확인] 한투 API가 빈 데이터를 반환했습니다. 백업 모드 없이 원본 실패 처리 전개.");
-        result.put("output2", new ArrayList<>());
-        result.put("message", "한투 오픈 API 인프라 정산 처리 혹은 주말 세션 제약으로 시세 데이터가 제공되지 않는 구간입니다.");
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(result);
+        result.put("output2", transformToCandles(data.getOutput2(), isMinute));
+        result.put("rt_cd", data.getRt_cd());
+        return ResponseEntity.ok(result);
     }
 
     /**
@@ -297,5 +308,10 @@ public class StockController {
         return ResponseEntity.ok(stockMiniChartService.refreshTopMiniCharts(limit));
     }
     
+    @GetMapping("/my-asset")
+    public ResponseEntity<Long> getMyTotalAsset(HttpSession session) {
+        MemberDTO user = (MemberDTO) session.getAttribute("member");
+        return ResponseEntity.ok(orderStockService.calculateTotalAsset(user));
+    }
     
 }

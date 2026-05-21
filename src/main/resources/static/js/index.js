@@ -135,9 +135,9 @@ async function initDashboardData() {
         console.warn("⚠️ 네이버 기반 백엔드 요약 시세 수급 실패");
     }
 
-    // C. 비트코인 빗썸 퍼블릭 API 단독 호출 전개
+    // C. 비트코인 빗썸 퍼블릭 API 로컬 프록시 호출 전개
     try {
-        const response = await fetch('https://api.bithumb.com/public/ticker/BTC_KRW');
+        const response = await fetch('/coin/api/bithumb/ticker?order=BTC&payment=KRW');
         const resData = await response.json();
 
         if (resData && resData.status === "0000" && resData.data) {
@@ -191,9 +191,9 @@ async function startRealTimeEngine() {
     kospiSeries.update({ time: currentTime, value: currentKospiPrice });
     document.getElementById('idx-kospi-price').textContent = currentKospiPrice.toLocaleString(undefined, { minimumFractionDigits: 2 });
 
-    // 비트코인 실시간 루틴
+    // 비트코인 실시간 루틴 (로컬 프록시 사용)
     try {
-        const response = await fetch('https://api.bithumb.com/public/ticker/BTC_KRW');
+        const response = await fetch('/coin/api/bithumb/ticker?order=BTC&payment=KRW');
         const resData = await response.json();
 
         if (resData && resData.status === "0000" && resData.data) {
@@ -313,19 +313,18 @@ function loadMarketHotTrends() {
                 row.style.borderBottom = "1px solid #222634";
                 row.style.cursor = "pointer";
                 
-                // 🔴 [한투 순정 DTO 파이프라인] 백엔드 StockListOutput 필드명 매싱 완료!
-                const stockName = stock.hts_kor_isnm; // HTS 한글 종목명
-                const priceStr = stock.stck_prpr;     // 주식 현재가 (문자열 혹은 숫자)
-                const rateStr = stock.prdy_ctrt;      // 전일 대비 등락률
+                const stockName = stock.name || "-"; 
+                const priceStr = stock.price || "0";     
+                const rateStr = stock.rate || "0";      
                 
                 // 현재가 포맷팅 (콤마 추가)
-                const price = typeof priceStr !== 'undefined' ? parseFloat(priceStr).toLocaleString() : '-';
+                const price = typeof priceStr !== 'undefined' ? parseFloat(priceStr.toString().replace(/,/g, '')).toLocaleString() : '-';
                 
                 // 부호 결정을 위한 변수 치환
-                const rate = parseFloat(rateStr);
+                const rate = parseFloat(rateStr.toString().replace(/%/g, ''));
                 const isUp = rate >= 0;
                 const rateColor = isUp ? "#f23645" : "#2962ff";
-                const sign = isUp ? "+" : ""; // 백엔드가 부호를 안 붙여줬을 때를 대비한 가드
+                const sign = isUp ? "+" : ""; 
                 
                 // 종목 클릭 시 해당 종목 실시간 네이버 뉴스 수급 링크 연동
                 row.addEventListener("click", () => {

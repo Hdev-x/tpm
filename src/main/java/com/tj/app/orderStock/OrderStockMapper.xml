@@ -114,7 +114,15 @@
 
 	<select id="getPendingOrders" resultType="map">
 		SELECT
-		O.*,
+		O."ORDER_ID",
+		O."ORDER_TYPE",
+		O."ORDER_PRICE",
+		O."ORDER_COUNT",
+		O."ORDER_DATE",
+		O."STOCK_NO",
+		O."STOCK_CODE",
+		O."USERNAME",
+		O."STATUS",
 		S."STOCK_NAME"
 		FROM "ORDER" O
 		JOIN "STOCK" S ON O."STOCK_NO" =
@@ -126,14 +134,21 @@
 
 	<update id="cancelPendingByStock">
 		UPDATE "ORDER"
-		SET "STOCK_CODE" = 'CANCELLED'
-		WHERE
+		SET "STATUS" = 'CANCELLED' WHERE
 		"ORDER_ID" = #{orderNo}
 	</update>
 
 	<select id="getAllPendingOrders"
 		resultType="com.tj.app.orderStock.OrderStockDTO">
-		SELECT * FROM "ORDER"
+		SELECT
+		"ORDER_ID" AS "orderId",
+		"ORDER_TYPE" AS "orderType",
+		"ORDER_PRICE" AS "orderPrice",
+		"ORDER_COUNT" AS "orderCount",
+		"STOCK_CODE" AS "stockCode",
+		"USERNAME" AS "username",
+		"STATUS" AS "status"
+		FROM "ORDER"
 		WHERE "STATUS" = 'PENDING'
 		ORDER BY "ORDER_DATE" ASC
 	</select>
@@ -142,7 +157,21 @@
 		parameterType="com.tj.app.orderStock.OrderStockDTO">
 		UPDATE "ORDER"
 		SET "STATUS" = #{status}
-		WHERE "ORDER_ID" = #{orderId}
+		WHERE "ORDER_ID" =
+		#{orderId}
 	</update>
+	
+	<select id="getOrderById" resultType="com.tj.app.orderStock.OrderStockDTO">
+    SELECT 
+        "ORDER_ID" AS "orderId",
+        "ORDER_TYPE" AS "orderType",
+        "ORDER_PRICE" AS "orderPrice",
+        "ORDER_COUNT" AS "orderCount",
+        "STOCK_CODE" AS "stockCode",
+        "USERNAME" AS "username",
+        "STATUS" AS "status"
+    FROM "ORDER"
+    WHERE "ORDER_ID" = #{orderId}
+</select>
 
 </mapper>

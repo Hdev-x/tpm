@@ -272,7 +272,7 @@ async function loadData() {
         updateAllSeries(allData);
     }
 
-    /* API 호출 */
+    /* API 호출 (로컬 프록시 사용으로 CORS/429 해결) */
     const res = await fetch(
         '/coin/api/candles?symbol=' + window.currentSymbol + '&granularity=' + currentGranularity + '&limit=200'
     ).then(r => r.json());
@@ -308,7 +308,7 @@ function loadMoreData() {
         isLoadingMore = true;
         try {
             const oldestTime = allData[0].time;
-            const endTimeMs = (oldestTime - 32400) * 1000 - 1; // 현재 가장 오래된 봉 바로 이전 시간 (KST→UTC 변환)
+            const endTimeMs = (oldestTime - 32400) * 1000 - 1;
 
             const res = await fetch(
                 '/coin/api/candles?symbol=' + window.currentSymbol + '&granularity=' + currentGranularity + '&limit=200&endTime=' + endTimeMs
@@ -746,8 +746,7 @@ function updateHoldingsPnl() {
 
 
 /* ====================================================
-   24h 티커 로드 (Bitget REST API)
-   현재가·변동률·고가·저가·거래량 정보 가져오기
+   24h 티커 로드 (로컬 프록시 사용)
    ==================================================== */
 async function loadTicker() {
     try {
@@ -788,17 +787,17 @@ async function loadTicker() {
 
 async function loadExtraStats() {
     try {
-        const ticker = currentSymbol.replace('USDT', '').replace('USDC', '').replace('_SPBL', '').toLowerCase();
-        const res = await fetch(`/coin/api/extra-stats?ticker=` + ticker)
-            .then(r => r.json());
+        const ticker = window.currentSymbol.replace('USDT', '').replace('USDC', '').replace('_SPBL', '').toLowerCase();
+        const res = await fetch('/coin/api/extra-stats?ticker=' + ticker).then(r => r.json());
 
         if (res && res[0]) {
             const data = res[0];
             const mktcap = data.market_cap;
-            document.getElementById('ph-mktcap').textContent = '$' + fmtNum(mktcap);
+            const el = document.getElementById('ph-mktcap');
+            if (el) el.textContent = '$' + fmtNum(mktcap);
         }
     } catch (e) {
-        console.error("추가 정보 로드 실패", e);
+        console.warn("추가 정보 로드 실패 (프록시 캐시 대기 중)", e);
     }
 }
 
@@ -922,7 +921,6 @@ makeVResizer('rh-v', 'panel-order-wrap', 'panel-hoga');
 
 
 /* 주문/지갑/미체결주문 → coin-order.js */
-
 /* ====================================================
    실시간 댓글 - WebSocket(STOMP)
    ==================================================== */
@@ -967,7 +965,7 @@ function appendChatMsg(username, content, createdAt, scroll, imageUrl, profileFi
     cmAppendChatMsg(username, content, createdAt, scroll, imageUrl, profileFileName, commentNo, likeCount, likedByMe);
 }
 
-connectChat(currentSymbol);
+connectChat(window.currentSymbol);
 
 document.querySelectorAll('.chat-sort-tabs .chat-sort-btn').forEach(btn => {
     btn.addEventListener('click', function () {
@@ -1003,19 +1001,20 @@ if (_chatMsgs) {
    페이지 로드 시 병렬 실행
    ==================================================== */
 // 헤더 종목명/티커 업데이트
-const tickerName = currentSymbol.replace('USDT', '').replace('USDC', '').replace('_SPBL', '');
+const tickerName = window.currentSymbol.replace('USDT', '').replace('USDC', '').replace('_SPBL', '');
 const nameEl = document.querySelector('.ph-name');
 const tickerEl = document.querySelector('.ph-ticker');
 if (nameEl) nameEl.textContent = tickerName;
-if (tickerEl) tickerEl.textContent = currentSymbol;
+if (tickerEl) tickerEl.textContent = window.currentSymbol;
 
 Promise.all([loadTicker(), loadWallet(), loadData(), initSearchMenu(), loadExtraStats()]).then(() => {
     connectWebSocket();
-    loadHoldings();
+    // loadHoldings is now part of loadMyInvestmentStatus in common.js
+    if (typeof loadMyInvestmentStatus === 'function') loadMyInvestmentStatus();
     loadPendingOrders();
     startCountdown();
-    updateWatchlistHeartBtn(currentSymbol);
-    addToRecent(currentSymbol);
+    updateWatchlistHeartBtn(window.currentSymbol);
+    addToRecent(window.currentSymbol);
 });
 
 /* ====================================================
@@ -1043,7 +1042,7 @@ async function initSearchMenu() {
     document.addEventListener('click', () => dropdown.classList.remove('active'));
     dropdown.addEventListener('click', (e) => e.stopPropagation());
 
-    // 3. 전체 코인 데이터 로드 (인기 순위용)
+    // 3. 전체 코인 데이터 로드 (인기 순위용 - 로컬 프록시 사용)
     try {
         const res = await fetch('/coin/api/tickers');
         const json = await res.json();
@@ -1113,10 +1112,10 @@ window.addEventListener('resize', () => {
     const chart = document.getElementById('panel-chart');
 
     if (window.innerWidth <= 1100) {
-        mid.style.width = '';
-        order.style.height = '';
-        hoga.style.height = '';
-        chart.style.height = '';
+        if (mid) mid.style.width = '';
+        if (order) order.style.height = '';
+        if (hoga) hoga.style.height = '';
+        if (chart) chart.style.height = '';
     }
 });
 
@@ -1124,7 +1123,7 @@ window.addEventListener('resize', () => {
 /* ====================================================
    하단 티커 바 - 15초마다 종목 가격 갱신
    ==================================================== */
-const TICKER_SYMBOLS = [currentSymbol, 'ETHUSDT', 'XRPUSDT', 'SOLUSDT', 'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT'];
+const TICKER_SYMBOLS = [window.currentSymbol, 'ETHUSDT', 'XRPUSDT', 'SOLUSDT', 'DOGEUSDT', 'ADAUSDT', 'AVAXUSDT', 'DOTUSDT'];
 
 async function loadTickerBar() {
     const res = await fetch('/coin/api/tickers')
@@ -1150,7 +1149,6 @@ async function loadTickerBar() {
         track.innerHTML = items + items + items + items;
         /* 두 번째 세트 첫 아이템의 offsetLeft = 정확한 첫 세트 너비 */
         setTimeout(() => {
-            const secondSet = track.children[filtered.length];
             tickerHalfWidth = track.scrollWidth / 2;
             tickerTrackEl = track;
         }, 500);
@@ -1163,13 +1161,15 @@ async function loadTickerBar() {
         const change = parseFloat(d.change24h) * 100;
         const cls = change >= 0 ? 'up' : 'down';
         const sign = change >= 0 ? '+' : '';
-        [allItems[i], allItems[i + filtered.length]].forEach(el => {
-            if (!el) return;
+        for (let j = 0; j < 4; j++) {
+            const targetIdx = i + (j * filtered.length);
+            const el = allItems[targetIdx];
+            if (!el) continue;
             el.querySelector('.ticker-price').textContent = parseFloat(d.lastPr).toLocaleString();
             const changeEl = el.querySelector('.ticker-change');
             changeEl.textContent = `${sign}${change.toFixed(2)}%`;
             changeEl.className = `ticker-change ${cls}`;
-        });
+        }
     });
 }
 
@@ -1205,5 +1205,3 @@ document.addEventListener('click', function(e) {
         if (m) m.style.display = 'none';
     }
 });
-
-

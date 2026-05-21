@@ -55,16 +55,10 @@ async function loadDetailChart(symbol) {
     // [코드 읽기] BTCUSDT/BTCUSDC에서 거래 통화 접미사를 제거해 화면용 티커(BTC)를 만든다.
     const ticker = symbol.replace(/USDT$/, '').replace(/USDC$/, '') || symbol;
 
-    let json;
-    try {
-        // [실행 흐름] Bitget REST API에서 1Wutc 주봉 52개, 즉 약 1년치 캔들을 요청한다.
-        const res = await fetch(`https://api.bitget.com/api/v2/spot/market/candles?symbol=${symbol}&granularity=1Wutc&limit=52`);
-        json = await res.json();
-    } catch (e) {
-        // [주의] 네트워크 실패 시 아래 DOM 갱신을 진행하면 빈 데이터로 차트를 만들 수 있으므로 여기서 끝낸다.
-        console.error('차트 데이터 로딩 실패:', e);
-        return;
-    }
+    // [실행 흐름] 서버 프록시(/coin/api/candles)를 통해 CORS/429 문제를 방지한다.
+    // 1Wutc 주봉 52개 = 약 1년치 캔들을 요청한다.
+    const res = await fetch(`/coin/api/candles?symbol=${symbol}&granularity=1Wutc&limit=52`);
+    const json = await res.json();
     if (!json.data || json.data.length === 0) return;
 
     // [코드 읽기] Bitget 캔들 배열에서 차트에 필요한 타임스탬프, 종가, 거래량만 객체로 뽑는다.

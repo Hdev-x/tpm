@@ -755,13 +755,13 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <script>
-        const currentSymbol = "${symbol}";
+        window.currentSymbol = "${symbol}";
         document.addEventListener('DOMContentLoaded', () => {
             const communityLink = document.getElementById('community-view-all');
             if (!communityLink) return;
 
             const openCommunity = () => {
-                const symbol = currentSymbol || 'BTCUSDT';
+                const symbol = window.currentSymbol || 'BTCUSDT';
                 window.location.href = '/coin/community?symbol=' + encodeURIComponent(symbol);
             };
 

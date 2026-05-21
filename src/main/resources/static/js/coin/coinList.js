@@ -98,20 +98,9 @@ document.querySelectorAll('.filter-group').forEach(group => {
  * @return {Promise<void>}
  */
 async function loadLogoMap() {
-    const pages = [1, 2, 3];
-
-    // [실행 흐름] Promise.all은 1~3페이지 요청을 동시에 보내고 모두 끝날 때까지 기다린다.
-    const results = await Promise.all(
-        pages.map(p => fetch(`https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&per_page=250&page=${p}`)
-            .then(r => r.json()).catch(() => []))
-    );
-
-    // [코드 읽기] flat()으로 페이지별 배열을 하나로 합친 뒤, BTC 같은 대문자 티커를 키로 저장한다.
-    results.flat().forEach(coin => {
-        if (coin && coin.symbol && coin.image) {
-            logoMap[coin.symbol.toUpperCase()] = coin.image;
-        }
-    });
+    // 429 에러 방지를 위해 CoinGecko 전수 조사를 중단한다.
+    // 로고는 makeRow/loadDetailChart의 cryptocurrency-icons URL로 처리된다.
+    return;
 }
 
 /**
@@ -120,7 +109,7 @@ async function loadLogoMap() {
  * @return {Promise<Array>} Bitget ticker 배열
  */
 async function loadTickers() {
-    const res = await fetch('https://api.bitget.com/api/v2/spot/market/tickers');
+    const res = await fetch('/coin/api/tickers');
     const json = await res.json();
     return json.data || [];
 }

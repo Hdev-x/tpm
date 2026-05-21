@@ -253,12 +253,12 @@
     display: flex;
     align-items: center;
     margin-left: auto;
-    animation: panelFadeIn 0.5s ease both;
+    animation: fadeInUp 0.5s ease both;
     animation-delay: 0.15s;
 }
 
 .ph-left {
-    animation: panelFadeIn 0.4s ease both;
+    animation: fadeInUp 0.4s ease both;
 }
 
 .ph-group {
@@ -322,10 +322,6 @@
    CARD - 패널 공통 카드 스타일
    ==================================================== */
 /* ── 패널 fade-in ── */
-@keyframes panelFadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
 
 .card {
     background: var(--bg);
@@ -334,7 +330,7 @@
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    animation: panelFadeIn 0.35s ease both;
+    animation: fadeInUp 0.35s ease both;
 }
 
 

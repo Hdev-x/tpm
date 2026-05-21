@@ -461,7 +461,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <script src="/js/common.js"></script>
-    <script src="/js/coinList.js"></script>
+    <script src="/js/coin/coin-common.js"></script>
+    <script src="/js/coin/coin-detail.js"></script>
+    <script src="/js/coin/coinList.js"></script>
     <script>
         function buildSparkline(prices, isUp) {
             if (!prices || prices.length < 2) {

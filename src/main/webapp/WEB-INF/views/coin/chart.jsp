@@ -772,7 +772,9 @@
         });
     </script>
     <script src="/js/common.js"></script>
-    <script src="/js/chart-toss-coin.js"></script>
+    <script src="/js/coin/coin-common.js"></script>
+    <script src="/js/coin/coin-order.js"></script>
+    <script src="/js/coin/chart-toss-coin.js"></script>
 </body>
 
 </html>

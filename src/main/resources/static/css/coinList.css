@@ -96,7 +96,7 @@
     gap: 12px;
     padding: 7px 17px;
     border-radius: 10px;
-    animation: rowFadeIn 0.35s ease both;
+    animation: fadeInUp 0.35s ease both;
     cursor: pointer;
     flex-shrink: 0;
     transition: background 0.14s;
@@ -376,10 +376,6 @@
 
 /* [선택자 읽기] .stock-table
    [박스 모델] table-layout:fixed는 th에 지정한 열 너비 비율을 안정적으로 유지합니다. */
-@keyframes rowFadeIn {
-    from { opacity: 0; transform: translateY(6px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
 
 .stock-table {
     width: 100%;
@@ -388,7 +384,7 @@
 }
 
 .stock-table tbody tr {
-    animation: rowFadeIn 0.3s ease both;
+    animation: fadeInUp 0.3s ease both;
 }
 
 .stock-table tbody tr:nth-child(1)  { animation-delay: 0.03s; }
@@ -651,6 +647,7 @@
     font-size: 16px;
     font-weight: 400;
     white-space: nowrap;
+    transition: background 0.5s ease-out;
 }
 
 .td-volume {
@@ -1101,10 +1098,6 @@
     100% {
         background: rgba(37, 99, 235, 0);
     }
-}
-
-.badge {
-    transition: background 0.5s ease-out;
 }
 
 .detail-period-btns {

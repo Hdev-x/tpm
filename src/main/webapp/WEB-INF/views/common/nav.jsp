@@ -26,7 +26,7 @@
     <a href="/news/list" class="nav-item">뉴스</a>
     <a href="/board/list" class="nav-item">커뮤니티</a>
     <a href="/notice/list" class="nav-item">공지사항</a>
-    <a href="/notice/list" class="nav-item">내 계좌</a>
+    <a href="/member/read" class="nav-item">내 계좌</a>
     <%-- <c:if test="${not empty member}">
         <span class="nav-item">내 계좌</span>
     </c:if> --%>

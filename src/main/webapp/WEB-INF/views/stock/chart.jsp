@@ -324,5 +324,6 @@
 
 	<script src="/js/stock.js"></script>
 	<script src="/js/common.js"></script>
+
 </body>
 </html>

@@ -79,7 +79,7 @@ CURRENT_TIMESTAMP, #{username}, 0)
 	</delete>
 
 	<insert id="createFile">
-		INSERT INTO "FILE" ("FILE_NAME", "FILE_ORI",
+		INSERT INTO "FILE" ("FILE_NAME", "ORI_NAME",
 		"BOARD_NO")
 		VALUES (#{fileName}, #{oriName}, #{boardNo})
 	</insert>

@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.tj.app.orderStock.OrderStockService;
+
 import jakarta.servlet.http.HttpSession;
 
 @Controller
@@ -23,6 +25,9 @@ public class MemberController {
 
     @Autowired
     private ProfileService profileService;
+    
+    @Autowired
+    private OrderStockService orderStockService;
 
     @GetMapping("create")
     public String create() {
@@ -45,12 +50,17 @@ public class MemberController {
     public String read(HttpSession session, Model model) throws Exception {
         MemberDTO user = (MemberDTO) session.getAttribute("member");
         if (user == null) {
-        	return "redirect:/member/login";
+            return "redirect:/member/login";
         }
         
         MemberDTO result = memberService.read(user);
         model.addAttribute("dto", result);
         model.addAttribute("profile", profileService.getProfile(user.getUsername()));
+        
+        // 💡 [추가] 실시간 자산 총액 계산
+        // 보유 주식 평가금 + 예수금을 합산합니다.
+        long totalAsset = orderStockService.calculateTotalAsset(user);
+        model.addAttribute("totalAsset", totalAsset);
 
         return "member/read";
     }

@@ -2,6 +2,8 @@ package com.tj.app.market.stock;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -30,6 +32,18 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Service
 public class KisWebSocketService {
+
+	private final ObjectProvider<StockService> stockServiceProvider;
+
+    // 생성자에서 바로 StockService를 받지 말고 ObjectProvider로 받으세요!
+    public KisWebSocketService(ObjectProvider<StockService> stockServiceProvider) {
+        this.stockServiceProvider = stockServiceProvider;
+    }
+
+    // 서비스가 실제로 필요할 때 아래처럼 호출합니다.
+    private StockService getStockService() {
+        return stockServiceProvider.getObject();
+    }
 
     @Autowired
     private WebClientService webClientService;
@@ -176,10 +190,10 @@ public class KisWebSocketService {
 
     private void parseAndBroadcast(String payload) {
         try {
-            // 구독 확인 메시지(JSON)는 무시
+            // 1. 구독 확인 메시지(JSON)는 무시
             if (payload.startsWith("{")) return;
 
-            // 포맷: 0|H0STCNT0|001|필드0^필드1^필드2^...
+            // 2. 포맷 분석
             String[] outer = payload.split("\\|");
             if (outer.length < 4 || !"0".equals(outer[0])) return;
             if (!"H0STCNT0".equals(outer[1])) return;
@@ -187,35 +201,45 @@ public class KisWebSocketService {
             String[] fields = outer[3].split("\\^");
             if (fields.length < 10) return;
 
-            String code   = fields[0];  // 종목코드
-            String price  = fields[2];  // 현재가
-            String sign   = fields[3];  // 부호 (1,2:상승 / 3:보합 / 4,5:하락)
-            String diff   = fields[4];  // 전일대비 금액
-            String rate   = fields[5];  // 등락률
-            String high   = fields[8];  // 고가
-            String low    = fields[9];  // 저가
-            String volume = fields.length > 14 ? fields[14] : "0"; // 누적 거래대금
+            // 3. 필드 추출
+            String code  = fields[0];
+            String price = fields[2];
+            String sign  = fields[3];
+            String diff  = fields[4];
+            String rate  = fields[5];
+            String high  = fields[8];
+            String low   = fields[9];
+            String volume = fields.length > 14 ? fields[14] : "0";
 
-            // 하락이면 마이너스 부호 적용
+            // 4. 하락 부호 적용
             boolean isDown = "4".equals(sign) || "5".equals(sign);
             if (isDown) {
                 if (!diff.startsWith("-")) diff = "-" + diff;
                 if (!rate.startsWith("-")) rate = "-" + rate;
             }
 
+            // 5. 데이터 맵 생성
             Map<String, String> data = new HashMap<>();
-            data.put("code",   code);
-            data.put("price",  price);
-            data.put("rate",   rate);
-            data.put("diff",   diff);
-            data.put("high",   high);
-            data.put("low",    low);
+            data.put("code", code);
+            data.put("price", price);
+            data.put("rate", rate);
+            data.put("diff", diff);
+            data.put("high", high);
+            data.put("low", low);
             data.put("volume", volume);
 
-            // 서버 캐시 갱신 (급상승/급하락 필터용)
+            // 6. 캐시 및 메시지 전송
             priceCache.put(code, data);
-
             messagingTemplate.convertAndSend("/topic/stock/price", data);
+
+            // 💡 [중요] StockService 캐시 업데이트 (API 호출 방지용)
+            try {
+                long longPrice = Long.parseLong(price.replaceAll("[^0-9.]", ""));
+                // 💡 getStockService() 메서드를 사용하여 안전하게 가져옵니다.
+                getStockService().updatePrice(code, longPrice); 
+            } catch (NumberFormatException e) {
+                log.warn("가격 데이터 변환 실패: {}", price);
+            }
 
         } catch (Exception e) {
             log.error("❌ KIS 데이터 파싱 오류: {}", e.getMessage());

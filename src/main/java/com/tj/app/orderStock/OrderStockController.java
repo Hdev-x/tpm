@@ -6,18 +6,19 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.tj.app.member.MemberDTO;
 
 import jakarta.servlet.http.HttpSession;
 
-@RestController
+@Controller
 @RequestMapping("/stock")
 public class OrderStockController {
 
@@ -29,6 +30,7 @@ public class OrderStockController {
 	 * URL: POST /stock/order
 	 */
 	@PostMapping("/order")
+	@ResponseBody
 	public ResponseEntity<Map<String, Object>> submitStockOrder(@RequestParam("side") String side,
 			@RequestBody OrderStockDTO dto, HttpSession session) {
 
@@ -46,11 +48,11 @@ public class OrderStockController {
 
 		try {
 			// 비즈니스 코어 엔진(Service)을 호출하여 실제 로그인한 회원의 트랜잭션을 실행합니다.
-			boolean isSuccess = stockOrderService.executeStockOrder(member, side, dto);
+			boolean isSuccess = stockOrderService.placeOrder(member, side, dto);
 
 			if (isSuccess) {
-				response.put("success", true);
-				response.put("message", ("BUY".equalsIgnoreCase(side) ? "매수" : "매도") + " 주문이 체결되었습니다.");
+	            response.put("success", true);
+	            response.put("message", "주문이 접수되었습니다. (미체결 상태)");
 			} else {
 				response.put("success", false);
 				response.put("message", "주문 체결에 실패했습니다. 잔고나 보유 수량을 확인하세요.");
@@ -69,6 +71,7 @@ public class OrderStockController {
 	 * URL: GET /stock/account-balance
 	 */
 	@GetMapping("/account-balance")
+	@ResponseBody
 	public ResponseEntity<Map<String, Object>> getAccountBalance(HttpSession session) {
 		Map<String, Object> response = new HashMap<>();
 
@@ -95,6 +98,7 @@ public class OrderStockController {
 	 * URL: GET /stock/holding-list
 	 */
 	@GetMapping("/holding-list")
+	@ResponseBody
 	public ResponseEntity<List<Map<String, Object>>> getHoldingList(HttpSession session) {
 		MemberDTO member = (MemberDTO) session.getAttribute("member");
 	    
@@ -112,6 +116,7 @@ public class OrderStockController {
 	 * URL: GET /stock/pending-list
 	 */
 	@GetMapping("/pending-list")
+	@ResponseBody
 	public ResponseEntity<List<Map<String, Object>>> getPendingList(HttpSession session) {
 		MemberDTO member = (MemberDTO) session.getAttribute("member");
 		
@@ -130,6 +135,7 @@ public class OrderStockController {
 	 * URL: GET /stock/history-list
 	 */
 	@GetMapping("/history-list")
+	@ResponseBody
 	public ResponseEntity<List<Map<String, Object>>> getHistoryList(HttpSession session) {
 		MemberDTO member = (MemberDTO) session.getAttribute("member");
 		
@@ -148,6 +154,7 @@ public class OrderStockController {
 	 * 💡 프론트엔드 stock.js의 cancelStockOrder() 함수와 매핑 완결
 	 */
 	@PostMapping("/cancel-order")
+	@ResponseBody
 	public ResponseEntity<Map<String, Object>> cancelOrder(@RequestParam("orderNo") long orderNo, HttpSession session) {
 		Map<String, Object> response = new HashMap<>();
 		MemberDTO member = (MemberDTO) session.getAttribute("member");
@@ -160,7 +167,7 @@ public class OrderStockController {
 
 		try {
 			// 서비스 레이어의 취소 비즈니스 트랜잭션 엔진 작동
-			boolean isCancelled = stockOrderService.cancelStockOrder(orderNo);
+			boolean isCancelled = stockOrderService.cancelStockOrder(member, orderNo);
 			
 			response.put("success", isCancelled);
 			if (isCancelled) {
@@ -176,6 +183,27 @@ public class OrderStockController {
 		}
 
 		return ResponseEntity.ok(response);
+	}
+	
+	@GetMapping("/asset-detail-data")
+	@ResponseBody
+	public List<Map<String, Object>> getAssetDetailData(HttpSession session) {
+	    // 1. 세션에서 로그인 정보 가져오기
+	    MemberDTO member = (MemberDTO) session.getAttribute("member");
+	    
+	    // 2. 🔴 로그인 세션이 끊겼을 때를 대비한 안전 가드
+	    if (member == null) {
+	        System.out.println("⚠️ 로그인을 해주세요");
+	        return java.util.Collections.emptyList(); // 에러 대신 빈 리스트 반환
+	    }
+	    
+	    // 3. 정상일 때만 서비스 호출
+	    return stockOrderService.getAssetDetails(member);
+	}
+	
+	@GetMapping("/asset")
+	public String assetDetailPage() {
+	    return "member/asset"; // JSP 파일 경로
 	}
 	
 }

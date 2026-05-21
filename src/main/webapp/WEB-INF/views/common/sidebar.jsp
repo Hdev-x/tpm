@@ -39,80 +39,10 @@
             </div>
             <div class="sb-content" id="tab-stock-holdings">
                 <div class="holding-cards">
-
-                    <div class="holding-card hc-main">
-                        <div class="hc-main-header">
-                            <div class="hc-main-id">
-                                <div class="hc-logo" style="background:#1428A0;">삼</div>
-                                <div class="hc-main-name-col">
-                                    <span class="hc-main-ticker">삼성전자</span>
-                                    <span class="hc-main-sub">005930 | 현금 10주</span>
-                                </div>
-                            </div>
-                            <div class="hc-main-right">
-                                <span class="hc-main-eval">735,000 원</span>
-                                <span class="hc-main-pnl up">▲23,000 (+3.16%)</span>
-                            </div>
-                        </div>
-                        <div class="hc-divider"></div>
-                        <div class="hc-main-grid">
-                            <div class="hc-main-row">
-                                <span class="hc-label">매수금액</span>
-                                <span class="hc-value">712,000 원</span>
-                            </div>
-                            <div class="hc-main-row">
-                                <span class="hc-label">평균단가</span>
-                                <span class="hc-value">71,200 원</span>
-                            </div>
-                            <div class="hc-main-row">
-                                <span class="hc-label">평가금액</span>
-                                <span class="hc-value">735,000 원</span>
-                            </div>
-                            <div class="hc-main-row">
-                                <span class="hc-label">현재가</span>
-                                <span class="hc-value">73,500 원</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="holding-card hc-main">
-                        <div class="hc-main-header">
-                            <div class="hc-main-id">
-                                <div class="hc-logo" style="background:#E8004D;">SK</div>
-                                <div class="hc-main-name-col">
-                                    <span class="hc-main-ticker">SK하이닉스</span>
-                                    <span class="hc-main-sub">000660 | 현금 5주</span>
-                                </div>
-                            </div>
-                            <div class="hc-main-right">
-                                <span class="hc-main-eval">977,500 원</span>
-                                <span class="hc-main-pnl down">▼12,500 (-1.24%)</span>
-                            </div>
-                        </div>
-                        <div class="hc-divider"></div>
-                        <div class="hc-main-grid">
-                            <div class="hc-main-row">
-                                <span class="hc-label">매수금액</span>
-                                <span class="hc-value">990,000 원</span>
-                            </div>
-                            <div class="hc-main-row">
-                                <span class="hc-label">평균단가</span>
-                                <span class="hc-value">198,000 원</span>
-                            </div>
-                            <div class="hc-main-row">
-                                <span class="hc-label">평가금액</span>
-                                <span class="hc-value">977,500 원</span>
-                            </div>
-                            <div class="hc-main-row">
-                                <span class="hc-label">현재가</span>
-                                <span class="hc-value">195,500 원</span>
-                            </div>
-                        </div>
-                    </div>
-
+                    <!-- 삼성전자 및 SK하이닉스 카드 삭제됨 -->
                 </div>
             </div>
-            <div class="sb-content" id="tab-stock-orders" style="display:none">
+            <div class="sb-content" id="tab-stock-pending" style="display:none">
                 <div class="sb-empty">
                     <span class="sb-empty-icon">📋</span>
                     <span>미체결 주문이 없습니다.</span>

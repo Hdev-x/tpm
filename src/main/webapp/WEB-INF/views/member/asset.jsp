@@ -406,9 +406,11 @@ async function updateAsset() {
         const grandTotalAsset = myAssetRes !== null ? myAssetRes
                                                     : (stockCash + sEval) + ((coinCash + cEval) * EXCHANGE_RATE);
 
-        // P&L / 수익률은 보유 종목 기준으로 계산
-        const grandTotalPrincipal = (stockCash + sBuy) + ((coinCash + cBuy) * EXCHANGE_RATE);
-        const grandTotalPnl = grandTotalAsset - grandTotalPrincipal;
+        // P&L / 수익률은 실제 거래 손익만 반영 (현금·환율 차이 제외)
+        // 주식 손익: 현재 평가액 - 매입원가
+        // 코인 손익: (현재 평가액 - 매입원가) × 환율  → 동일 환율 적용이라 환율 차이 없음
+        const grandTotalPnl = (sEval - sBuy) + ((cEval - cBuy) * EXCHANGE_RATE);
+        const grandTotalPrincipal = sBuy + cBuy * EXCHANGE_RATE;
         const grandTotalRate = grandTotalPrincipal > 0 ? (grandTotalPnl / grandTotalPrincipal) * 100 : 0;
 
         if(document.getElementById('grand-total-asset')) document.getElementById('grand-total-asset').textContent = Math.floor(grandTotalAsset).toLocaleString() + '원';

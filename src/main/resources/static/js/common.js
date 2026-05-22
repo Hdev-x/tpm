@@ -21,6 +21,9 @@ async function fetchExchangeRate() {
             usdToKrw = res.rates.KRW;
             const rateEl = document.getElementById('ex-current-rate');
             if (rateEl) rateEl.textContent = `현재 환율: 1$ = ${usdToKrw.toLocaleString()}원`;
+            // 환율 로드 완료 후 의존 함수 재실행 (defer 로딩 경쟁 조건 해소)
+            if (typeof updateAsset === 'function') updateAsset();
+            if (typeof updateExchangeUI === 'function') updateExchangeUI();
         }
     } catch (e) {}
 }
@@ -410,8 +413,10 @@ function renderHoldings(data) {
     const container = document.getElementById('bp-holdings-body');
     if (!container) return;
 
+    const sellAllWrap = document.getElementById('bp-sell-all-wrap');
     if (data.length > 0) {
         document.getElementById('bp-empty').style.display = 'none';
+        if (sellAllWrap) sellAllWrap.style.display = '';
 
         data.forEach(h_raw => {
             // 키 정규화
@@ -452,7 +457,12 @@ function renderHoldings(data) {
                     + '<div class="hc-main-id">'
                     + coinLogoHtml(ticker)
                     + '<div class="hc-main-name-col">'
+                    + '<div style="display:flex; align-items:center; gap:6px;">'
                     + '<span class="hc-main-ticker">' + ticker + '</span>'
+                    + '<button onclick="event.stopPropagation(); sellCoinMarket(\'' + coinCode + '\', ' + coinCount + ')" '
+                    + 'style="padding:2px 8px; border:1px solid rgba(240,68,82,0.4); border-radius:5px; background:transparent; color:#f04452; font-size:11px; font-weight:600; cursor:pointer; line-height:1.4;" '
+                    + 'onmouseover="this.style.background=\'rgba(240,68,82,0.1)\'" onmouseout="this.style.background=\'transparent\'">매도</button>'
+                    + '</div>'
                     + '<span class="hc-main-sub">' + ticker + '/USDT | ' + coinCount.toFixed(4) + '개</span>'
                     + '</div>'
                     + '</div>'
@@ -476,8 +486,58 @@ function renderHoldings(data) {
         container.querySelectorAll('.skeleton-card').forEach(r => r.remove());
     } else {
         document.getElementById('bp-empty').style.display = '';
+        if (sellAllWrap) sellAllWrap.style.display = 'none';
         container.innerHTML = '';
     }
+}
+
+/** 개별 코인 시장가 즉시 매도 */
+async function sellCoinMarket(coinCode, coinCount) {
+    const ticker = coinCode.replace(/USDT$/, '');
+    const price = cachedPrices[coinCode] || 0;
+    if (!confirm(ticker + ' ' + coinCount.toFixed(4) + '개를 시장가로 즉시 매도하시겠습니까?')) return;
+
+    try {
+        const res = await fetch('/coin/sell', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ coinCode, orderPrice: price, orderCount: coinCount, orderType: 'SELL' })
+        }).then(r => r.text());
+
+        if (res === 'success') {
+            if (typeof loadCoinHoldings === 'function') loadCoinHoldings();
+            if (typeof loadWallet === 'function') loadWallet();
+            if (typeof loadHoldings === 'function') loadHoldings();
+        } else {
+            alert('매도 실패: ' + res);
+        }
+    } catch (e) { alert('매도 중 오류가 발생했습니다.'); }
+}
+
+/** 전체 코인 시장가 즉시 매도 */
+async function sellAllCoins() {
+    if (!holdingsData || holdingsData.length === 0) { alert('보유 코인이 없습니다.'); return; }
+    if (!confirm('보유한 코인 ' + holdingsData.length + '종목 전체를 시장가로 즉시 매도하시겠습니까?')) return;
+
+    let failed = 0;
+    for (const h of holdingsData) {
+        const code = h.coinCode || h.coincode;
+        const count = h.coinCount || h.coincount;
+        const price = cachedPrices[code] || h.avgPrice || h.avgprice || 0;
+        try {
+            const res = await fetch('/coin/sell', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ coinCode: code, orderPrice: price, orderCount: count, orderType: 'SELL' })
+            }).then(r => r.text());
+            if (res !== 'success') failed++;
+        } catch (e) { failed++; }
+    }
+
+    if (failed > 0) alert(failed + '종목 매도에 실패했습니다.');
+    if (typeof loadCoinHoldings === 'function') loadCoinHoldings();
+    if (typeof loadWallet === 'function') loadWallet();
+    if (typeof loadHoldings === 'function') loadHoldings();
 }
 
 async function loadHoldings() {

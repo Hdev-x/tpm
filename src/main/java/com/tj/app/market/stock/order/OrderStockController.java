@@ -202,8 +202,10 @@ public class OrderStockController {
 	}
 	
 	@GetMapping("/asset")
-	public String assetDetailPage() {
-	    return "member/asset"; // JSP 파일 경로
+	public String assetDetailPage(HttpSession session) {
+	    MemberDTO member = (MemberDTO) session.getAttribute("member");
+	    if (member == null) return "redirect:/member/login?redirect=/stock/asset";
+	    return "member/asset";
 	}
 	
 }

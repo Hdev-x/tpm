@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="jakarta.tags.core"%>
 <div class="sidebar-icons">
 
     <button class="si-btn si-fold-btn" id="si-fold-btn" onclick="toggleFold()">

@@ -269,6 +269,7 @@
         <div class="page">
             <%@ include file="../common/nav.jsp" %>
 
+            <div style="height: calc(100vh - 70px); overflow-y: auto; scrollbar-width: none;">
             <div class="board-header">
                 <div style="max-width: 1400px; margin: 0 auto; width: 100%;">
                     <h1 class="board-title">자유게시판</h1>
@@ -391,6 +392,7 @@
                         </div>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
 

@@ -1,7 +1,7 @@
 window.searchNewsByKeyword = function(keyword) {
     if (!keyword) return;
 
-    // 1. 타이틀 키워드 텍스트 변경 규칙
+    // 1. 타이틀 키워드 텍스트 변경
     const targetSpan = document.getElementById("news-target-keyword");
     if (targetSpan) targetSpan.innerText = keyword;
 
@@ -15,10 +15,9 @@ window.searchNewsByKeyword = function(keyword) {
     const streamListDiv = document.getElementById("big-news-stream-list");
     if (!streamListDiv) return;
 
-    // 로딩 처리
     streamListDiv.innerHTML = `<p style="color: var(--text3); text-align: center; padding: 40px 0;">🔄 [${keyword}] 관련 실시간 뉴스를 수급 중입니다...</p>`;
+    streamListDiv.scrollTop = 0;
 
-    // 📡 백엔드 네이버 뉴스 검색 API 정밀 타격
     fetch("/news?keyword=" + encodeURIComponent(keyword))
         .then(response => {
             if (!response.ok) throw new Error("뉴스 서버 통신 제한");
@@ -32,13 +31,12 @@ window.searchNewsByKeyword = function(keyword) {
                 return;
             }
 
-            // 뉴스 카드 리스트 서핑 빌드업
             data.items.forEach(item => {
                 const article = document.createElement("div");
                 article.style.borderBottom = "1px solid var(--border)";
                 article.style.padding = "20px 4px";
                 article.style.transition = "background 0.2s";
-                
+
                 article.addEventListener("mouseenter", () => article.style.background = "rgba(255,255,255,0.01)");
                 article.addEventListener("mouseleave", () => article.style.background = "transparent");
 
@@ -73,23 +71,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchInput = document.getElementById("news-search-input");
 
     if (searchBtn && searchInput) {
-        // 검색 버튼 클릭 시
         searchBtn.addEventListener("click", () => {
             const kw = searchInput.value.trim();
-            if (kw) {
-                saveRecentKeyword(kw); // 🕒 로컬스토리지에 저장
-                searchNewsByKeyword(kw);
-            }
+            if (kw) { saveRecentKeyword(kw); searchNewsByKeyword(kw); }
         });
 
-        // 검색창 엔터 키 입력 시
         searchInput.addEventListener("keypress", (e) => {
             if (e.key === "Enter") {
                 const kw = searchInput.value.trim();
-                if (kw) {
-                    saveRecentKeyword(kw); // 🕒 로컬스토리지에 저장
-                    searchNewsByKeyword(kw);
-                }
+                if (kw) { saveRecentKeyword(kw); searchNewsByKeyword(kw); }
             }
         });
     }

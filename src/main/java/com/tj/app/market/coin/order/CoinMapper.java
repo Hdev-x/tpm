@@ -14,6 +14,8 @@ public interface CoinMapper {
      */
     CoinWalletDTO getWallet(String username) throws Exception;
 
+    void createWallet(String username) throws Exception;
+
     /**
      * 지갑 잔고 업데이트
      * @param wallet 업데이트할 지갑 정보

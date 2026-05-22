@@ -55,6 +55,17 @@ CURRENT_TIMESTAMP, #{username}, 0)
     LIMIT #{perPage} OFFSET #{startNum}
 	</select>
 
+	<select id="listRecent" parameterType="int" resultType="com.tj.app.board.BoardDTO">
+		SELECT
+			"BOARD_NO"     AS boardNo,
+			"BOARD_TITLE"  AS boardTitle,
+			"BOARD_DATE"   AS boardDate,
+			"BOARD_WRITER" AS boardWriter
+		FROM "BOARD"
+		ORDER BY "BOARD_NO" DESC
+		LIMIT #{limit}
+	</select>
+
 	<select id="detail" resultMap="detailResult">
 		SELECT *
 		FROM "BOARD" B

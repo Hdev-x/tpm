@@ -9,6 +9,11 @@
         SELECT * FROM "COIN_WALLET" WHERE "USERNAME" = #{username}
     </select>
 
+    <!-- 지갑 초기 생성 (회원가입 시) -->
+    <insert id="createWallet">
+        INSERT INTO "COIN_WALLET" ("USERNAME", "USDT_BALANCE") VALUES (#{username}, 100000.0)
+    </insert>
+
     <!-- 지갑 잔고 업데이트 -->
     <update id="updateWallet">
         UPDATE "COIN_WALLET" SET "USDT_BALANCE" = #{usdtBalance} WHERE "USERNAME" = #{username}

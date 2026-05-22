@@ -341,6 +341,10 @@ nav {
     overflow: hidden;
 }
 
+/* 사이드바 스크롤바 숨김 */
+.sidebar-panel * { scrollbar-width: none; }
+.sidebar-panel *::-webkit-scrollbar { display: none; }
+
 
 /* ====================================================
    SIDEBAR ICONS - 아이콘 스트립 (항상 표시)

@@ -4,6 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.tj.app.market.coin.CoinMarketService;
+import com.tj.app.market.coin.order.CoinHoldingsDTO;
+import com.tj.app.market.coin.order.CoinService;
+import com.tj.app.market.coin.order.CoinWalletDTO;
+import com.tj.app.market.index.MarketIndexDTO;
+import com.tj.app.market.index.MarketIndexService;
 import com.tj.app.market.stock.StockService;
 import com.tj.app.member.MemberDTO;
 
@@ -198,13 +204,13 @@ public class OrderStockService {
 	
 	// OrderStockService.java
 	@Autowired
-	private com.tj.app.market.index.MarketIndexService indexService;
+	private MarketIndexService indexService;
 	
 	@Autowired
-	private com.tj.app.market.coin.order.CoinService coinService;
+	private CoinService coinService;
 
 	@Autowired
-	private com.tj.app.market.coin.CoinMarketService coinMarketService;
+	private CoinMarketService coinMarketService;
 
 	public long calculateTotalAsset(MemberDTO member) {
 	    if (member == null) return 0;
@@ -225,15 +231,15 @@ public class OrderStockService {
 	    // 2. 코인 자산 계산 (USDT 잔고 + 보유 코인 평가액)
 	    double coinTotalUsdt = 0;
 	    try {
-	        com.tj.app.market.coin.CoinWalletDTO wallet = coinService.getWallet(member.getUsername());
+	        CoinWalletDTO wallet = coinService.getWallet(member.getUsername());
 	        if (wallet != null) {
 	            coinTotalUsdt += wallet.getUsdtBalance();
 	        }
 	        
-	        List<com.tj.app.market.coin.CoinHoldingsDTO> coinHoldings = coinService.getHoldingList(member.getUsername());
+	        List<CoinHoldingsDTO> coinHoldings = coinService.getHoldingList(member.getUsername());
 	        if (coinHoldings != null && !coinHoldings.isEmpty()) {
 	            Map<String, Double> prices = coinMarketService.getTickerPriceMap();
-	            for (com.tj.app.market.coin.CoinHoldingsDTO ch : coinHoldings) {
+	            for (CoinHoldingsDTO ch : coinHoldings) {
 	                double price = prices.getOrDefault(ch.getCoinCode(), ch.getAvgPrice());
 	                coinTotalUsdt += (ch.getCoinCount() * price);
 	            }
@@ -245,7 +251,7 @@ public class OrderStockService {
 	    // 3. 통합 (환율 적용)
 	    double exchangeRate = 1400; // 기본값
 	    try {
-	        com.tj.app.market.index.MarketIndexDTO exDTO = indexService.getMarketIndex().stream()
+	        MarketIndexDTO exDTO = indexService.getMarketIndex().stream()
 	                .filter(d -> d.getName().contains("환율"))
 	                .findFirst().orElse(null);
 	        if (exDTO != null) {

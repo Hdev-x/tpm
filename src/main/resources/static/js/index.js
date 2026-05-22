@@ -51,7 +51,7 @@ function createMiniChart(containerId, lineColor) {
     if (!container) return null;
 
     const chart = LightweightCharts.createChart(container, {
-        width: container.clientWidth,
+        autoSize: true,
         height: 180,
         layout: {
             background: { color: 'transparent' },
@@ -72,7 +72,6 @@ function createMiniChart(containerId, lineColor) {
         priceLineVisible: false, lastValueVisible: false,
     });
 
-    window.addEventListener('resize', () => chart.resize(container.clientWidth, 180));
     return { chart, series };
 }
 
@@ -111,7 +110,7 @@ async function loadGlobalTicker() {
                     <div class="ticker-item">
                         <span class="ticker-label">${emoji} ${idx.name}</span>
                         <span class="ticker-price">${idx.price}</span>
-                        <span class="ticker-change" style="color: ${color}">${idx.change} (${idx.rate})</span>
+                        <span class="ticker-change" style="color: ${color}">${idx.change} (${idx.changeRate})</span>
                     </div>
                 `;
             }).join('');
@@ -335,4 +334,5 @@ function initEventListeners() {
             }
         });
     }
+
 }

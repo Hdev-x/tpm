@@ -299,9 +299,12 @@ async function executeExchange() {
         if (res.success) {
             alert('환전이 완료되었습니다.');
             document.getElementById('ex-amount-input').value = '';
-            loadMyInvestmentStatus();
-            updateAccountBalanceUI();
-            loadWallet(); // chart-toss-coin.js에 정의된 경우 대비
+            document.getElementById('ex-result-display').value = '';
+            updateExchangeUI();                                               // 환전 패널 잔고 갱신
+            if (typeof loadMyInvestmentStatus === 'function') loadMyInvestmentStatus();
+            if (typeof updateAccountBalanceUI === 'function') updateAccountBalanceUI();
+            if (typeof loadWallet === 'function') loadWallet();
+            if (typeof updateAsset === 'function') updateAsset();             // 내 계좌 페이지 갱신
         } else {
             alert('환전 실패: ' + res.message);
         }

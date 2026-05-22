@@ -160,6 +160,7 @@
         <div class="page">
             <%@ include file="../common/nav.jsp" %>
 
+            <div style="height: calc(100vh - 70px); overflow-y: auto; scrollbar-width: none;">
             <div class="notice-header">
                 <div style="max-width: 1400px; margin: 0 auto; width: 100%;">
                     <h1 class="notice-title">공지사항</h1>
@@ -238,6 +239,7 @@
                         </p>
                     </div>
                 </div>
+            </div>
             </div>
         </div>
 

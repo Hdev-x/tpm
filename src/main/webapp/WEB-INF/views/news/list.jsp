@@ -77,9 +77,9 @@
 				</div>
 
 				<div
-					style="flex: 7; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 30px; box-sizing: border-box; height: fit-content; min-height: 500px;">
+					style="flex: 7; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0; box-sizing: border-box; height: calc(100vh - 160px); display: flex; flex-direction: column; overflow: hidden;">
 					<div
-						style="border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+						style="border-bottom: 1px solid var(--border); padding: 20px 30px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
 						<h3
 							style="font-size: 20px; color: var(--text); margin: 0; display: flex; align-items: center; gap: 8px;">
 							📰 실시간 주요 뉴스 <span id="news-target-keyword"
@@ -90,7 +90,8 @@
 					</div>
 
 					<div id="big-news-stream-list"
-						style="display: flex; flex-direction: column; gap: 4px;"></div>
+						style="display: flex; flex-direction: column; gap: 4px; flex: 1; overflow-y: auto; min-height: 0; padding: 0 30px; scrollbar-width: none;"></div>
+
 				</div>
 
 

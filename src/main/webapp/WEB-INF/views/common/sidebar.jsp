@@ -77,6 +77,11 @@
                 <div class="sb-tab" onclick="switchBpTab(this,'coin-history')">거래내역</div>
             </div>
             <div class="sb-content" id="tab-coin-holdings">
+                <div id="bp-sell-all-wrap" style="display:none; text-align:right; padding:10px 14px 0;">
+                    <button onclick="sellAllCoins()"
+                        style="padding:4px 12px; border:1px solid rgba(240,68,82,0.4); border-radius:6px; background:transparent; color:#f04452; font-size:12px; font-weight:600; cursor:pointer;"
+                        onmouseover="this.style.background='rgba(240,68,82,0.1)'" onmouseout="this.style.background='transparent'">전체 매도</button>
+                </div>
                 <div class="sb-empty" id="bp-empty">
                     <span class="sb-empty-icon">📊</span>
                     <span>보유 코인이 없습니다.</span>

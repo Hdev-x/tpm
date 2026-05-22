@@ -191,6 +191,7 @@ function submitOrder(side) {
                 // [실행 흐름] 주문 성공 후 화면에 보이는 자산 관련 정보를 다시 서버 기준으로 맞춘다.
                 loadWallet();
                 loadHoldings();
+                if (typeof loadCoinHoldings === 'function') loadCoinHoldings();
 
                 // [실행 흐름] 지정가 주문은 등록 직후 현재가 조건을 만족할 수 있어 미체결 조회 뒤 즉시 검사한다.
                 loadPendingOrders().then(() => {
@@ -298,6 +299,7 @@ function checkPendingOrders(price) {
         loadHoldings();
         loadWallet();
         loadOrders();
+        if (typeof loadCoinHoldings === 'function') loadCoinHoldings();
     }).catch(() => {
         // [주의] 실패해도 다음 가격 변화 때 다시 검사할 수 있도록 플래그를 반드시 해제한다.
         checkingPending = false;
@@ -319,5 +321,5 @@ async function cancelPendingOrder(orderNo) {
     }).then(r => r.text());
 
     // [실행 흐름] 취소 성공 시 미체결 목록, 보유 현황, 지갑 잔고를 다시 불러온다.
-    if (res === 'success') { loadPendingOrders(); loadHoldings(); loadWallet(); }
+    if (res === 'success') { loadPendingOrders(); loadHoldings(); loadWallet(); if (typeof loadCoinHoldings === 'function') loadCoinHoldings(); }
 }

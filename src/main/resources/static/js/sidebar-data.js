@@ -1296,24 +1296,62 @@ function loadMyInvestmentStatus() {
     fetch('/stock/history-list')
         .then(response => response.json())
         .then(history => {
-            const parent = document.getElementById('tab-stock-history');
-            if (!parent) return;
-            const emptyEl = parent.querySelector('.sb-empty');
-            const tableEl = parent.querySelector('.sb-table');
-            const tbody = document.getElementById('stock-history-body');
-            if (!tbody) return;
+            const container = document.getElementById('stock-history-cards');
+            if (!container) return;
+            const emptyEl = document.getElementById('stock-history-empty');
+            
             if (!history || history.length === 0) {
                 if (emptyEl) emptyEl.style.display = 'flex';
-                if (tableEl) tableEl.style.display = 'none';
+                container.innerHTML = '';
                 return;
             }
             if (emptyEl) emptyEl.style.display = 'none';
-            if (tableEl) tableEl.style.display = 'table';
-            tbody.innerHTML = history.map(h_raw => {
+            
+            container.className = 'history-list';
+            container.innerHTML = history.map(h_raw => {
                 const h = Object.keys(h_raw).reduce((acc, k) => { acc[k.toLowerCase().replace(/_/g, '')] = h_raw[k]; return acc; }, {});
-                const sideCls = h.ordertype === 'BUY' ? 'up' : 'down'; const sideText = h.ordertype === 'BUY' ? '매수' : '매도'; const total = Math.floor(h.orderprice * h.ordercount);
+                
+                const stockName = h.stockname || '주식';
+                const typeLabel = h.status === 'CANCELLED' ? '취소' : (h.ordertype === 'BUY' ? '매수' : '매도');
+                const typeCls = h.status === 'CANCELLED' ? 'cancel' : (h.ordertype === 'BUY' ? 'up' : 'down');
+                const total = Math.floor(h.orderprice * h.ordercount).toLocaleString();
                 const date = new Date(h.orderdate).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-                return `<tr><td style="font-size:11px; color:var(--text3);">${date}</td><td class="${sideCls}">${sideText}</td><td>${h.stockname || '주식'}</td><td>${Math.floor(h.orderprice).toLocaleString()}원</td><td>${h.ordercount}주</td><td><b>${total.toLocaleString()}원</b></td></tr>`;
+
+                let rightHtml = `<div class="hr-right">
+                    <span class="hr-total">${total} 원</span>
+                    <span class="hr-pnl ${typeCls}">${typeLabel}</span>
+                </div>`;
+
+                return `<div class="history-card hc-${(h.ordertype || "").toLowerCase()} ${h.status === 'CANCELLED' ? 'hc-cancelled' : ''}" onclick="if(this.classList.contains('open')){this.classList.add('closing');this.classList.remove('open');setTimeout(()=>this.classList.remove('closing'),250);}else{this.classList.remove('closing');this.classList.add('open');}">
+                    <div class="hr-header">
+                        <div class="hr-left">
+                            <div class="hc-logo" style="background:#343a40; width:32px; height:32px; font-size:11px;">${stockName.slice(0, 2)}</div>
+                            <div class="hr-info">
+                                <span class="hr-ticker">${stockName}</span>
+                                <span class="hr-meta">${date} · ${typeLabel}</span>
+                            </div>
+                        </div>
+                        ${rightHtml}
+                    </div>
+                    <div class="hr-detail">
+                        <div class="hr-detail-row">
+                            <span class="hr-dlabel">체결가</span>
+                            <span class="hr-dvalue">${Math.floor(h.orderprice).toLocaleString()} 원</span>
+                        </div>
+                        <div class="hr-detail-row">
+                            <span class="hr-dlabel">수량</span>
+                            <span class="hr-dvalue">${h.ordercount} 주</span>
+                        </div>
+                        <div class="hr-detail-row">
+                            <span class="hr-dlabel">총금액</span>
+                            <span class="hr-dvalue">${total} 원</span>
+                        </div>
+                        <div class="hr-detail-row">
+                            <span class="hr-dlabel">상태</span>
+                            <span class="hr-dvalue">${h.status === 'PENDING' ? '미체결' : (h.status === 'CANCELLED' ? '취소됨' : '체결완료')}</span>
+                        </div>
+                    </div>
+                </div>`;
             }).join('');
         }).catch(e => console.warn("주식 거래내역 로드 에러"));
 

@@ -67,9 +67,9 @@
 	</delete>
 
 	<insert id="insertOrder"
-		parameterType="com.tj.app.market.stock.order.OrderStockDTO">
+		parameterType="com.tj.app.market.stock.order.OrderStockDTO"
+		useGeneratedKeys="true" keyProperty="orderId">
 		INSERT INTO "ORDER" (
-		"ORDER_ID",
 		"ORDER_TYPE",
 		"ORDER_PRICE",
 		"ORDER_COUNT",
@@ -79,7 +79,6 @@
 		"USERNAME",
 		"STATUS" )
 		VALUES (
-		DEFAULT,
 		#{orderType},
 		#{orderPrice},
 		#{orderCount},

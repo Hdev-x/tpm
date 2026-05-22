@@ -20,8 +20,8 @@ public class OrderScheduler {
     @Autowired
     private StockService stockService;
 
-    // 50초마다 모든 미체결 주문을 감시합니다.
-    @Scheduled(fixedDelay = 90000)
+    // 10초마다 모든 미체결 주문을 감시합니다.
+    @Scheduled(fixedDelay = 10000)
     public void checkPendingOrders() {
         List<OrderStockDTO> pendingList = orderStockMapper.getAllPendingOrders();
         

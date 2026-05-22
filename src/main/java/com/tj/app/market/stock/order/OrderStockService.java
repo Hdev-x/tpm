@@ -158,7 +158,11 @@ public class OrderStockService {
 	public boolean placeOrder(MemberDTO member, String side, OrderStockDTO dto) {
 	    dto.setUsername(member.getUsername());
 	    dto.setOrderType(side);
-	    dto.setStatus("PENDING");
+	    
+	    // [수정] 프론트엔드에서 보낸 상태(시장가일 경우 COMPLETED)를 존중하되, 없으면 PENDING 기본값
+	    if (dto.getStatus() == null || dto.getStatus().isBlank()) {
+	        dto.setStatus("PENDING");
+	    }
 
 	    // 종목 코드 정규화 (6자리 숫자로 보정)
 	    if (dto.getStockCode() == null || dto.getStockCode().isBlank()) {
@@ -193,11 +197,30 @@ public class OrderStockService {
 	            log.warn("⚠️ [주문 실패] 보유 수량 부족. 유저: {}, 보유: {}, 주문: {}", member.getUsername(), currentCount, dto.getOrderCount());
 	            return false;
 	        }
-	        // (참고: 실제 금융 시스템에서는 매도 주문 시 주식을 'lock' 처리하지만, 여기서는 단순화하여 체결 시점에 차감합니다.)
 	    }
 
-	    // 3. DB에 주문 저장
+	    // [추가] 지정가 주문(PENDING)이라도 현재가 조건을 만족하면 즉시 체결 대상으로 전환
+	    if ("PENDING".equals(dto.getStatus())) {
+	        long currentPrice = stockService.getPriceFromCache(dto.getStockCode());
+	        if (currentPrice <= 0) currentPrice = stockService.getCurrentPrice(dto.getStockCode());
+	        
+	        if (currentPrice > 0) {
+	            boolean isExecutable = "BUY".equalsIgnoreCase(side) ? 
+	                                   (dto.getOrderPrice() >= currentPrice) : 
+	                                   (dto.getOrderPrice() <= currentPrice);
+	            if (isExecutable) {
+	                dto.setStatus("COMPLETED");
+	            }
+	        }
+	    }
+
+	    // 3. DB에 주문 저장 (insertOrder가 orderId를 채워줌)
 	    int result = orderStockMapper.insertOrder(dto);
+	    
+	    // 4. 시장가 주문 또는 즉시 체결 조건 만족 시 즉시 체결 엔진 가동
+	    if (result > 0 && "COMPLETED".equals(dto.getStatus())) {
+	        processExecution(dto);
+	    }
 	    
 	    return result > 0;
 	}

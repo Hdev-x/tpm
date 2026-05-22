@@ -58,14 +58,11 @@
                 </table>
             </div>
             <div class="sb-content" id="tab-stock-history" style="display:none">
-                <div class="sb-empty">
+                <div class="sb-empty" id="stock-history-empty">
                     <span class="sb-empty-icon">🕐</span>
                     <span>거래 내역이 없습니다.</span>
                 </div>
-                <table class="sb-table" style="display:none">
-                    <thead><tr><th>일시</th><th>유형</th><th>종목</th><th>가격</th><th>수량</th><th>금액</th></tr></thead>
-                    <tbody id="stock-history-body"></tbody>
-                </table>
+                <div class="holding-cards" id="stock-history-cards"></div>
             </div>
         </div>
 

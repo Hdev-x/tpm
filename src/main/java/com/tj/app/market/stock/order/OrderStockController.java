@@ -52,7 +52,16 @@ public class OrderStockController {
 
 			if (isSuccess) {
 	            response.put("success", true);
-	            response.put("message", "주문이 접수되었습니다. (미체결 상태)");
+	            // [수정] 주문 유형과 상태에 따라 정확한 메시지 반환
+	            if ("COMPLETED".equals(dto.getStatus())) {
+	                if ("MARKET".equalsIgnoreCase(dto.getOrderType()) || dto.getTargetPrice() == 0) {
+	                    response.put("message", "시장가 주문이 즉시 체결되었습니다.");
+	                } else {
+	                    response.put("message", "지정가 주문이 현재가 조건에 맞아 즉시 체결되었습니다.");
+	                }
+	            } else {
+	                response.put("message", "주문이 접수되었습니다. (미체결 상태)");
+	            }
 			} else {
 				response.put("success", false);
 				response.put("message", "주문 체결에 실패했습니다. 잔고나 보유 수량을 확인하세요.");

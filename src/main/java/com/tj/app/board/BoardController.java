@@ -11,12 +11,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.ModelAndView;
 
-import com.tj.app.like.LikeDTO;
-import com.tj.app.like.LikeService;
+import com.tj.app.board.like.LikeDTO;
+import com.tj.app.board.like.LikeService;
 import com.tj.app.member.MemberDTO;
-import com.tj.app.pager.Pager;
-import com.tj.app.reply.ReplyDTO;
-import com.tj.app.reply.ReplyService;
+import com.tj.app.common.pager.Pager;
+import com.tj.app.board.reply.ReplyDTO;
+import com.tj.app.board.reply.ReplyService;
 
 import jakarta.servlet.http.HttpSession;
 

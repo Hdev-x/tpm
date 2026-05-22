@@ -86,8 +86,10 @@
     <title>TradeBot · 커뮤니티</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/chart-toss-coin.css">
-    <link rel="stylesheet" href="/css/coinCommunity.css">
+    <link rel="stylesheet" href="/css/market/common.css">
+    <link rel="stylesheet" href="/css/market/chart.css">
+    <link rel="stylesheet" href="/css/community.css">
+    <link rel="stylesheet" href="/css/market/community.css">
 </head><!-- /head -->
 
 <!-- ====================================================
@@ -487,7 +489,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
-<script src="/js/common.js"></script>
+<script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
 <script>
     const currentSymbol = "${symbol}";
     const isLoggedIn = ${not empty member};
@@ -830,7 +833,7 @@
         const likeBtn = div.querySelector('.cm-like-btn');
         likeBtn.addEventListener('click', async function() {
             if (!isLoggedIn) { location.href = '/member/login?redirect=' + encodeURIComponent(location.pathname + location.search); return; }
-            const res = await fetch('/api/coin/comment/' + commentNo + '/like', { method: 'POST' });
+            const res = await fetch('/api/market/comment/' + commentNo + '/like', { method: 'POST' });
             if (!res.ok) return;
             const data = await res.json();
             const countEl = this.querySelector('span');
@@ -918,12 +921,13 @@
         if (!content) return;
 
         const form = new FormData();
-        form.append('symbol', currentSymbol);
+        form.append('marketType', 'COIN');
+        form.append('marketCode', currentSymbol);
         form.append('content', content);
         const fileInput = document.getElementById('cmImageInput');
         if (fileInput.files[0]) form.append('file', fileInput.files[0]);
 
-        fetch('/api/coin/comment', { method: 'POST', body: form })
+        fetch('/api/market/comment', { method: 'POST', body: form })
             .then(r => {
                 if (r.status === 401) { location.href = '/member/login?redirect=' + encodeURIComponent(location.pathname + location.search); return; }
                 textarea.value = '';
@@ -1001,12 +1005,13 @@
 
         const removeFlag = item.querySelector('.cm-edit-remove-flag');
         const form = new FormData();
-        form.append('symbol', currentSymbol);
+        form.append('marketType', 'COIN');
+        form.append('marketCode', currentSymbol);
         form.append('content', content);
         if (fileInput && fileInput.files[0]) form.append('file', fileInput.files[0]);
         if (removeFlag && removeFlag.value === '1') form.append('removeImage', 'true');
 
-        fetch('/api/coin/comment/' + commentNo, { method: 'PUT', body: form })
+        fetch('/api/market/comment/' + commentNo, { method: 'PUT', body: form })
             .then(r => r.ok ? r.json() : null).then(dto => {
                 if (!dto) return;
                 const textEl = item.querySelector('.cm-text');
@@ -1046,7 +1051,7 @@
         if (!confirm('댓글을 삭제하시겠습니까?')) return;
         const item = btn.closest('.cm-feed-item');
         const commentNo = item.dataset.commentNo;
-        fetch('/api/coin/comment/' + commentNo + '?symbol=' + encodeURIComponent(currentSymbol), {
+        fetch('/api/market/comment/' + commentNo + '?marketType=COIN&marketCode=' + encodeURIComponent(currentSymbol), {
             method: 'DELETE'
         }).then(r => {
             if (r.ok) item.remove();
@@ -1066,7 +1071,7 @@
     }
 
     function loadCommunityFeedHistory(symbol) {
-        fetch('/coin/comments/' + symbol + '?sort=' + currentSort)
+        fetch('/market/comments/COIN/' + symbol + '?sort=' + currentSort)
             .then(r => r.json())
             .then(list => {
                 const feed = document.getElementById('cmFeedList');
@@ -1086,7 +1091,7 @@
         _stompClient = Stomp.over(socket);
         _stompClient.debug = null;
         _stompClient.connect({}, () => {
-            _stompClient.subscribe('/topic/coin/' + symbol, msg => {
+            _stompClient.subscribe('/topic/market/COIN/' + symbol, msg => {
                 const dto = JSON.parse(msg.body);
                 if (dto.type === 'DELETE') {
                     const item = document.querySelector('.cm-feed-item[data-comment-no="' + dto.commentNo + '"]');

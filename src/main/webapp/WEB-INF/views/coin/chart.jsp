@@ -86,7 +86,8 @@
     <title>TradeBot · 차트</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/chart-toss-coin.css">
+    <link rel="stylesheet" href="/css/market/common.css">
+    <link rel="stylesheet" href="/css/market/chart.css">
 </head><!-- /head -->
 
 <!-- ====================================================
@@ -688,8 +689,8 @@
                     <div class="panel-title-row">
                         <span class="panel-title">실시간 댓글</span>
                         <div class="chat-sort-tabs">
-                            <button class="chat-sort-btn active">인기순</button>
-                            <button class="chat-sort-btn">최신순</button>
+                            <button class="chat-sort-btn active" data-sort="latest">최신순</button>
+                            <button class="chat-sort-btn" data-sort="popular">인기순</button>
                         </div>
                     </div>
 
@@ -771,8 +772,11 @@
             });
         });
     </script>
-    <script src="/js/chart-toss-coin.js"></script>
-    <script src="/js/common.js"></script>
+    <script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
+    <script src="/js/market/market-common.js"></script>
+    <script src="/js/market/coin/coin-order.js"></script>
+    <script src="/js/market/coin/chart-toss-coin.js"></script>
 </body>
 
 </html>

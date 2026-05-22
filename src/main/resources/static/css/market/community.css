@@ -1,0 +1,147 @@
+/* ====================================================
+   market/community.css  —  market 커뮤니티 전용 스타일
+   공통 피드/입력/모달은 community.css 참고
+   ==================================================== */
+
+/* ── 페이지 헤더 (심볼 / 가격) ── */
+.cm-page-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+}
+
+.cm-page-symbol {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.cm-page-name {
+    font-size: 13px;
+    color: var(--text2);
+}
+
+.cm-page-price {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-left: auto;
+}
+
+.cm-page-change { font-size: 13px; font-weight: 500; }
+.cm-page-change.up   { color: var(--up); }
+.cm-page-change.down { color: var(--down); }
+
+/* ── 커뮤니티 페이지 레이아웃 ── */
+.community-page .main-layout {
+    flex-direction: row;
+    padding: var(--gap) 50px 70px;
+    overflow: hidden;
+    gap: 0;
+}
+
+/* ── 뉴스 패널 ── */
+.cm-news-panel {
+    flex: 0 0 340px;
+    width: 340px;
+    min-width: 340px;
+    max-width: 340px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border: 0;
+    height: auto;
+    min-height: 0;
+}
+
+.cm-panel-title {
+    padding: 18px 20px 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+    border-bottom: 0;
+    flex-shrink: 0;
+    background: transparent;
+    letter-spacing: 0;
+}
+
+.cm-news-list {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+}
+
+.cm-news-item {
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 0.12s;
+}
+
+.cm-news-item:last-child { border-bottom: none; }
+.cm-news-item:hover { background: rgba(255, 255, 255, 0.03); }
+
+.cm-news-source {
+    font-size: 11px;
+    color: #8c919f;
+    font-weight: 500;
+}
+
+.cm-news-time {
+    font-size: 11px;
+    color: #737887;
+    margin-left: 6px;
+}
+
+.cm-news-text {
+    margin: 4px 0 0;
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.45;
+    word-break: keep-all;
+}
+
+/* ── 주문 패널 ── */
+.cm-order-panel {
+    flex: 0 0 340px;
+    width: 340px;
+    min-width: 340px;
+    max-width: 340px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+}
+
+.cm-order-panel .panel-order-wrap {
+    flex: 1;
+    min-height: 0;
+    border: 0;
+}
+
+.cm-order-panel .order-panel {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.cm-order-panel .order-avail { margin-top: auto; }
+
+/* ── 스크롤바 (뉴스/주문 패널) ── */
+.cm-news-panel::-webkit-scrollbar,
+.cm-order-panel::-webkit-scrollbar,
+.cm-news-list::-webkit-scrollbar { width: 4px; }
+
+.cm-news-panel::-webkit-scrollbar-track,
+.cm-order-panel::-webkit-scrollbar-track,
+.cm-news-list::-webkit-scrollbar-track { background: transparent; }
+
+.cm-news-panel::-webkit-scrollbar-thumb,
+.cm-order-panel::-webkit-scrollbar-thumb,
+.cm-news-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }

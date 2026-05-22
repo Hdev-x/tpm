@@ -4,7 +4,7 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
 
-import com.tj.app.file.FileDTO;
+import com.tj.app.common.file.FileDTO;
 
 @Mapper
 public interface NoticeMapper {

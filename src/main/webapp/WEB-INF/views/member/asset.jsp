@@ -10,7 +10,7 @@
 <link rel="stylesheet"
 	href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/css/common.css">
-<link rel="stylesheet" href="/css/chart-toss-coin.css">
+    <link rel="stylesheet" href="/css/member/member.css">
 
 <style>
 .asset-container {
@@ -236,11 +236,12 @@
 	</div>
 
 	<script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
 	<script>
-// 전역 변수로 환율 설정 (common.js 등에서 안 넘어올 경우를 대비한 안전망)
-const EXCHANGE_RATE = typeof usdToKrw !== 'undefined' ? usdToKrw : 1400;
-
 async function updateAsset() {
+    // common.js의 fetchExchangeRate()가 완료된 후의 최신 환율을 사용한다.
+    // defer 로드 특성상 const로 고정하면 1400 폴백만 사용되므로 매 호출마다 읽는다.
+    const EXCHANGE_RATE = (typeof usdToKrw !== 'undefined' && usdToKrw > 1) ? usdToKrw : 1400;
     try {
         // 통합 자산 상세 데이터 가져오기
         const res = await fetch('/stock/asset-detail-data');

@@ -10,7 +10,7 @@
 <link rel="stylesheet"
 	href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <link rel="stylesheet" href="/css/common.css">
-<link rel="stylesheet" href="/css/chart-toss-coin.css">
+    <link rel="stylesheet" href="/css/member/member.css">
 <style>
 .member-content-wrapper {
 	display: flex;
@@ -282,15 +282,19 @@
 	</div> <!-- /.app-wrapper -->
 
 	<script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
 	<script>
         async function fetchTotalAsset() {
             try {
-                const res = await fetch('/stock/my-asset');
-                const val = await res.json();
+                const [stockVal, coinWallet] = await Promise.all([
+                    fetch('/stock/my-asset').then(r => r.json()).catch(() => 0),
+                    fetch('/coin/wallet').then(r => r.json()).catch(() => ({ usdtBalance: 0 }))
+                ]);
+                const rate = (typeof usdToKrw !== 'undefined' && usdToKrw > 1) ? usdToKrw : 1400;
+                const coinKrw = Math.floor((coinWallet?.usdtBalance || 0) * rate);
+                const total = (stockVal || 0) + coinKrw;
                 const el = document.getElementById('totalAssetVal');
-                if (el) {
-                    el.innerHTML = Number(val).toLocaleString() + ' <small>원</small>';
-                }
+                if (el) el.innerHTML = Number(total).toLocaleString() + ' <small>원</small>';
             } catch (e) {
                 console.error("자산 정보 로드 실패", e);
             }
@@ -301,21 +305,73 @@
             setInterval(fetchTotalAsset, 15000);
         });
 
-        const fileInp = document.getElementById('profileFileInput');
-        if (fileInp) {
-            fileInp.onchange = async () => {
-                if (!fileInp.files[0]) return;
-                const formData = new FormData();
-                formData.append('file', fileInp.files[0]);
-                
-                try {
-                    const res = await fetch('/member/profile', { method: 'POST', body: formData });
-                    if (res.ok) location.reload();
-                    else alert('업로드 실패');
-                } catch (e) {
-                    console.error("업로드 에러", e);
-                }
-            };
+        const profileFileInput = document.getElementById('profileFileInput');
+        if (profileFileInput) {
+            profileFileInput.addEventListener('change', function() {
+                const file = this.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const avatar = document.getElementById('profileAvatar');
+                    const placeholder = document.getElementById('profilePlaceholder');
+                    let img = document.getElementById('profileImg');
+
+                    if (!img) {
+                        img = document.createElement('img');
+                        img.id = 'profileImg';
+                        if (placeholder) placeholder.remove();
+                        avatar.appendChild(img);
+                    }
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+
+                const form = new FormData();
+                form.append('file', file);
+                fetch('/member/profile', { method: 'POST', body: form })
+                    .then(res => {
+                        if (res.ok) showToast('사진이 업데이트됐어요');
+                        else alert('업로드에 실패했습니다.');
+                    });
+            });
+        }
+
+        function showToast(msg) {
+            const card = document.querySelector('.profile-card');
+            const rect = card ? card.getBoundingClientRect() : null;
+            const cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+            const ty = rect ? rect.top - 12 : 80;
+
+            const toast = document.createElement('div');
+            toast.textContent = msg;
+            Object.assign(toast.style, {
+                position: 'fixed',
+                left: cx + 'px',
+                top: ty + 'px',
+                transform: 'translateX(-50%) translateY(calc(-100% - 8px))',
+                background: '#1e1e22',
+                color: '#fff',
+                padding: '12px 22px',
+                borderRadius: '12px',
+                fontSize: '14px',
+                whiteSpace: 'nowrap',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+                zIndex: '9999',
+                opacity: '0',
+                transition: 'opacity 0.25s, transform 0.25s',
+                pointerEvents: 'none'
+            });
+            document.body.appendChild(toast);
+            requestAnimationFrame(() => requestAnimationFrame(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(-50%) translateY(-100%)';
+            }));
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(-50%) translateY(calc(-100% - 8px))';
+                setTimeout(() => toast.remove(), 250);
+            }, 2500);
         }
     </script>
 </body>

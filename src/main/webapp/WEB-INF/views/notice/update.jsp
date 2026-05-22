@@ -4,78 +4,73 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>공지 수정 - 관리자</title>
+    <title>Insert title here</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/chart-toss-coin.css">
 </head>
-<body style="overflow: auto;">
-    <%@ include file="../common/nav.jsp" %>
-    
-    <div style="display: flex; min-height: 100vh; background: var(--background);">
-        <%@ include file="../common/sidebar.jsp"%>
+<body>
 
-        <main class="main-content" style="flex: 1; padding: 40px 24px;">
-            <div class="card" style="max-width: 800px; margin: 0 auto; padding: 48px; border-radius: 24px; background: var(--surface);">
-                <div class="notice-summary" style="margin-bottom: 40px;">
-                    <span class="badge badge-notice" style="margin-bottom: 12px; display: inline-block;">EDIT NOTICE</span>
-                    <h2 style="font-size: 32px; font-weight: 800; color: var(--text); margin: 0;">공지사항 수정</h2>
-                    <p style="color: var(--text-grey); margin-top: 12px; font-size: 16px;">공지 내용을 수정하고 완료 버튼을 눌러주세요.</p>
-                </div>
+<main class="main-layout" style="max-width: 800px; margin: 0 auto; padding-top: 50px;">
+    <div class="card" style="padding: 40px;">
+        <div class="notice-summary" style="margin-bottom: 30px;">
+            <h2 class="ph-price" style="font-size: 24px;">게시글 수정</h2>
+            <p class="ph-label">내용을 수정하고 완료 버튼을 눌러주세요.</p>
+        </div>
 
-                <form action="./update" method="post" enctype="multipart/form-data">
-                    <input type="hidden" name="noticeNo" value="${detail.noticeNo}">
+        <form action="./update" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="noticeNo" value="${detail.noticeNo}">
 
-                    <div class="input-group" style="margin-bottom: 32px;">
-                        <label style="display: block; margin-bottom: 12px; font-weight: 600; color: var(--text-grey); font-size: 14px;">제목</label>
-                        <input type="text" name="noticeTitle" value="${detail.noticeTitle}" required
-                            style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 18px; color: var(--text); outline: none; font-size: 16px;">
-                    </div>
-
-                    <div class="input-group" style="margin-bottom: 32px;">
-                        <label style="display: block; margin-bottom: 12px; font-weight: 600; color: var(--text-grey); font-size: 14px;">작성자</label>
-                        <input type="text" name="noticeWriter" value="${detail.noticeWriter}" readonly 
-                            style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 18px; color: var(--text); outline: none; font-size: 16px; opacity: 0.6; cursor: not-allowed;">
-                    </div>
-
-                    <div class="input-group" style="margin-bottom: 32px;">
-                        <label style="display: block; margin-bottom: 12px; font-weight: 600; color: var(--text-grey); font-size: 14px;">내용</label>
-                        <textarea name="noticeContent" required
-                            style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 18px; color: var(--text); outline: none; font-size: 16px; height: 350px; resize: none; line-height: 1.6;">${detail.noticeContent}</textarea>
-                    </div>
-
-                    <div class="input-group" style="margin-bottom: 32px;">
-                        <label style="display: block; margin-bottom: 12px; font-weight: 600; color: var(--text-grey); font-size: 14px;">현재 첨부파일</label>
-                        <div style="background: var(--surface2); padding: 24px; border-radius: 16px; border: 1px solid var(--border); display: flex; gap: 16px; flex-wrap: wrap;">
-                            <c:choose>
-                                <c:when test="${not empty detail.list}">
-                                    <c:forEach items="${detail.list}" var="file">
-                                        <img src="/files/${file.fileName}" alt="첨부이미지"
-                                            style="width: 120px; height: 120px; object-fit: cover; border-radius: 12px; border: 1px solid var(--border);">
-                                    </c:forEach>
-                                </c:when>
-                                <c:otherwise>
-                                    <span style="color: var(--text-grey); font-size: 14px;">첨부된 파일이 없습니다.</span>
-                                </c:otherwise>
-                            </c:choose>
-                        </div>
-                    </div>
-
-                    <div class="input-group" style="margin-bottom: 48px;">
-                        <label style="display: block; margin-bottom: 12px; font-weight: 600; color: var(--text-grey); font-size: 14px;">새 파일 추가 <span style="font-weight: 400; opacity: 0.7;">(기존 파일은 유지됩니다)</span></label>
-                        <input type="file" name="attach" multiple 
-                            style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 16px; color: var(--text); font-size: 14px;">
-                    </div>
-
-                    <div style="display: flex; gap: 16px;">
-                        <button type="submit" class="nav-login-btn" style="flex: 2; padding: 18px 0; font-weight: 700; background: #F04452; border-color: #F04452;">수정 완료</button>
-                        <button type="button" class="order-type-btn" onclick="history.back()" style="flex: 1; padding: 18px 0;">취소</button>
-                    </div>
-                </form>
+            <div class="input-group">
+                <label class="input-label">제목</label>
+                <input type="text" name="noticeTitle" class="member-input" 
+                       value="${detail.noticeTitle}" style="width: 100%;">
             </div>
-        </main>
-    </div>
 
-    <script src="/js/common.js"></script>
+            <div class="input-group">
+                <label class="input-label">작성자</label>
+                <input type="text" name="noticeWriter" class="member-input" 
+                       value="${detail.noticeWriter}" readonly style="width: 100%; opacity: 0.6; cursor: not-allowed;">
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">내용</label>
+                <textarea name="noticeContent" class="member-input" 
+                          style="width: 100%; height: 250px; resize: none; line-height: 1.6; padding: 15px;">${detail.noticeContent}</textarea>
+            </div>
+
+            <div class="input-group">
+                <label class="input-label">현재 첨부파일</label>
+                <div style="background: var(--surface2); padding: 15px; border-radius: 12px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <c:choose>
+                        <c:when test="${not empty detail.list}">
+                            <c:forEach items="${detail.list}" var="file">
+                                <div style="position: relative;">
+                                    <img src="/files/${file.fileName}" 
+                                         style="width: 100px; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border2);">
+                                </div>
+                            </c:forEach>
+                        </c:when>
+                        <c:otherwise>
+                            <span style="color: var(--text3); font-size: 13px;">첨부된 파일이 없습니다.</span>
+                        </c:otherwise>
+                    </c:choose>
+                </div>
+            </div>
+
+            <div class="input-group" style="margin-top: 20px;">
+                <label class="input-label">새 파일 추가 (기존 파일은 유지됩니다)</label>
+                <input type="file" name="attach" multiple class="member-input" style="width: 100%; font-size: 13px;">
+            </div>
+
+            <div style="display: flex; gap: 10px; margin-top: 40px;">
+                <button type="submit" class="nav-login-btn" style="flex: 2; height: 50px;">수정 완료</button>
+                <button type="button" class="order-type-btn" onclick="history.back()" style="flex: 1; height: 50px;">취소</button>
+            </div>
+        </form>
+    </div>
+</main>
+
+<script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
 </body>
 </html>

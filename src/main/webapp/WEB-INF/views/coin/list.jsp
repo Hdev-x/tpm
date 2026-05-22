@@ -90,7 +90,8 @@
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/coinList.css">
+    <link rel="stylesheet" href="/css/market/market-list.css">
+    <link rel="stylesheet" href="/css/market/coin/list.css">
 </head><!-- /head -->
 
 <!-- ====================================================
@@ -370,7 +371,13 @@
                                      [COMMUNITY COMMENTS] .detail-chat
                                      ==================================================== -->
                                 <div class="card panel-chat" id="panel-chat">
-                                    <div class="panel-title">실시간 댓글</div>
+                                    <div class="panel-title-row">
+                                        <div class="panel-title">실시간 댓글</div>
+                                        <div class="chat-sort-group">
+                                            <button class="chat-sort-btn active" data-sort="latest">최신순</button>
+                                            <button class="chat-sort-btn" data-sort="popular">인기순</button>
+                                        </div>
+                                    </div>
                                     <div class="chat-messages" id="chat-messages">
                                         <div class="chat-empty">
                                             <span class="chat-empty-icon">💬</span>
@@ -440,7 +447,8 @@
          위치 : body 맨 아래
          역할 : HTML 요소가 먼저 만들어진 뒤 JavaScript를 실행하도록 JS 파일을 마지막에 불러옵니다.
 
-         script src="/js/common.js"   : 공통 nav/sidebar UI 동작을 불러옵니다.
+         script src="/js/common.js"
+	<script src="/js/sidebar-data.js" defer></script>   : 공통 nav/sidebar UI 동작을 불러옵니다.
          script src="/js/coinList.js" : 코인 리스트 API/WebSocket, 테이블 렌더링, 상세 패널 동작을 불러옵니다.
 
          실행 흐름:
@@ -454,8 +462,11 @@
     </div>
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
-    <script src="/js/common.js"></script>
-    <script src="/js/coinList.js"></script>
+    <script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
+    <script src="/js/market/market-common.js"></script>
+    <script src="/js/market/coin/coin-detail.js"></script>
+    <script src="/js/market/coin/coin-list.js"></script>
     <script>
         function buildSparkline(prices, isUp) {
             if (!prices || prices.length < 2) {

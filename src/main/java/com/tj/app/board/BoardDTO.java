@@ -3,7 +3,7 @@ package com.tj.app.board;
 import java.time.LocalDateTime;
 import java.util.List;
 
-import com.tj.app.file.FileDTO;
+import com.tj.app.common.file.FileDTO;
 
 import lombok.Getter;
 import lombok.Setter;

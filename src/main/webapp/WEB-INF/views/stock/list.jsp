@@ -7,7 +7,9 @@
     <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/stockList.css">
+    <link rel="stylesheet" href="/css/market/market-list.css">
+    <link rel="stylesheet" href="/css/market/chart.css">
+    <link rel="stylesheet" href="/css/market/stock/list.css">
 </head>
 <body>
 
@@ -103,7 +105,13 @@
                                 </div>
 
                                 <div class="card panel-chat" id="panel-chat">
-                                    <div class="panel-title">실시간 댓글</div>
+                                    <div class="panel-title-row">
+                                        <div class="panel-title">실시간 댓글</div>
+                                        <div class="chat-sort-group">
+                                            <button class="chat-sort-btn active" data-sort="latest">최신순</button>
+                                            <button class="chat-sort-btn" data-sort="popular">인기순</button>
+                                        </div>
+                                    </div>
                                     <div class="chat-messages" id="chat-messages">
                                         <div class="chat-empty">
                                             <span class="chat-empty-icon">💬</span>
@@ -131,7 +139,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
 
-    <script src="/js/stockList.js"></script>
-    <script src="/js/common.js"></script>
+    <script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
+    <script src="/js/market/market-common.js"></script>
+    <script src="/js/market/stock/stock-list.js"></script>
 </body>
 </html>

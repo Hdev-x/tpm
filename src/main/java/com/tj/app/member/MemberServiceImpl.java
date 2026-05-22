@@ -1,5 +1,6 @@
 package com.tj.app.member;
 
+import com.tj.app.market.coin.order.CoinMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.validation.BindingResult;
@@ -9,6 +10,9 @@ public class MemberServiceImpl implements MemberService {
 
     @Autowired
     private MemberMapper memberMapper;
+
+    @Autowired
+    private CoinMapper coinMapper;
     
     @Override
     public boolean doubleCheck(MemberDTO memberDTO, BindingResult bindingResult) throws Exception{
@@ -36,7 +40,11 @@ public class MemberServiceImpl implements MemberService {
 
     @Override
     public int create(MemberDTO memberDTO) throws Exception {
-        return memberMapper.create(memberDTO);
+        int result = memberMapper.create(memberDTO);
+        if (result > 0) {
+            coinMapper.createWallet(memberDTO.getUsername());
+        }
+        return result;
     }
 
     @Override

@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="jakarta.tags.core"%>
 <div class="sidebar-icons">
 
     <button class="si-btn si-fold-btn" id="si-fold-btn" onclick="toggleFold()">
@@ -43,8 +44,7 @@
     /* 첫 방문·새로고침은 common.js가 애니메이션으로 처리 */
     if (isFirstLoad) return;
 
-    var tab = localStorage.getItem('sidebar');
-    if (!tab) return;
+    var tab = localStorage.getItem('sidebar') || 'live';
 
     var TITLES = { invest: '내 투자현황', interest: '관심 종목', recent: '최근 본', live: '실시간' };
     var btn = document.getElementById('si-' + tab);

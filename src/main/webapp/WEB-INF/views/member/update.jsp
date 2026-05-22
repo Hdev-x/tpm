@@ -7,7 +7,7 @@
 <meta charset="UTF-8">
 <title>Insert title here</title>
 <link rel="stylesheet" href="/css/common.css">
-<link rel="stylesheet" href="/css/chart-toss-coin.css">
+    <link rel="stylesheet" href="/css/member/member.css">
 <style>
 .member-container {
 	display: flex;
@@ -98,6 +98,7 @@
 		</form>
 	</div>
 
-	<script src="/js/common.js"></script>
+	<script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
 </body>
 </html>

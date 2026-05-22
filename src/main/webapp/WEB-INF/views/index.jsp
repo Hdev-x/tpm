@@ -7,11 +7,10 @@
     <title>Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/chart-toss-coin.css">
-    <link rel="stylesheet" href="/css/coinCommunity.css"> <style>
+    <style>
         /* 대시보드 레이아웃 고도화 */
-        .main-layout { padding: 24px; max-width: 1200px; margin: 0 auto; }
-        
+        .main-layout { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
         /* 1. 글로벌 지수 티커 바 */
         .ticker-bar {
             background: var(--surface);
@@ -21,15 +20,17 @@
             gap: 30px;
             overflow-x: auto;
             white-space: nowrap;
-            margin: -40px -50px 32px -50px; /* 💡 상단 여백 규격 수정 */
             scrollbar-width: none;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         .ticker-bar::-webkit-scrollbar { display: none; }
         .ticker-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
         .ticker-label { color: var(--text-grey); font-weight: 500; }
         .ticker-price { font-weight: 700; color: var(--text); }
         .ticker-change { font-size: 12px; font-weight: 600; }
-        
+
         /* 2. 히어로 섹션 */
         .hero-section {
             background: linear-gradient(135deg, #3182F6 0%, #1c2030 100%);
@@ -85,7 +86,7 @@
         .list-item:hover { transform: translateX(4px); }
         .item-title { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; padding-right: 15px; color: var(--text); }
         .item-date { font-size: 12px; color: var(--text-grey); flex-shrink: 0; }
-        
+
         /* 배지 스타일 */
         .badge {
             padding: 2px 8px;
@@ -96,6 +97,10 @@
         }
         .badge-notice { background: rgba(240, 68, 82, 0.1); color: #F04452; }
         .badge-new { background: rgba(49, 130, 246, 0.1); color: #3182F6; }
+
+        /* 스크롤바 숨김 */
+        #index-main-scroll { scrollbar-width: none; }
+        #index-main-scroll::-webkit-scrollbar { display: none; }
     </style>
 </head>
 <body class="chart-page community-page board-community-page" style="overflow: auto;">
@@ -103,20 +108,32 @@
 <div class="app-wrapper">
     <div class="page">
         <%@ include file="common/nav.jsp" %>
-        
-        <div class="main-layout" style="display: block; padding: 40px 50px 80px; height: calc(100vh - 70px); overflow-y: auto; box-sizing: border-box;">
-            
+
+        <div id="index-main-scroll" style="height: calc(100vh - 70px); overflow-y: auto; box-sizing: border-box;">
+
             <div id="global-ticker" class="ticker-bar">
                 <div class="ticker-item"><span class="ticker-label">Loading indices...</span></div>
             </div>
+
+        <div class="main-layout" style="padding: 40px 50px 80px; box-sizing: border-box;">
 
             <div class="hero-section">
                 <div class="hero-content">
                     <h2>안녕하세요, ${not empty member ? member.name : '투자자'}님!</h2>
                     <p>오늘의 시장 흐름을 한눈에 확인해보세요.</p>
-                    <div style="margin-top: 24px; display: flex; gap: 12px;">
-                        <a href="/stock/view" class="order-type-btn sel" style="background: white; color: #3182F6; border: none;">거래소 가기</a>
-                        <a href="/board/list" class="order-type-btn" style="border-color: rgba(255,255,255,0.3); color: white;">커뮤니티</a>
+                    <div style="margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap;">
+                        <a href="/stock/view"
+                            style="display:inline-flex; align-items:center; gap:6px; padding:12px 24px; background:#fff; color:#1a6fdb; border-radius:12px; font-size:14px; font-weight:700; text-decoration:none; box-shadow:0 2px 12px rgba(0,0,0,0.15); transition:transform .15s, box-shadow .15s;"
+                            onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.2)'"
+                            onmouseout="this.style.transform='';this.style.boxShadow='0 2px 12px rgba(0,0,0,0.15)'">
+                            📈 거래소 가기
+                        </a>
+                        <a href="/board/list"
+                            style="display:inline-flex; align-items:center; gap:6px; padding:12px 24px; background:rgba(255,255,255,0.12); color:#fff; border:1px solid rgba(255,255,255,0.35); border-radius:12px; font-size:14px; font-weight:600; text-decoration:none; backdrop-filter:blur(4px); transition:background .15s;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.22)'"
+                            onmouseout="this.style.background='rgba(255,255,255,0.12)'">
+                            💬 커뮤니티
+                        </a>
                     </div>
                 </div>
                 <c:if test="${not empty member}">
@@ -150,7 +167,7 @@
                     <div id="btc-mini-chart" style="height: 180px;"></div>
                 </div>
             </div>
-            
+
             <div class="community-grid">
                 <div class="list-card">
                     <div class="section-header">
@@ -178,7 +195,7 @@
                         <a href="/news/list" class="main-news-title-link" style="font-size: 16px; font-weight: bold; color: var(--text); text-decoration: none;">
                             📰 실시간 종목 뉴스
                         </a>
-                        <input type="text" id="main-news-search" value="삼성전자" 
+                        <input type="text" id="main-news-search" value="삼성전자"
                                style="width: 100px; background: #131722; border: 1px solid #2962ff; color: #2962ff; font-size: 12px; font-weight: bold; padding: 4px 10px; border-radius: 4px; text-align: center; outline: none;">
                     </h3>
                     <div id="naver-news-list" class="news-list"></div>
@@ -199,7 +216,12 @@
                     </table>
                 </div>
             </div>
-        </div> </div> <%@ include file="common/sidebar.jsp" %>
+
+        </div>
+        </div>
+    </div>
+
+    <%@ include file="common/sidebar.jsp" %>
     <%@ include file="common/sidebar-icons.jsp" %>
 </div>
 
@@ -208,14 +230,14 @@
         sessionStorage.setItem('visited', 'true');
         document.body.setAttribute('data-sidebar-closed', 'true');
     }
-
     let currentKospiPrice = 7500.00;
     let currentBtcPrice = 90000000;
 </script>
 
 <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/js/common.js" defer></script>
+<script src="/js/sidebar-data.js" defer></script>
 <script src="/js/index.js"></script>
-<script src="/js/common.js"></script>
 
 </body>
 </html>

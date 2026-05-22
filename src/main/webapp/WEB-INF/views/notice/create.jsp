@@ -7,14 +7,14 @@
     <title>공지사항 작성 - 관리자</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/chart-toss-coin.css">
-    <link rel="stylesheet" href="/css/coinCommunity.css"> </head>
+    <link rel="stylesheet" href="/css/board/board.css">
+</head>
 <body class="chart-page community-page board-community-page" style="overflow: auto;">
-    
+
     <div class="app-wrapper">
         <div class="page">
             <%@ include file="../common/nav.jsp"%>
-            
+
             <div class="board-header">
                 <div style="max-width: 1400px; margin: 0 auto; width: 100%;">
                     <h1 class="board-title">공지사항 작성</h1>
@@ -57,14 +57,16 @@
                             <button type="button" class="order-type-btn" style="width: 120px; padding: 16px 0;" onclick="history.back()">취소</button>
                             <button type="submit" class="nav-login-btn" style="width: 180px; padding: 16px 0; font-weight: 700; background: #F04452; border-color: #F04452;">공지 등록하기</button>
                         </div>
-                    </form>     
+                    </form>
                 </div>
             </div>
-        </div> <%@ include file="../common/sidebar.jsp" %>
+        </div>
+        <%@ include file="../common/sidebar.jsp" %>
         <%@ include file="../common/sidebar-icons.jsp" %>
     </div>
-    
-    <script src="/js/common.js"></script>
-    <script src="/js/notice.js"></script>
+
+    <script src="/js/common.js" defer></script>
+    <script src="/js/sidebar-data.js" defer></script>
+    <script src="/js/board/board.js"></script>
 </body>
 </html>

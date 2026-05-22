@@ -1,4 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="jakarta.tags.core"%>
 <div class="sidebar-panel" id="sidebar-panel">
 
     <div class="sidebar-header">
@@ -22,12 +23,15 @@
     </div>
 
     <!-- ① 내 투자 섹션 -->
+    <c:choose>
+    <c:when test="${not empty member}">
     <div class="sidebar-section" id="sidebar-invest">
 
         <!-- 상위 탭: 주식 / 코인 -->
         <div class="si-type-tabs">
             <div class="si-type-tab active" onclick="switchInvestTab(this,'stock')">주식</div>
             <div class="si-type-tab" onclick="switchInvestTab(this,'coin')">코인</div>
+            <div class="si-type-tab" onclick="switchInvestTab(this,'exchange')">환전</div>
         </div>
 
         <!-- 주식 탭 -->
@@ -138,6 +142,18 @@
         </div>
 
     </div>
+    </c:when>
+    <c:otherwise>
+    <div class="sidebar-section" id="sidebar-invest" style="display:none; flex-direction:column; align-items:center; justify-content:center; flex:1; gap:16px; padding:40px 20px; text-align:center;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--text3)" stroke-width="1.5" width="48" height="48">
+            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+        <div style="font-size:15px; font-weight:700; color:var(--text);">로그인이 필요해요</div>
+        <div style="font-size:13px; color:var(--text3); line-height:1.6;">투자 현황을 확인하려면<br>로그인 후 이용해주세요.</div>
+        <a href="/member/login" style="margin-top:8px; padding:10px 28px; background:var(--blue); color:#fff; border-radius:10px; font-size:14px; font-weight:700; text-decoration:none;">로그인하기</a>
+    </div>
+    </c:otherwise>
+    </c:choose>
 
     <!-- ② 관심 섹션 -->
     <div class="sidebar-section" id="sidebar-interest" style="display:none; flex-direction:column; flex:1; overflow:hidden;">

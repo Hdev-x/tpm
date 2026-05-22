@@ -204,7 +204,7 @@ nav {
     justify-content: center;
     width: 32px;
     height: 32px;
-    background: var(--blue);
+    background: var(--surface2);
     border-radius: 8px;
     color: #fff;
     flex-shrink: 0;
@@ -340,6 +340,10 @@ nav {
     flex: 1;
     overflow: hidden;
 }
+
+/* 사이드바 스크롤바 숨김 */
+.sidebar-panel * { scrollbar-width: none; }
+.sidebar-panel *::-webkit-scrollbar { display: none; }
 
 
 /* ====================================================
@@ -514,6 +518,11 @@ nav {
 @keyframes sb-fadein {
     from { opacity: 0; }
     to   { opacity: 1; }
+}
+
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 .sb-empty {
@@ -1472,174 +1481,6 @@ nav {
 
 
 /* ====================================================
-   MEMBER PAGES (LOGIN / CREATE) - 회원 관련 스타일
-   ==================================================== */
-
-/* 배경 전체 레이아웃 */
-.member-layout {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-    background: var(--bg); /* common.css의 배경색 사용 */
-}
-
-/* 카드 박스 */
-.member-card {
-    width: 100%;
-    max-width: 400px;
-    padding: 40px;
-    background: var(--surface);
-    border-radius: var(--radius);
-    border: 1px solid var(--border);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-}
-
-.member-logo {
-    font-size: 26px;
-    font-weight: 800;
-    text-align: center;
-    margin-bottom: 30px;
-    color: var(--text);
-}
-
-.member-logo span {
-    color: var(--blue);
-}
-
-/* 입력 그룹 */
-.input-group {
-    margin-bottom: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-.input-label {
-    font-size: 13px;
-    color: var(--text2);
-    font-weight: 600;
-}
-
-.member-input {
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    color: var(--text);
-    padding: 12px 15px;
-    border-radius: 10px;
-    outline: none;
-    font-size: 14px;
-    transition: border-color 0.15s;
-}
-
-.member-input:focus {
-    border-color: var(--blue);
-}
-
-/* 버튼 */
-.member-btn {
-    width: 100%;
-    padding: 14px;
-    background: var(--blue);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    font-weight: 700;
-    font-size: 15px;
-    cursor: pointer;
-    margin-top: 10px;
-    transition: opacity 0.15s;
-}
-
-.member-btn:hover {
-    opacity: 0.9;
-}
-
-.member-footer {
-    text-align: center;
-    margin-top: 25px;
-    color: var(--text3);
-    font-size: 13px;
-}
-
-.member-footer a {
-    color: var(--blue);
-    text-decoration: none;
-    font-weight: 600;
-    margin-left: 5px;
-}
-
-/* ====================================================
-   BOARD DETAIL - 게시판 상세보기 버튼 스타일
-   ==================================================== */
-
-/* 레이아웃 제어 */
-.detail-actions {
-    display: flex;
-    justify-content: space-between; /* 양 끝 정렬 */
-    align-items: center;
-    border-top: 1px solid var(--border);
-    padding: 30px 0;
-    margin-bottom: 40px;
-    width: 100%;
-}
-
-.btn-group-right {
-    display: flex;
-    gap: 8px; /* 버튼 사이 간격 */
-    align-items: center;
-}
-
-/* 공통 버튼 스타일 */
-.btn-action {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 90px;      /* 최소 너비 확보 */
-    height: 42px;         /* 높이 고정 */
-    padding: 0 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s;
-    white-space: nowrap;  /* 글자 줄바꿈 절대 방지 */
-    border: none;
-}
-
-/* 목록으로 버튼 */
-.btn-list {
-    background-color: var(--surface) !important;
-    color: var(--text) !important;
-    border: 1px solid var(--border2) !important;
-}
-.btn-list:hover {
-    background-color: var(--border) !important;
-}
-
-/* 수정 버튼 */
-.btn-edit {
-    background-color: transparent !important;
-    color: var(--blue) !important;
-    border: 1px solid var(--blue) !important;
-}
-.btn-edit:hover {
-    background-color: var(--blue) !important;
-    color: #fff !important;
-}
-
-/* 삭제 버튼 */
-.btn-delete {
-    background-color: var(--up) !important;
-    color: #fff !important;
-}
-.btn-delete:hover {
-    opacity: 0.9;
-    box-shadow: 0 4px 12px rgba(240, 68, 82, 0.3);
-}
-
-
-/* ====================================================
    공통 댓글 (채팅 패널 / 커뮤니티 공용)
    ==================================================== */
 .panel-chat {
@@ -1786,6 +1627,31 @@ nav {
     text-decoration: underline;
 }
 
+.cm-actions {
+    margin-top: 6px;
+}
+
+.cm-like-btn {
+    background: none;
+    border: none;
+    color: var(--text3);
+    font-size: 12px;
+    cursor: pointer;
+    padding: 2px 6px 2px 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    transition: color 0.12s;
+}
+
+.cm-like-btn:hover {
+    color: #e9516a;
+}
+
+.cm-like-btn.liked {
+    color: #e9516a;
+}
+
 .chat-messages::-webkit-scrollbar {
     width: 5px;
 }
@@ -1908,3 +1774,36 @@ nav {
 .sb-table.active {
     display: table !important;
 }
+/* ====================================================
+   CARD - 패널 공통 카드 스타일
+   ==================================================== */
+/* ── 패널 fade-in ── */
+
+.card {
+    background: var(--bg);
+    border-radius: var(--radius);
+    border: none;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    animation: fadeInUp 0.35s ease both;
+}
+
+
+
+
+
+/* ── 공용 텍스트 유틸리티 (board/notice/market 공통) ── */
+.ph-name   { font-size: 18px; font-weight: 700; color: var(--text); }
+.ph-ticker { font-size: 12px; font-weight: 500; color: var(--text3); background: var(--surface2); padding: 2px 7px; border-radius: 5px; }
+.ph-price  { font-size: 26px; font-weight: 800; letter-spacing: -0.8px; color: var(--text); line-height: 1; }
+.ph-change { font-size: 15px; font-weight: 600; line-height: 1; }
+.ph-label  { font-size: 11px; color: var(--text3); font-weight: 400; white-space: nowrap; }
+
+
+
+
+
+
+
+

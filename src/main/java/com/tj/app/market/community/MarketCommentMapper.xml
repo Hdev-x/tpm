@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tj.app.market.community.MarketCommentMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="commentNo">
+        INSERT INTO "MARKET_COMMENT" ("MARKET_TYPE", "MARKET_CODE", "CONTENT", "USERNAME", "CREATED_AT")
+        VALUES (#{marketType}, #{marketCode}, #{content}, #{username}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <select id="listByCode" resultType="com.tj.app.market.community.MarketCommentDTO">
+        SELECT
+            c."COMMENT_NO"   AS commentNo,
+            c."MARKET_TYPE"  AS marketType,
+            c."MARKET_CODE"  AS marketCode,
+            c."CONTENT"      AS content,
+            c."USERNAME"     AS username,
+            c."CREATED_AT"   AS createdAt,
+            c."IMAGE_URL"    AS imageUrl,
+            p."FILE_NAME"    AS profileFileName,
+            COUNT(l."COMMENT_NO") AS likeCount
+        FROM "MARKET_COMMENT" c
+        LEFT JOIN "PROFILE" p ON c."USERNAME" = p."USERNAME"
+        LEFT JOIN "MARKET_COMMENT_LIKE" l ON c."COMMENT_NO" = l."COMMENT_NO"
+        WHERE c."MARKET_TYPE" = #{marketType} AND c."MARKET_CODE" = #{marketCode}
+        GROUP BY c."COMMENT_NO", c."MARKET_TYPE", c."MARKET_CODE", c."CONTENT", c."USERNAME", c."CREATED_AT", c."IMAGE_URL", p."FILE_NAME"
+        ORDER BY c."CREATED_AT" DESC
+        LIMIT 50
+    </select>
+
+    <select id="listByCodePopular" resultType="com.tj.app.market.community.MarketCommentDTO">
+        SELECT
+            c."COMMENT_NO"   AS commentNo,
+            c."MARKET_TYPE"  AS marketType,
+            c."MARKET_CODE"  AS marketCode,
+            c."CONTENT"      AS content,
+            c."USERNAME"     AS username,
+            c."CREATED_AT"   AS createdAt,
+            c."IMAGE_URL"    AS imageUrl,
+            p."FILE_NAME"    AS profileFileName,
+            COUNT(l."COMMENT_NO") AS likeCount
+        FROM "MARKET_COMMENT" c
+        LEFT JOIN "PROFILE" p ON c."USERNAME" = p."USERNAME"
+        LEFT JOIN "MARKET_COMMENT_LIKE" l ON c."COMMENT_NO" = l."COMMENT_NO"
+        WHERE c."MARKET_TYPE" = #{marketType} AND c."MARKET_CODE" = #{marketCode}
+        GROUP BY c."COMMENT_NO", c."MARKET_TYPE", c."MARKET_CODE", c."CONTENT", c."USERNAME", c."CREATED_AT", c."IMAGE_URL", p."FILE_NAME"
+        ORDER BY likeCount DESC, c."CREATED_AT" DESC
+        LIMIT 50
+    </select>
+
+    <update id="update">
+        UPDATE "MARKET_COMMENT"
+        SET "CONTENT"   = #{content},
+            "IMAGE_URL" = #{imageUrl}
+        WHERE "COMMENT_NO" = #{commentNo} AND "USERNAME" = #{username}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM "MARKET_COMMENT"
+        WHERE "COMMENT_NO" = #{commentNo} AND "USERNAME" = #{username}
+    </delete>
+
+</mapper>

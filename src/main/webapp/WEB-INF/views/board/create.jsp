@@ -7,15 +7,14 @@
     <title>새 글 쓰기 - 커뮤니티</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/chart-toss-coin.css">
-    <link rel="stylesheet" href="/css/coinCommunity.css">
+    <link rel="stylesheet" href="/css/board/board.css">
 </head>
 <body class="chart-page community-page board-community-page" style="overflow: auto;">
-    
+
     <div class="app-wrapper">
         <div class="page">
             <%@ include file="../common/nav.jsp"%>
-            
+
             <div class="board-header">
                 <div style="max-width: 1400px; margin: 0 auto; width: 100%;">
                     <h1 class="board-title">새 글 쓰기</h1>
@@ -25,7 +24,7 @@
 
             <div class="main-layout" style="display: block; padding: 40px 50px 80px; height: calc(100vh - 140px); overflow-y: auto; box-sizing: border-box;">
                 <div class="card" style="max-width: 800px; margin: 0 auto; padding: 48px; border-radius: 24px; background: var(--surface); border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-                    
+
                     <form action="./create" method="post" enctype="multipart/form-data" id="boardForm">
                         <div class="input-group" style="margin-bottom: 32px;">
                             <label style="display: block; margin-bottom: 12px; font-weight: 600; color: var(--text-grey); font-size: 14px;">제목</label>
@@ -61,11 +60,13 @@
                     </form>
                 </div>
             </div>
-        </div> <%@ include file="../common/sidebar.jsp" %>
+        </div>
+        <%@ include file="../common/sidebar.jsp" %>
         <%@ include file="../common/sidebar-icons.jsp" %>
     </div>
 
-    <script src="/js/common.js"></script>
-    <script src="/js/board.js"></script>
+    <script src="/js/common.js" defer></script>
+    <script src="/js/sidebar-data.js" defer></script>
+    <script src="/js/board/board.js"></script>
 </body>
 </html>

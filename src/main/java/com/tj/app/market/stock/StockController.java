@@ -7,7 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import com.tj.app.member.MemberDTO;
-import com.tj.app.orderStock.OrderStockService;
+import com.tj.app.market.stock.order.OrderStockService;
 import jakarta.servlet.http.HttpSession;
 
 import java.time.LocalDate;
@@ -307,7 +307,7 @@ public class StockController {
             @RequestParam(value = "limit", defaultValue = "40") int limit) {
         return ResponseEntity.ok(stockMiniChartService.refreshTopMiniCharts(limit));
     }
-    
+
     @GetMapping("/my-asset")
     public ResponseEntity<Long> getMyTotalAsset(HttpSession session) {
         MemberDTO user = (MemberDTO) session.getAttribute("member");

@@ -1,5 +1,9 @@
 package com.tj.app.market.index;
 
+import com.tj.app.board.BoardDTO;
+import com.tj.app.board.BoardService;
+import com.tj.app.notice.NoticeDTO;
+import com.tj.app.notice.NoticeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,8 +17,8 @@ import java.util.List;
 public class MarketIndexController {
 
     private final MarketIndexService marketIndexService;
-    private final com.tj.app.board.BoardService boardService;
-    private final com.tj.app.notice.NoticeService noticeService;
+    private final BoardService boardService;
+    private final NoticeService noticeService;
 
     @GetMapping
     public List<MarketIndexDTO> getMarketIndex() {
@@ -23,13 +27,13 @@ public class MarketIndexController {
 
     // 💡 1. @RequestParam 안에 value = "limit" 지정
     @GetMapping("/recent-board")
-    public List<com.tj.app.board.BoardDTO> getRecentBoard(@RequestParam(value = "limit", defaultValue = "5") int limit) throws Exception {
+    public List<BoardDTO> getRecentBoard(@RequestParam(value = "limit", defaultValue = "5") int limit) throws Exception {
         return boardService.listRecent(limit);
     }
 
     // 💡 2. @RequestParam 안에 value = "limit" 지정
     @GetMapping("/recent-notice")
-    public List<com.tj.app.notice.NoticeDTO> getRecentNotice(@RequestParam(value = "limit", defaultValue = "5") int limit) throws Exception {
+    public List<NoticeDTO> getRecentNotice(@RequestParam(value = "limit", defaultValue = "5") int limit) throws Exception {
         return noticeService.listRecent(limit);
     }
 }

@@ -19,10 +19,12 @@ public class NewsController {
 
     @ResponseBody 
     @GetMapping("")
-    public ResponseEntity<?> getRealtimeNews(@RequestParam(value = "keyword", required = false, defaultValue = "주식") String keyword) {
-        log.info("📡 [뉴스 도메인 엔진 가동] 검색어: {}", keyword);
+    public ResponseEntity<?> getRealtimeNews(
+            @RequestParam(value = "keyword", required = false, defaultValue = "주식") String keyword,
+            @RequestParam(value = "start", required = false, defaultValue = "1") int start) {
+        log.info("📡 [뉴스 도메인 엔진 가동] 검색어: {}, start: {}", keyword, start);
 
-        NewsDTO newsData = newsService.searchStockNews(keyword);
+        NewsDTO newsData = newsService.searchStockNews(keyword, start);
 
         if (newsData != null && newsData.getItems() != null && !newsData.getItems().isEmpty()) {
             return ResponseEntity.ok(newsData);

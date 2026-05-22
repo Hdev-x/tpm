@@ -1,17 +1,17 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <title>공지 수정 - 관리자</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/chart-toss-coin.css">
+    <link rel="stylesheet" href="/css/board/board.css">
 </head>
 <body style="overflow: auto;">
     <%@ include file="../common/nav.jsp" %>
-    
+
     <div style="display: flex; min-height: 100vh; background: var(--background);">
         <%@ include file="../common/sidebar.jsp"%>
 
@@ -34,7 +34,7 @@
 
                     <div class="input-group" style="margin-bottom: 32px;">
                         <label style="display: block; margin-bottom: 12px; font-weight: 600; color: var(--text-grey); font-size: 14px;">작성자</label>
-                        <input type="text" name="noticeWriter" value="${detail.noticeWriter}" readonly 
+                        <input type="text" name="noticeWriter" value="${detail.noticeWriter}" readonly
                             style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 18px; color: var(--text); outline: none; font-size: 16px; opacity: 0.6; cursor: not-allowed;">
                     </div>
 
@@ -63,7 +63,7 @@
 
                     <div class="input-group" style="margin-bottom: 48px;">
                         <label style="display: block; margin-bottom: 12px; font-weight: 600; color: var(--text-grey); font-size: 14px;">새 파일 추가 <span style="font-weight: 400; opacity: 0.7;">(기존 파일은 유지됩니다)</span></label>
-                        <input type="file" name="attach" multiple 
+                        <input type="file" name="attach" multiple
                             style="width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 16px; padding: 16px; color: var(--text); font-size: 14px;">
                     </div>
 
@@ -76,6 +76,7 @@
         </main>
     </div>
 
-    <script src="/js/common.js"></script>
+    <script src="/js/common.js" defer></script>
+    <script src="/js/sidebar-data.js" defer></script>
 </body>
 </html>

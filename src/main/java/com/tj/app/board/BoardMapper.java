@@ -4,8 +4,8 @@ import java.util.List;
 
 import org.apache.ibatis.annotations.Mapper;
 
-import com.tj.app.file.FileDTO;
-import com.tj.app.pager.Pager;
+import com.tj.app.common.file.FileDTO;
+import com.tj.app.common.pager.Pager;
 
 @Mapper
 public interface BoardMapper {

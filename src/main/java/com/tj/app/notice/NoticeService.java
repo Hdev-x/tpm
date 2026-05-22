@@ -8,8 +8,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import com.tj.app.file.FileDTO;
-import com.tj.app.file.FileManager;
+import com.tj.app.common.file.FileDTO;
+import com.tj.app.common.file.FileManager;
 
 @Service
 public class NoticeService {

@@ -12,7 +12,7 @@
 		<result column="NOTICE_DATE" property="noticeDate" />
 		<result column="NOTICE_VIEW" property="noticeView" />
 		<collection property="list" javaType="java.util.List"
-			ofType="FileDTO">
+			ofType="com.tj.app.common.file.FileDTO">
 			<id column="FILE_NO" property="fileNo" />
 			<result column="FILE_NAME" property="fileName" />
 			<result column="ORI_NAME" property="oriName" />
@@ -62,7 +62,7 @@
 		VALUES (#{fileName}, #{oriName}, #{noticeNo})
 	</insert>
 
-	<select id="detailFile" resultType="FileDTO"
+	<select id="detailFile" resultType="com.tj.app.common.file.FileDTO"
 		parameterType="NoticeDTO">
 		SELECT * FROM "FILE"
 		WHERE "NOTICE_NO" = #{noticeNo}

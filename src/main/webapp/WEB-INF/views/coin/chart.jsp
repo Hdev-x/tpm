@@ -86,7 +86,8 @@
     <title>TradeBot · 차트</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/chart-toss-coin.css">
+    <link rel="stylesheet" href="/css/market/common.css">
+    <link rel="stylesheet" href="/css/market/chart.css">
 </head><!-- /head -->
 
 <!-- ====================================================
@@ -771,10 +772,11 @@
             });
         });
     </script>
-    <script src="/js/common.js"></script>
-    <script src="/js/coin/coin-common.js"></script>
-    <script src="/js/coin/coin-order.js"></script>
-    <script src="/js/coin/chart-toss-coin.js"></script>
+    <script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
+    <script src="/js/market/market-common.js"></script>
+    <script src="/js/market/coin/coin-order.js"></script>
+    <script src="/js/market/coin/chart-toss-coin.js"></script>
 </body>
 
 </html>

@@ -1,10 +1,13 @@
 package com.tj.app.market.coin;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -141,6 +144,47 @@ public class CoinMarketService {
             log.warn("⚠️ CoinGecko 조회 실패 (정상 동작 중 429 가능성 높음): {}", e.getMessage());
         }
         return Collections.emptyList();
+    }
+
+    /**
+     * CoinGecko 코인 로고 맵 조회 (캐싱: 1시간)
+     * 반환 형태: { "BTC": "https://...", "ETH": "https://..." }
+     */
+    @SuppressWarnings("unchecked")
+    public Map<String, String> getLogos() {
+        String cacheKey = "gecko_logos";
+        if (isCacheValid(cacheKey)) return (Map<String, String>) cache.get(cacheKey);
+
+        Map<String, String> result = new HashMap<>();
+        for (int page = 1; page <= 3; page++) {
+            final int p = page;
+            try {
+                List<Map<String, Object>> data = geckoClient.get()
+                        .uri(ub -> ub.path("/api/v3/coins/markets")
+                                .queryParam("vs_currency", "usd")
+                                .queryParam("per_page", "250")
+                                .queryParam("page", p)
+                                .build())
+                        .retrieve()
+                        .bodyToMono(new ParameterizedTypeReference<List<Map<String, Object>>>() {})
+                        .block(Duration.ofSeconds(5));
+
+                if (data != null) {
+                    for (Map<String, Object> coin : data) {
+                        Object sym = coin.get("symbol");
+                        Object img = coin.get("image");
+                        if (sym != null && img != null) {
+                            result.put(sym.toString().toUpperCase(), img.toString());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("⚠️ CoinGecko 로고 페이지 {} 조회 실패: {}", p, e.getMessage());
+            }
+        }
+
+        if (!result.isEmpty()) putCache(cacheKey, result, 3600); // 1시간 캐시
+        return result;
     }
 
     // --- 캐시 도우미 함수 ---

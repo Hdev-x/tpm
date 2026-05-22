@@ -12,6 +12,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import com.tj.app.market.coin.order.CoinHoldingsDTO;
+import com.tj.app.market.coin.order.CoinOrdersDTO;
+import com.tj.app.market.coin.order.CoinService;
+import com.tj.app.market.coin.order.CoinWalletDTO;
 import com.tj.app.member.MemberDTO;
 
 import jakarta.servlet.http.HttpSession;
@@ -60,6 +64,13 @@ public class CoinController {
 	@ResponseBody
 	public Object getExtraStats(@RequestParam("ticker") String ticker) {
 		return marketService.getExtraStats(ticker);
+	}
+
+	/** CoinGecko 로고 맵 프록시 (1시간 캐시) */
+	@GetMapping("api/logos")
+	@ResponseBody
+	public Map<String, String> getLogos() {
+		return marketService.getLogos();
 	}
 
 	/** Bithumb Ticker 프록시 */
@@ -203,7 +214,12 @@ public class CoinController {
             emptyWallet.setUsdtBalance(0.0);
             return emptyWallet;
         }
-        return coinService.getWallet(member.getUsername());
+        CoinWalletDTO wallet = coinService.getWallet(member.getUsername());
+        if (wallet == null) {
+            wallet = new CoinWalletDTO();
+            wallet.setUsdtBalance(0.0);
+        }
+        return wallet;
     }
 
     /** 보유 코인 목록 조회 */

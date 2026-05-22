@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tj.app.board.reply.ReplyMapper">
+
+<insert id="create"  useGeneratedKeys="true" keyProperty="replyNo">
+	INSERT INTO "REPLY" ("REPLY_CONTENT", "REPLY_DATE", "USERNAME", "BOARD_NO")
+        VALUES (#{replyContent}, CURRENT_TIMESTAMP, #{username}, #{boardNo})
+</insert>
+
+<select id="list" resultType="ReplyDTO">
+	SELECT * FROM "REPLY"
+	WHERE "BOARD_NO" = #{boardNo}
+</select>
+
+<select id="detail" resultType="ReplyDTO">
+	SELECT * FROM "REPLY"
+	WHERE "REPLY_NO" = #{replyNo}
+</select>
+
+<update id="update">
+	UPDATE "REPLY"
+	SET
+		"REPLY_CONTENT" = #{replyContent},
+		"REPLY_DATE" = #{replyDate}
+	WHERE "REPLY_NO" = #{replyNo}
+</update>
+
+<delete id="delete">
+	DELETE FROM "REPLY"
+	WHERE "REPLY_NO" = #{replyNo}
+</delete>
+
+</mapper>

@@ -27,7 +27,7 @@
 		<result column="BOARD_DATE" property="boardDate" />
 		<result column="BOARD_VIEW" property="boardView" />
 		<collection property="list" javaType="java.util.List"
-			ofType="FileDTO">
+			ofType="com.tj.app.common.file.FileDTO">
 			<id column="FILE_NO" property="fileNo" />
 			<result column="FILE_NAME" property="fileName" />
 			<result column="ORI_NAME" property="oriName" />
@@ -48,7 +48,7 @@
 CURRENT_TIMESTAMP, #{username}, 0)
 	</insert>
 
-	<select id="list" resultMap="detailResult" parameterType="Pager">
+	<select id="list" resultMap="detailResult" parameterType="com.tj.app.common.pager.Pager">
     SELECT * FROM "BOARD"
     <include refid="search_sql"></include>
     ORDER BY "BOARD_NO" DESC
@@ -84,7 +84,7 @@ CURRENT_TIMESTAMP, #{username}, 0)
 		VALUES (#{fileName}, #{oriName}, #{boardNo})
 	</insert>
 
-	<select id="detailFile" resultType="FileDTO"
+	<select id="detailFile" resultType="com.tj.app.common.file.FileDTO"
 		parameterType="BoardDTO">
 		SELECT * FROM "FILE"
 		WHERE "BOARD_NO" = #{boardNo}

@@ -28,6 +28,7 @@
         <div class="si-type-tabs">
             <div class="si-type-tab active" onclick="switchInvestTab(this,'stock')">주식</div>
             <div class="si-type-tab" onclick="switchInvestTab(this,'coin')">코인</div>
+            <div class="si-type-tab" onclick="switchInvestTab(this,'exchange')">환전</div>
         </div>
 
         <!-- 주식 탭 -->

@@ -7,7 +7,7 @@
     <title>${detail.noticeTitle} - 공지사항</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-   <link rel="stylesheet" href="/css/chart-toss-coin.css">
+    <link rel="stylesheet" href="/css/board/board.css">
 </head>
 <body>
 
@@ -70,7 +70,8 @@
     </div>
 </main>
 
-<script src="/js/common.js"></script>
-<script src="/js/board.js"></script>
+<script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
+<script src="/js/board/board.js"></script>
 </body>
 </html>

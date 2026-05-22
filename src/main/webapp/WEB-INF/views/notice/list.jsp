@@ -7,8 +7,8 @@
     <title>공지사항 - 커뮤니티</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/chart-toss-coin.css">
-    <link rel="stylesheet" href="/css/coinCommunity.css">
+    <link rel="stylesheet" href="/css/board/board.css">
+    <link rel="stylesheet" href="/css/community.css">
     <style>
         .notice-community-page .notice-header {
             min-height: 92px;
@@ -306,7 +306,8 @@
         <%@ include file="../common/sidebar-icons.jsp" %>
     </div>
 
-    <script src="/js/common.js"></script>
-    <script src="/js/board.js"></script>
+    <script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
+    <script src="/js/board/board.js"></script>
 </body>
 </html>

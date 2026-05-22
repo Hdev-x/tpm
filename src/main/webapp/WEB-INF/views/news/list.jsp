@@ -102,8 +102,9 @@
 		<%@ include file="../common/sidebar-icons.jsp"%>
 	</div>
 
-	<script src="/js/common.js"></script>
-	<script src="/js/news.js" defer></script>
+	<script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
+	<script src="/js/news/news.js" defer></script>
 	<script>
 		window.addEventListener('load', function() {
 			if (typeof searchNewsByKeyword === 'function') {

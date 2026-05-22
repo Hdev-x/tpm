@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.tj.app.market.coin.order.CoinMapper">
+
+    <!-- 지갑 잔고 조회 -->
+    <select id="getWallet" resultType="com.tj.app.market.coin.order.CoinWalletDTO">
+        SELECT * FROM "COIN_WALLET" WHERE "USERNAME" = #{username}
+    </select>
+
+    <!-- 지갑 잔고 업데이트 -->
+    <update id="updateWallet">
+        UPDATE "COIN_WALLET" SET "USDT_BALANCE" = #{usdtBalance} WHERE "USERNAME" = #{username}
+    </update>
+
+    <!-- 보유 코인 단건 조회 -->
+    <select id="getHolding" resultType="com.tj.app.market.coin.order.CoinHoldingsDTO">
+        SELECT * FROM "COIN_HOLDINGS" WHERE "USERNAME" = #{username} AND "COIN_CODE" = #{coinCode}
+    </select>
+
+    <!-- 보유 코인 목록 조회 -->
+    <select id="getHoldingList" resultType="com.tj.app.market.coin.order.CoinHoldingsDTO">
+        SELECT * FROM "COIN_HOLDINGS" WHERE "USERNAME" = #{username}
+    </select>
+
+    <!-- 보유 코인 추가 -->
+    <insert id="insertHolding">
+        INSERT INTO "COIN_HOLDINGS" ("USERNAME", "COIN_CODE", "COIN_COUNT", "AVG_PRICE")
+        VALUES (#{username}, #{coinCode}, #{coinCount}, #{avgPrice})
+    </insert>
+
+    <!-- 보유 코인 업데이트 -->
+    <update id="updateHolding">
+        UPDATE "COIN_HOLDINGS" SET "COIN_COUNT" = #{coinCount}, "AVG_PRICE" = #{avgPrice}
+        WHERE "USERNAME" = #{username} AND "COIN_CODE" = #{coinCode}
+    </update>
+
+    <!-- 보유 코인 삭제 -->
+    <delete id="deleteHolding">
+        DELETE FROM "COIN_HOLDINGS" WHERE "USERNAME" = #{username} AND "COIN_CODE" = #{coinCode}
+    </delete>
+
+    <!-- 주문 내역 추가 -->
+    <insert id="insertOrder">
+        INSERT INTO "COIN_ORDERS" ("USERNAME", "COIN_CODE", "ORDER_TYPE", "ORDER_PRICE", "ORDER_COUNT", "AVG_PRICE", "STATUS", "TARGET_PRICE", "ORDER_DATE")
+        VALUES (#{username}, #{coinCode}, #{orderType}, #{orderPrice}, #{orderCount}, #{avgPrice}, #{status}, #{targetPrice}, CURRENT_TIMESTAMP)
+    </insert>
+
+    <!-- 주문 내역 조회 (체결 완료만) -->
+    <select id="getOrderList" resultType="com.tj.app.market.coin.order.CoinOrdersDTO">
+        SELECT * FROM "COIN_ORDERS" WHERE "USERNAME" = #{username} AND "STATUS" = 'COMPLETED' ORDER BY "ORDER_DATE" DESC
+    </select>
+
+    <!-- 미체결 주문 조회 -->
+    <select id="getPendingOrders" resultType="com.tj.app.market.coin.order.CoinOrdersDTO">
+        SELECT * FROM "COIN_ORDERS" WHERE "USERNAME" = #{username} AND "STATUS" = 'PENDING' ORDER BY "ORDER_DATE" DESC
+    </select>
+
+    <!-- 주문 상태 업데이트 -->
+    <update id="updateOrderStatus">
+        UPDATE "COIN_ORDERS" SET "STATUS" = #{status} WHERE "ORDER_NO" = #{orderNo}
+    </update>
+
+    <!-- 특정 코인 미체결 주문 일괄 취소 -->
+    <update id="cancelPendingByCoin">
+        UPDATE "COIN_ORDERS" SET "STATUS" = 'CANCELLED'
+        WHERE "USERNAME" = #{username} AND "COIN_CODE" = #{coinCode} AND "STATUS" = 'PENDING'
+    </update>
+
+</mapper>

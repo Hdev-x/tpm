@@ -7,7 +7,6 @@
     <title>Dashboard</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/chart-toss-coin.css">
 </head>
 <body>
 
@@ -111,10 +110,8 @@
 </div>
 
 <script>
-    // 1. 사이드바 최초 방문 기록 제어 (가장 먼저 실행)
     if (!sessionStorage.getItem('visited')) {
         sessionStorage.setItem('visited', 'true');
-        document.body.setAttribute('data-sidebar-closed', 'true');
     }
 
     // 2. index.js에서 사용할 전역 금융 변수 명시적 선언 (Uncaught ReferenceError 방지)
@@ -123,8 +120,9 @@ let currentKospiPrice = 7500.00;
 </script>
 
 <script src="https://unpkg.com/lightweight-charts/dist/lightweight-charts.standalone.production.js"></script>
+<script src="/js/common.js" defer></script>
+	<script src="/js/sidebar-data.js" defer></script>
 <script src="/js/index.js"></script>
-<script src="/js/common.js"></script>
 
 </body>
 </html>

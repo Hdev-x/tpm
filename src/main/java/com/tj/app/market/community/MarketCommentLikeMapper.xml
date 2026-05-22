@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.tj.app.market.community.MarketCommentLikeMapper">
+
+    <insert id="insert">
+        INSERT INTO "MARKET_COMMENT_LIKE" ("COMMENT_NO", "USERNAME")
+        VALUES (#{commentNo}, #{username})
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM "MARKET_COMMENT_LIKE"
+        WHERE "COMMENT_NO" = #{commentNo} AND "USERNAME" = #{username}
+    </delete>
+
+    <select id="check" resultType="int">
+        SELECT COUNT(*) FROM "MARKET_COMMENT_LIKE"
+        WHERE "COMMENT_NO" = #{commentNo} AND "USERNAME" = #{username}
+    </select>
+
+    <select id="count" resultType="long">
+        SELECT COUNT(*) FROM "MARKET_COMMENT_LIKE"
+        WHERE "COMMENT_NO" = #{commentNo}
+    </select>
+
+</mapper>

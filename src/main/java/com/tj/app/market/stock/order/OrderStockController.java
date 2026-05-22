@@ -89,14 +89,18 @@ public class OrderStockController {
 		// 🔴 [수정포인트 2] 로그인 안 된 경우 잔고 0원 반환 및 안전 차단
 		if (member == null) {
 			response.put("balance", 0);
+			response.put("locked", 0);
 			return ResponseEntity.ok(response);
 		}
 
 		try {
 			long currentCash = stockOrderService.getUserBalance(member);
+			long lockedCash = stockOrderService.getLockedPendingBuyCash(member);
 			response.put("balance", currentCash);
+			response.put("locked", lockedCash);
 		} catch (Exception e) {
 			response.put("balance", 0);
+			response.put("locked", 0);
 		}
 
 		return ResponseEntity.ok(response);

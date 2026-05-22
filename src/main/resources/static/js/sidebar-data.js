@@ -1264,7 +1264,35 @@ function loadMyInvestmentStatus() {
                 const pnlRate = buyAmount > 0 ? ((pnl / buyAmount) * 100).toFixed(2) : "0.00";
                 let pnlClass = ""; let pnlSign = "";
                 if (pnl > 0) { pnlClass = "up"; pnlSign = "▲"; } else if (pnl < 0) { pnlClass = "down"; pnlSign = "▼"; }
-                const html = `<div class="holding-card hc-main"><div class="hc-main-header"><div class="hc-main-id"><div class="hc-logo" style="background:#343a40;">${stockName.slice(0, 2)}</div><div class="hc-main-name-col"><span class="hc-main-ticker">${stockName}</span><span class="hc-main-sub">${stockNo} | 현금 ${count}주</span></div></div><div class="hc-main-right"><span class="hc-main-eval">${evalAmount.toLocaleString()} 원</span><span class="hc-main-pnl ${pnlClass}">${pnlSign}${Math.abs(pnl).toLocaleString()} (${pnlRate}%)</span></div></div><div class="hc-divider"></div><div class="hc-main-grid"><div class="hc-main-row"><span class="hc-label">매수금액</span><span class="hc-value">${buyAmount.toLocaleString()} 원</span></div><div class="hc-main-row"><span class="hc-label">평균단가</span><span class="hc-value">${purchase.toLocaleString()} 원</span></div><div class="hc-main-row"><span class="hc-label">평가금액</span><span class="hc-value">${evalAmount.toLocaleString()} 원</span></div><div class="hc-main-row"><span class="hc-label">현재가</span><span class="hc-value">${currentPrice.toLocaleString()} 원</span></div></div></div>`;
+                
+                const initials = (stockName || '  ').slice(0, 2);
+                const html = `<div class="holding-card hc-main" style="cursor:pointer;" onclick="location.href='/stock/view?code=${stockNo}'">
+                    <div class="hc-main-header">
+                        <div class="hc-main-id">
+                            <div class="hc-logo" style="overflow:hidden; background:#343a40;">
+                                <img src="https://file.alphasquare.co.kr/media/images/stock_logo/kr/${stockNo}.png" 
+                                     style="width:100%; height:100%; object-fit:contain;" 
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='';">
+                                <span style="display:none; font-size:9px; font-weight:700; color:#fff;">${initials}</span>
+                            </div>
+                            <div class="hc-main-name-col">
+                                <span class="hc-main-ticker">${stockName}</span>
+                                <span class="hc-main-sub">${stockNo} | 현금 ${count}주</span>
+                            </div>
+                        </div>
+                        <div class="hc-main-right">
+                            <span class="hc-main-eval">${evalAmount.toLocaleString()} 원</span>
+                            <span class="hc-main-pnl ${pnlClass}">${pnlSign}${Math.abs(pnl).toLocaleString()} (${pnlRate}%)</span>
+                        </div>
+                    </div>
+                    <div class="hc-divider"></div>
+                    <div class="hc-main-grid">
+                        <div class="hc-main-row"><span class="hc-label">매수금액</span><span class="hc-value">${buyAmount.toLocaleString()} 원</span></div>
+                        <div class="hc-main-row"><span class="hc-label">평균단가</span><span class="hc-value">${purchase.toLocaleString()} 원</span></div>
+                        <div class="hc-main-row"><span class="hc-label">평가금액</span><span class="hc-value">${evalAmount.toLocaleString()} 원</span></div>
+                        <div class="hc-main-row"><span class="hc-label">현재가</span><span class="hc-value">${currentPrice.toLocaleString()} 원</span></div>
+                    </div>
+                </div>`;
                 container.insertAdjacentHTML('beforeend', html);
             });
         }).catch(err => console.error('주식 보유 로드 에러:', err));
@@ -1312,8 +1340,11 @@ function loadMyInvestmentStatus() {
                 const h = Object.keys(h_raw).reduce((acc, k) => { acc[k.toLowerCase().replace(/_/g, '')] = h_raw[k]; return acc; }, {});
                 
                 const stockName = h.stockname || '주식';
-                const typeLabel = h.status === 'CANCELLED' ? '취소' : (h.ordertype === 'BUY' ? '매수' : '매도');
-                const typeCls = h.status === 'CANCELLED' ? 'cancel' : (h.ordertype === 'BUY' ? 'up' : 'down');
+                const status = (h.status || "").trim().toUpperCase();
+                
+                const typeLabel = status === 'CANCELLED' ? '취소' : (status === 'PENDING' ? '대기' : (h.ordertype === 'BUY' ? '매수' : '매도'));
+                const typeCls = status === 'CANCELLED' ? 'cancel' : (status === 'PENDING' ? 'pending' : (h.ordertype === 'BUY' ? 'up' : 'down'));
+                
                 const total = Math.floor(h.orderprice * h.ordercount).toLocaleString();
                 const date = new Date(h.orderdate).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
@@ -1322,10 +1353,16 @@ function loadMyInvestmentStatus() {
                     <span class="hr-pnl ${typeCls}">${typeLabel}</span>
                 </div>`;
 
-                return `<div class="history-card hc-${(h.ordertype || "").toLowerCase()} ${h.status === 'CANCELLED' ? 'hc-cancelled' : ''}" onclick="if(this.classList.contains('open')){this.classList.add('closing');this.classList.remove('open');setTimeout(()=>this.classList.remove('closing'),250);}else{this.classList.remove('closing');this.classList.add('open');}">
+                const initials = (stockName || '  ').slice(0, 2);
+                return `<div class="history-card hc-${(h.ordertype || "").toLowerCase()} ${status === 'CANCELLED' ? 'hc-cancelled' : ''}" onclick="if(this.classList.contains('open')){this.classList.add('closing');this.classList.remove('open');setTimeout(()=>this.classList.remove('closing'),250);}else{this.classList.remove('closing');this.classList.add('open');}">
                     <div class="hr-header">
                         <div class="hr-left">
-                            <div class="hc-logo" style="background:#343a40; width:32px; height:32px; font-size:11px;">${stockName.slice(0, 2)}</div>
+                            <div class="hc-logo" style="background:#343a40; width:32px; height:32px; font-size:11px; overflow:hidden;">
+                                <img src="https://file.alphasquare.co.kr/media/images/stock_logo/kr/${h.stockcode}.png" 
+                                     style="width:100%; height:100%; object-fit:contain;" 
+                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='';">
+                                <span style="display:none; font-size:9px; font-weight:700; color:#fff;">${initials}</span>
+                            </div>
                             <div class="hr-info">
                                 <span class="hr-ticker">${stockName}</span>
                                 <span class="hr-meta">${date} · ${typeLabel}</span>
@@ -1348,7 +1385,7 @@ function loadMyInvestmentStatus() {
                         </div>
                         <div class="hr-detail-row">
                             <span class="hr-dlabel">상태</span>
-                            <span class="hr-dvalue">${h.status === 'PENDING' ? '미체결' : (h.status === 'CANCELLED' ? '취소됨' : '체결완료')}</span>
+                            <span class="hr-dvalue">${status === 'PENDING' ? '미체결' : (status === 'CANCELLED' ? '취소됨' : '체결완료')}</span>
                         </div>
                     </div>
                 </div>`;

@@ -30,38 +30,44 @@ public class OrderStockService {
 	@Autowired
 	private StockService stockService;
 
-	/**
-     * 💰 [주식 주문 체결 코어 트랜잭션 수립]
-     * @param member 현재 로그인한 사용자 DTO 객체
-     * @param side 프론트엔드에서 보낸 매수/매도 구분 문자열 ("BUY" 또는 "SELL")
-     * @param dto 프론트엔드에서 넘어온 주문 요청 객체
-     * @return 체결 성공 여부 (true: 성공 / false: 잔고 부족 등 실패)
-     */
+	@Autowired
+	private MarketIndexService indexService;
 
+	@Autowired
+	private CoinService coinService;
+
+	@Autowired
+	private CoinMarketService coinMarketService;
+
+	/**
+	 * 💰 [주식 주문 체결 코어 트랜잭션 수립] - placeOrder 단계에서 검증 및 예수금 선차감이 완료된 주문만 들어옵니다.
+	 */
 	@Transactional
 	public void processExecution(OrderStockDTO dto) {
-		String side = dto.getOrderType(); // 매수("BUY")인지 매도("SELL")인지 확인
+		String side = dto.getOrderType();
 		String username = dto.getUsername();
+		// dto.getOrderPrice()가 Long이므로 바로 계산 가능
 		long totalOrderAmount = dto.getOrderPrice() * dto.getOrderCount();
 
 		if ("BUY".equalsIgnoreCase(side)) {
-			// 💡 [수정] placeOrder에서 이미 잔고를 차감했으므로, 여기서는 잔고 업데이트를 하지 않습니다.
-			// (ASSETS 업데이트만 수행)
-
 			Map<String, Object> holdingStock = orderStockMapper.getHolding(username, dto.getStockCode());
+
 			if (holdingStock == null || holdingStock.isEmpty()) {
 				orderStockMapper.insertHolding(dto);
 			} else {
 				long currentCount = ((Number) holdingStock.get("STOCK_COUNT")).longValue();
 				long currentPurchase = ((Number) holdingStock.get("STOCK_PURCHASE")).longValue();
+
 				long newCount = currentCount + dto.getOrderCount();
+				// 평단가 가중평균 계산 (long 타입 유지하여 금액 짤림 방지)
 				long newPurchase = ((currentCount * currentPurchase) + totalOrderAmount) / newCount;
+
 				dto.setOrderCount(newCount);
-				dto.setOrderPrice(newPurchase);
+				dto.setOrderPrice(newPurchase); // 💡 깔끔하게 Long형으로 세팅 완료
 				orderStockMapper.updateHolding(dto);
 			}
 		} else {
-			// 기존 매도 로직 (ASSETS 업데이트)
+			// [매도 체결]
 			Map<String, Object> holdingStock = orderStockMapper.getHolding(username, dto.getStockCode());
 			if (holdingStock == null || holdingStock.isEmpty()) {
 				log.error("❌ [체결 실패] 보유 주식이 없습니다. 유저: {}, 종목: {}", username, dto.getStockCode());
@@ -79,271 +85,291 @@ public class OrderStockService {
 			Long userCash = orderStockMapper.getWallet(username);
 			orderStockMapper.updateWallet(username, userCash + totalOrderAmount);
 
-			if (currentCount == dto.getOrderCount())
+			if (currentCount == dto.getOrderCount()) {
 				orderStockMapper.deleteHolding(username, dto.getStockCode());
-			else {
+			} else {
 				dto.setOrderCount(currentCount - dto.getOrderCount());
-				dto.setOrderPrice(currentPurchase);
+				dto.setOrderPrice(currentPurchase); // 💡 기존 평단가(Long) 유지
 				orderStockMapper.updateHolding(dto);
 			}
 		}
 
-		// 상태를 COMPLETED로 변경
 		dto.setStatus("COMPLETED");
 		orderStockMapper.updateOrderStatus(dto);
 	}
 
-	// ====================================================
-	// 2. 가용 잔고 조회 엔진 (getUserBalance)
-	// ====================================================
+	@Transactional
+	public boolean placeOrder(MemberDTO member, String side, OrderStockDTO dto) {
+		dto.setUsername(member.getUsername());
+		dto.setOrderType(side);
+		
+		if (dto.getStatus() == null || dto.getStatus().isBlank()) {
+			dto.setStatus("PENDING");
+		}
+
+		// 종목 코드 6자리 자릿수 보정
+		if (dto.getStockCode() == null || dto.getStockCode().isBlank()) {
+			if (dto.getStockNo() != null) {
+				dto.setStockCode(String.format("%06d", dto.getStockNo()));
+			} else {
+				return false;
+			}
+		}
+		dto.setStockCode(dto.getStockCode().trim());
+
+		if ("BUY".equalsIgnoreCase(side)) {
+			// 1. 매수 주문: 잔고 확인 후 '예수금 선차감' (미체결 락)
+			long totalAmount = dto.getOrderPrice() * dto.getOrderCount();
+			long currentBalance = orderStockMapper.getWallet(member.getUsername());
+
+			if (currentBalance < totalAmount) {
+				log.warn("⚠️ [주문 실패] 잔고 부족. 유저: {}, 필요: {}, 현재: {}", member.getUsername(), totalAmount, currentBalance);
+				return false; 
+			}
+			orderStockMapper.updateWallet(member.getUsername(), currentBalance - totalAmount);
+
+		} else {
+			// 2. 매도 주문: 보유 수량 확인 (미체결 매도 주문 수량 제외하고 체크)
+			Map<String, Object> holdingStock = orderStockMapper.getHolding(member.getUsername(), dto.getStockCode());
+			if (holdingStock == null || holdingStock.isEmpty()) {
+				log.warn("⚠️ [주문 실패] 보유 주식 없음. 유저: {}, 종목: {}", member.getUsername(), dto.getStockCode());
+				return false; 
+			}
+			
+			long totalHeldCount = ((Number) holdingStock.get("STOCK_COUNT")).longValue();
+			
+			// 현재 미체결된 매도 주문 수량 합계 조회
+			List<Map<String, Object>> pendingOrders = orderStockMapper.getPendingOrders(member.getUsername());
+			long pendingSellCount = 0;
+			for (Map<String, Object> po : pendingOrders) {
+				if ("SELL".equalsIgnoreCase((String) po.get("ORDER_TYPE")) && 
+					dto.getStockCode().equals(po.get("STOCK_CODE"))) {
+					pendingSellCount += ((Number) po.get("ORDER_COUNT")).longValue();
+				}
+			}
+			
+			long availableCount = totalHeldCount - pendingSellCount;
+			
+			if (availableCount < dto.getOrderCount()) {
+				log.warn("⚠️ [주문 실패] 매도 가능 수량 부족. 유저: {}, 보유: {}, 미체결매도: {}, 주문: {}", 
+						member.getUsername(), totalHeldCount, pendingSellCount, dto.getOrderCount());
+				return false;
+			}
+			
+			// [수정] 사용자의 요청에 따라, 미체결(PENDING) 상태에서는 ASSETS 테이블의 수량을 건드리지 않습니다.
+			// 대신 DB의 ORDER 테이블에 PENDING으로 저장되어 "매도 가능 수량" 체크 시에만 반영됩니다.
+		}
+
+		// 3. 지정가 주문인 경우 현재가와 비교하여 즉시 체결 조건 충족 시 상태 변경
+		if ("PENDING".equals(dto.getStatus())) {
+			long currentPrice = stockService.getPriceFromCache(dto.getStockCode());
+			if (currentPrice <= 0) currentPrice = stockService.getCurrentPrice(dto.getStockCode());
+			
+			if (currentPrice > 0) {
+				boolean isExecutable = "BUY".equalsIgnoreCase(side) ? 
+									   (dto.getOrderPrice() >= currentPrice) : 
+									   (dto.getOrderPrice() <= currentPrice);
+				if (isExecutable) {
+					dto.setStatus("COMPLETED");
+				}
+			}
+		}
+
+		// 4. DB 주문 마스터 테이블 기록
+		int result = orderStockMapper.insertOrder(dto);
+		
+		// 5. 시장가 또는 조건 만족으로 COMPLETED가 되었다면 즉시 체결 엔진 수행
+		if (result > 0 && "COMPLETED".equals(dto.getStatus())) {
+			processExecution(dto);
+		}
+		
+		return result > 0;
+	}
+
+	/**
+	 * 📊 [통합 자산 계산 엔진]
+	 * 미체결 매수 주문으로 인해 선차감된 예수금만 합산하여 자산 총액을 유지합니다.
+	 * 주식 평가금액은 미체결 매도와 상관없이 실제 보유 수량(ASSETS 테이블)을 기준으로 계산됩니다.
+	 */
+	public long calculateTotalAsset(MemberDTO member) {
+		if (member == null)
+			return 0;
+
+		// 1. 주식 실제 예수금 조회 (차감된 후의 금액)
+		long stockCash = orderStockMapper.getWallet(member.getUsername());
+
+		// 2. 미체결 매수 주문에 묶여 있는 현금만 합산 (매도는 주식이 아직 ASSETS에 있으므로 합산 제외)
+		List<Map<String, Object>> pendingOrders = orderStockMapper.getPendingOrders(member.getUsername());
+		long lockedPendingCash = 0;
+		for (Map<String, Object> order : pendingOrders) {
+			if ("BUY".equalsIgnoreCase((String) order.get("ORDER_TYPE"))) {
+				long price = ((Number) order.get("ORDER_PRICE")).longValue();
+				long count = ((Number) order.get("ORDER_COUNT")).longValue();
+				lockedPendingCash += (price * count);
+			}
+		}
+
+		// 3. 보유 주식 평가액 계산 (미체결 매도 주식도 여기에 포함되어 계산됨)
+		List<Map<String, Object>> stockHoldings = orderStockMapper.getHoldingList(member.getUsername());
+		long stockValue = 0;
+		for (Map<String, Object> holding : stockHoldings) {
+			String code = (String) holding.get("STOCK_CODE");
+			long count = ((Number) holding.get("STOCK_COUNT")).longValue();
+			long price = stockService.getPriceFromCache(code);
+			if (price <= 0)
+				price = stockService.getCurrentPrice(code);
+			stockValue += (count * price);
+		}
+
+		// 4. 코인 자산 계산
+		double coinTotalUsdt = 0;
+		try {
+			CoinWalletDTO wallet = coinService.getWallet(member.getUsername());
+			if (wallet != null) {
+				coinTotalUsdt += wallet.getUsdtBalance();
+			}
+
+			List<CoinHoldingsDTO> coinHoldings = coinService.getHoldingList(member.getUsername());
+			if (coinHoldings != null && !coinHoldings.isEmpty()) {
+				Map<String, Double> prices = coinMarketService.getTickerPriceMap();
+				for (CoinHoldingsDTO ch : coinHoldings) {
+					double price = prices.getOrDefault(ch.getCoinCode(), ch.getAvgPrice());
+					coinTotalUsdt += (ch.getCoinCount() * price);
+				}
+			}
+		} catch (Exception e) {
+			log.error("코인 자산 합산 중 오류", e);
+		}
+
+		// 5. 환율 적용
+		double exchangeRate = 1400;
+		try {
+			MarketIndexDTO exDTO = indexService.getMarketIndex().stream().filter(d -> d.getName().contains("환율"))
+					.findFirst().orElse(null);
+			if (exDTO != null) {
+				exchangeRate = Double.parseDouble(exDTO.getPrice().replace(",", ""));
+			}
+		} catch (Exception e) {
+			log.error("환율 정보 획득 실패", e);
+		}
+
+		return (stockCash + lockedPendingCash) + stockValue + (long) (coinTotalUsdt * exchangeRate);
+	}
+
+	// 단순 조회 API 인터페이스 핸들러 모음
 	public long getUserBalance(MemberDTO member) {
 		return orderStockMapper.getWallet(member.getUsername());
 	}
 
-	// ====================================================
-	// 3. 보유 자산 리스트 조회 엔진 (getHoldingStockList)
-	// ====================================================
 	public List<Map<String, Object>> getHoldingStockList(MemberDTO member) {
 		return orderStockMapper.getHoldingList(member.getUsername());
 	}
 
-	// ====================================================
-	// ⏳ 4. 미체결 예약 주문 목록 전체 조회 엔진 (getPendingOrders)
-	// ====================================================
 	public List<Map<String, Object>> getPendingOrders(MemberDTO member) {
 		return orderStockMapper.getPendingOrders(member.getUsername());
 	}
 
-	// ====================================================
-	// 📜 5. 체결 완료 거래 내역 목록 전체 조회 엔진 (getOrderList)
-	// ====================================================
 	public List<Map<String, Object>> getOrderList(MemberDTO member) {
 		return orderStockMapper.getOrderList(member.getUsername());
 	}
 
-	// ====================================================
-	// ❌ 6. 우측 사이드바 미체결 예약 주문 일괄 취소 엔진 (cancelStockOrder)
-	// ====================================================
-	// 🔴 [싱크 교정]: 인터페이스 명칭인 cancelPendingByStock 규격에 맞춰 결합하고,
-	// orderNo 대신 매퍼가 요구하는 특정 유저의 특정 종목코드 취소선으로 완벽 동기화합니다.
+	public long getLockedPendingBuyCash(MemberDTO member) {
+		List<Map<String, Object>> pendingOrders = orderStockMapper.getPendingOrders(member.getUsername());
+		long locked = 0;
+		for (Map<String, Object> order : pendingOrders) {
+			if ("BUY".equalsIgnoreCase((String) order.get("ORDER_TYPE"))) {
+				long price = ((Number) order.get("ORDER_PRICE")).longValue();
+				long count = ((Number) order.get("ORDER_COUNT")).longValue();
+				locked += (price * count);
+			}
+		}
+		return locked;
+	}
+
 	@Transactional
-	public boolean cancelStockOrder(MemberDTO member ,long orderNo) {
-	    // 1. 주문 정보 조회 (위에서 추가한 쿼리 사용)
-	    OrderStockDTO order = orderStockMapper.getOrderById(orderNo);
-	    
-	    // 2. 주문이 없거나 본인 주문이 아닌 경우 보안 체크
-	    if (order == null || !order.getUsername().equals(member.getUsername())) {
-	        log.warn("🚨 비정상적인 주문 취소 시도: 유저 {}, 주문번호 {}", member.getUsername(), orderNo);
-	        return false;
-	    }
-	    
-	    if (!"PENDING".equals(order.getStatus())) {
-	        return false;
-	    }
+	public boolean cancelStockOrder(MemberDTO member, long orderNo) {
+		OrderStockDTO order = orderStockMapper.getOrderById(orderNo);
 
-	    // 3. [매수 취소 시] 예수금 복구
-	    if ("BUY".equalsIgnoreCase(order.getOrderType())) {
-	        long refundAmount = (long) order.getOrderPrice() * order.getOrderCount();
-	        Long currentWallet = orderStockMapper.getWallet(order.getUsername());
-	        orderStockMapper.updateWallet(order.getUsername(), currentWallet + refundAmount);
-	    }
+		if (order == null || !order.getUsername().equals(member.getUsername())) {
+			log.warn("🚨 비정상적인 주문 취소 시도: 유저 {}, 주문번호 {}", member.getUsername(), orderNo);
+			return false;
+		}
 
-	    // 4. 상태 변경
-	    int result = orderStockMapper.cancelPendingByStock(orderNo);
-	    log.info("❌ 주문 취소 완료: 유저 {}, 주문번호 {}", member.getUsername(), orderNo);
-	    return result > 0;
+		if (!"PENDING".equals(order.getStatus())) {
+			return false;
+		}
+
+		// [매수 취소 시] 선차감했던 예수금을 다시 지갑으로 롤백
+		if ("BUY".equalsIgnoreCase(order.getOrderType())) {
+			long refundAmount = (long) order.getOrderPrice() * order.getOrderCount();
+			Long currentWallet = orderStockMapper.getWallet(order.getUsername());
+			orderStockMapper.updateWallet(order.getUsername(), currentWallet + refundAmount);
+		}
+		
+		// [매도 취소 시] PENDING 상태에서 수량을 차감하지 않았으므로, 롤백할 수량이 없습니다.
+		// (단순히 ORDER 테이블의 상태만 CANCELLED로 바꾸면 됨)
+
+		int result = orderStockMapper.cancelPendingByStock(orderNo);
+		log.info("❌ 주문 취소 완료: 유저 {}, 주문번호 {}", member.getUsername(), orderNo);
+		return result > 0;
 	}
-	
-	@Transactional
-	public boolean placeOrder(MemberDTO member, String side, OrderStockDTO dto) {
-	    dto.setUsername(member.getUsername());
-	    dto.setOrderType(side);
-	    
-	    // [수정] 프론트엔드에서 보낸 상태(시장가일 경우 COMPLETED)를 존중하되, 없으면 PENDING 기본값
-	    if (dto.getStatus() == null || dto.getStatus().isBlank()) {
-	        dto.setStatus("PENDING");
-	    }
 
-	    // 종목 코드 정규화 (6자리 숫자로 보정)
-	    if (dto.getStockCode() == null || dto.getStockCode().isBlank()) {
-	        if (dto.getStockNo() != null) {
-	            dto.setStockCode(String.format("%06d", dto.getStockNo()));
-	        } else {
-	            return false;
-	        }
-	    }
-	    dto.setStockCode(dto.getStockCode().trim());
-
-	    if ("BUY".equalsIgnoreCase(side)) {
-	        // 1. 매수 주문: 잔고 확인 및 차감
-	        long totalAmount = (long) dto.getOrderPrice() * dto.getOrderCount();
-	        long currentBalance = orderStockMapper.getWallet(member.getUsername());
-
-	        if (currentBalance < totalAmount) {
-	            log.warn("⚠️ [주문 실패] 잔고 부족. 유저: {}, 필요: {}, 현재: {}", member.getUsername(), totalAmount, currentBalance);
-	            return false; 
-	        }
-	        orderStockMapper.updateWallet(member.getUsername(), currentBalance - totalAmount);
-
-	    } else {
-	        // 2. 매도 주문: 보유 수량 확인
-	        Map<String, Object> holdingStock = orderStockMapper.getHolding(member.getUsername(), dto.getStockCode());
-	        if (holdingStock == null || holdingStock.isEmpty()) {
-	            log.warn("⚠️ [주문 실패] 보유 주식 없음. 유저: {}, 종목: {}", member.getUsername(), dto.getStockCode());
-	            return false;
-	        }
-	        long currentCount = ((Number) holdingStock.get("STOCK_COUNT")).longValue();
-	        if (currentCount < dto.getOrderCount()) {
-	            log.warn("⚠️ [주문 실패] 보유 수량 부족. 유저: {}, 보유: {}, 주문: {}", member.getUsername(), currentCount, dto.getOrderCount());
-	            return false;
-	        }
-	    }
-
-	    // [추가] 지정가 주문(PENDING)이라도 현재가 조건을 만족하면 즉시 체결 대상으로 전환
-	    if ("PENDING".equals(dto.getStatus())) {
-	        long currentPrice = stockService.getPriceFromCache(dto.getStockCode());
-	        if (currentPrice <= 0) currentPrice = stockService.getCurrentPrice(dto.getStockCode());
-	        
-	        if (currentPrice > 0) {
-	            boolean isExecutable = "BUY".equalsIgnoreCase(side) ? 
-	                                   (dto.getOrderPrice() >= currentPrice) : 
-	                                   (dto.getOrderPrice() <= currentPrice);
-	            if (isExecutable) {
-	                dto.setStatus("COMPLETED");
-	            }
-	        }
-	    }
-
-	    // 3. DB에 주문 저장 (insertOrder가 orderId를 채워줌)
-	    int result = orderStockMapper.insertOrder(dto);
-	    
-	    // 4. 시장가 주문 또는 즉시 체결 조건 만족 시 즉시 체결 엔진 가동
-	    if (result > 0 && "COMPLETED".equals(dto.getStatus())) {
-	        processExecution(dto);
-	    }
-	    
-	    return result > 0;
-	}
-	
-	// OrderStockService.java
-	@Autowired
-	private MarketIndexService indexService;
-	
-	@Autowired
-	private CoinService coinService;
-
-	@Autowired
-	private CoinMarketService coinMarketService;
-
-	public long calculateTotalAsset(MemberDTO member) {
-	    if (member == null) return 0;
-	    
-	    // 1. 주식 자산 계산 (예수금 + 보유 주식 평가액)
-	    long stockCash = orderStockMapper.getWallet(member.getUsername());
-	    List<Map<String, Object>> stockHoldings = orderStockMapper.getHoldingList(member.getUsername());
-	    
-	    long stockValue = 0;
-	    for (Map<String, Object> holding : stockHoldings) {
-	        String code = (String) holding.get("STOCK_CODE");
-	        long count = ((Number) holding.get("STOCK_COUNT")).longValue();
-	        long price = stockService.getPriceFromCache(code);
-	        if (price <= 0) price = stockService.getCurrentPrice(code);
-	        stockValue += (count * price);
-	    }
-
-	    // 2. 코인 자산 계산 (USDT 잔고 + 보유 코인 평가액)
-	    double coinTotalUsdt = 0;
-	    try {
-	        CoinWalletDTO wallet = coinService.getWallet(member.getUsername());
-	        if (wallet != null) {
-	            coinTotalUsdt += wallet.getUsdtBalance();
-	        }
-	        
-	        List<CoinHoldingsDTO> coinHoldings = coinService.getHoldingList(member.getUsername());
-	        if (coinHoldings != null && !coinHoldings.isEmpty()) {
-	            Map<String, Double> prices = coinMarketService.getTickerPriceMap();
-	            for (CoinHoldingsDTO ch : coinHoldings) {
-	                double price = prices.getOrDefault(ch.getCoinCode(), ch.getAvgPrice());
-	                coinTotalUsdt += (ch.getCoinCount() * price);
-	            }
-	        }
-	    } catch (Exception e) {
-	        log.error("코인 자산 합산 중 오류", e);
-	    }
-
-	    // 3. 통합 (환율 적용)
-	    double exchangeRate = 1400; // 기본값
-	    try {
-	        MarketIndexDTO exDTO = indexService.getMarketIndex().stream()
-	                .filter(d -> d.getName().contains("환율"))
-	                .findFirst().orElse(null);
-	        if (exDTO != null) {
-	            exchangeRate = Double.parseDouble(exDTO.getPrice().replace(",", ""));
-	        }
-	    } catch (Exception e) {
-	        log.error("환율 정보 획득 실패", e);
-	    }
-
-	    return stockCash + stockValue + (long)(coinTotalUsdt * exchangeRate);
-	}
-	
 	public List<Map<String, Object>> getAssetDetails(MemberDTO member) {
-	    List<Map<String, Object>> details = new ArrayList<>();
-	    if (member == null) return details;
+		List<Map<String, Object>> details = new ArrayList<>();
+		if (member == null)
+			return details;
 
-	    // 1. 주식 자산 상세
-	    List<Map<String, Object>> stockHoldings = orderStockMapper.getHoldingList(member.getUsername());
-	    for (Map<String, Object> h : stockHoldings) {
-	        String code = (String) h.get("STOCK_CODE");
-	        long count = ((Number) h.get("STOCK_COUNT")).longValue();
-	        long avgPrice = ((Number) h.get("STOCK_PURCHASE")).longValue();
-	        long currentPrice = stockService.getPriceFromCache(code);
-	        if (currentPrice <= 0) currentPrice = stockService.getCurrentPrice(code);
+		List<Map<String, Object>> stockHoldings = orderStockMapper.getHoldingList(member.getUsername());
+		for (Map<String, Object> h : stockHoldings) {
+			String code = (String) h.get("STOCK_CODE");
+			long count = ((Number) h.get("STOCK_COUNT")).longValue();
+			long avgPrice = ((Number) h.get("STOCK_PURCHASE")).longValue();
+			long currentPrice = stockService.getPriceFromCache(code);
+			if (currentPrice <= 0)
+				currentPrice = stockService.getCurrentPrice(code);
 
-	        long totalBuy = avgPrice * count;
-	        long totalEval = (currentPrice > 0) ? (currentPrice * count) : totalBuy;
-	        double profitRate = (totalBuy == 0) ? 0 : ((double) (totalEval - totalBuy) / totalBuy) * 100;
+			long totalBuy = avgPrice * count;
+			long totalEval = (currentPrice > 0) ? (currentPrice * count) : totalBuy;
+			double profitRate = (totalBuy == 0) ? 0 : ((double) (totalEval - totalBuy) / totalBuy) * 100;
 
-	        Map<String, Object> map = new HashMap<>();
-	        map.put("type", "stock");
-	        map.put("name", h.get("STOCK_NAME"));
-	        map.put("count", count);
-	        map.put("buyPrice", avgPrice);
-	        map.put("currentPrice", currentPrice);
-	        map.put("eval", totalEval);
-	        map.put("rate", String.format("%.2f", profitRate));
-	        details.add(map);
-	    }
+			Map<String, Object> map = new HashMap<>();
+			map.put("type", "stock");
+			map.put("name", h.get("STOCK_NAME"));
+			map.put("count", count);
+			map.put("buyPrice", avgPrice);
+			map.put("currentPrice", currentPrice);
+			map.put("eval", totalEval);
+			map.put("rate", String.format("%.2f", profitRate));
+			details.add(map);
+		}
 
-	    // 2. 코인 자산 상세
-	    try {
-	        var coinHoldings = coinService.getHoldingList(member.getUsername());
-	        Map<String, Double> prices = coinMarketService.getTickerPriceMap();
-	        
-	        for (var ch : coinHoldings) {
-	            double count = ch.getCoinCount();
-	            double avgPrice = ch.getAvgPrice();
-	            double currentPrice = prices.getOrDefault(ch.getCoinCode(), avgPrice);
-	            
-	            double totalBuy = avgPrice * count;
-	            double totalEval = currentPrice * count;
-	            double profitRate = (totalBuy == 0) ? 0 : ((totalEval - totalBuy) / totalBuy) * 100;
+		try {
+			var coinHoldings = coinService.getHoldingList(member.getUsername());
+			Map<String, Double> prices = coinMarketService.getTickerPriceMap();
 
-	            Map<String, Object> map = new HashMap<>();
-	            map.put("type", "coin");
-	            map.put("name", ch.getCoinCode().replace("USDT", ""));
-	            map.put("count", count);
-	            map.put("buyPrice", avgPrice);
-	            map.put("currentPrice", currentPrice);
-	            map.put("eval", totalEval); // USDT 기준
-	            map.put("rate", String.format("%.2f", profitRate));
-	            details.add(map);
-	        }
-	    } catch (Exception e) {
-	        log.error("코인 자산 상세 조회 실패", e);
-	    }
+			for (var ch : coinHoldings) {
+				double count = ch.getCoinCount();
+				double avgPrice = ch.getAvgPrice();
+				double currentPrice = prices.getOrDefault(ch.getCoinCode(), avgPrice);
 
-	    return details;
+				double totalBuy = avgPrice * count;
+				double totalEval = currentPrice * count;
+				double profitRate = (totalBuy == 0) ? 0 : ((totalEval - totalBuy) / totalBuy) * 100;
+
+				Map<String, Object> map = new HashMap<>();
+				map.put("type", "coin");
+				map.put("name", ch.getCoinCode().replace("USDT", ""));
+				map.put("count", count);
+				map.put("buyPrice", avgPrice);
+				map.put("currentPrice", currentPrice);
+				map.put("eval", totalEval);
+				map.put("rate", String.format("%.2f", profitRate));
+				details.add(map);
+			}
+		} catch (Exception e) {
+			log.error("코인 자산 상세 조회 실패", e);
+		}
+
+		return details;
 	}
-	
 }

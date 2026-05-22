@@ -20,4 +20,5 @@ public class OrderStockDTO {
 	private String stockCode;
 	private String username;
 	private String status;
+	private Long targetPrice;
 }

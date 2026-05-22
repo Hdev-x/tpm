@@ -272,10 +272,11 @@ async function updateAsset() {
         const data = await res.json();
         if (!data || !Array.isArray(data)) return;
 
-        const stockWalletRes = await fetch('/stock/account-balance').then(r => r.ok ? r.json() : { balance: 0 });
+        const stockWalletRes = await fetch('/stock/account-balance').then(r => r.ok ? r.json() : { balance: 0, locked: 0 });
         const coinWalletRes = await fetch('/coin/wallet').then(r => r.ok ? r.json() : { usdtBalance: 0 });
 
         const stockCash = stockWalletRes ? (stockWalletRes.balance || 0) : 0;
+        const stockLocked = stockWalletRes ? (stockWalletRes.locked || 0) : 0;
         const coinCash = coinWalletRes ? (coinWalletRes.usdtBalance || 0) : 0;
 
         // 1. 코인 라이브 시세 가져오기
@@ -321,8 +322,13 @@ async function updateAsset() {
         const sPnl = sEval - sBuy;
         const sRate = sBuy > 0 ? (sPnl / sBuy * 100) : 0;
 
-        if(document.getElementById('s-total-eval')) document.getElementById('s-total-eval').textContent = Math.floor(stockCash + sEval).toLocaleString() + '원';
-        if(document.getElementById('s-cash-hint')) document.getElementById('s-cash-hint').textContent = '예수금 ' + Math.floor(stockCash).toLocaleString() + '원 포함';
+        if(document.getElementById('s-total-eval')) document.getElementById('s-total-eval').textContent = Math.floor(stockCash + stockLocked + sEval).toLocaleString() + '원';
+        if(document.getElementById('s-cash-hint')) {
+            let hintHtml = '가용잔고 ' + Math.floor(stockCash).toLocaleString() + '원<br>' +
+                           '주문 중 ' + Math.floor(stockLocked).toLocaleString() + '원';
+            
+            document.getElementById('s-cash-hint').innerHTML = hintHtml;
+        }
 
         const sPnlEl = document.getElementById('s-total-pnl');
         if (sPnlEl) {
@@ -404,7 +410,7 @@ async function updateAsset() {
         // 4. 통합 자산 — 백엔드와 동일한 소스(/stock/my-asset)로 총액 표시
         const myAssetRes = await fetch('/stock/my-asset').then(r => r.ok ? r.json() : null);
         const grandTotalAsset = myAssetRes !== null ? myAssetRes
-                                                    : (stockCash + sEval) + ((coinCash + cEval) * EXCHANGE_RATE);
+                                                    : (stockCash + stockLocked + sEval) + ((coinCash + cEval) * EXCHANGE_RATE);
 
         // P&L / 수익률은 실제 거래 손익만 반영 (현금·환율 차이 제외)
         // 주식 손익: 현재 평가액 - 매입원가

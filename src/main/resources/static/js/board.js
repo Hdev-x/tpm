@@ -99,6 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if(result === "1") {
                     // 댓글 등록 성공 시 새로고침 (추후 비동기 리스트 업데이트로 교체 가능)
                     location.reload(); 
+                } else if(result === "not_logged_in") {
+                    alert("로그인이 필요한 기능입니다. 📈");
+                    location.href = "/member/login";
                 } else {
                     alert("댓글 등록에 실패했습니다.");
                 }

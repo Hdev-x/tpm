@@ -1,23 +1,51 @@
 /* =====================================================
-   index.js - 코스피 가상/실제 파이프라인 및 비트코인 빗썸 직통 분리 버전
+   index.js - 통합 대시보드 스크립트
    ===================================================== */
 
-/* 1. 유틸리티 함수: 한국투자증권 날짜 및 분봉 시간 파싱 */
-function parseStockDate(dateStr, timeStr) {
-    if (!dateStr) return Math.floor(Date.now() / 1000);
-    const y = parseInt(dateStr.substring(0, 4));
-    const m = parseInt(dateStr.substring(4, 6)) - 1;
-    const d = parseInt(dateStr.substring(6, 8));
+/* 1. 글로벌 상태 및 초기화 */
+let kospiChartObj = null, btcChartObj = null;
+let kospiSeries = null, btcSeries = null;
 
-    if (timeStr && timeStr.length >= 4) {
-        const hh = parseInt(timeStr.substring(0, 2));
-        const mm = parseInt(timeStr.substring(2, 4));
-        return new Date(y, m, d, hh, mm, 0).getTime() / 1000;
-    }
-    return new Date(y, m, d, 9, 0, 0).getTime() / 1000;
+// 시세 베이스라인 초기값
+currentKospiPrice = typeof currentKospiPrice !== 'undefined' ? currentKospiPrice : 7552.39;
+currentBtcPrice = typeof currentBtcPrice !== 'undefined' ? currentBtcPrice : 114000000;
+
+document.addEventListener("DOMContentLoaded", async () => {
+    console.log("🚀 대시보드 엔진 가동...");
+
+    // A. 차트 엔진 초기화
+    initCharts();
+
+    // B. 데이터 로드 루틴 (병렬 실행)
+    await Promise.all([
+        initDashboardData(),    // 지수 및 비트코인 초기가
+        loadGlobalTicker(),     // 상단 티커
+        loadRecentContents(),   // 최근 공지/게시글
+        loadHeroAsset(),        // 내 자산 (로그인 시)
+        loadStockNews("삼성전자"), // 뉴스
+        loadMarketHotTrends()    // 급등락 랭킹
+    ]);
+
+    // C. 실시간 업데이트 루프 시작
+    startRealTimeEngine();
+    setInterval(startRealTimeEngine, 4000); 
+
+    // D. 이벤트 리스너 등록
+    initEventListeners();
+});
+
+/* 2. 유틸리티 & 차트 함수 */
+function initCharts() {
+    const kRes = createMiniChart('kospi-mini-chart', '#F04452');
+    if (kRes) { kospiChartObj = kRes.chart; kospiSeries = kRes.series; }
+
+    const bRes = createMiniChart('btc-mini-chart', '#3182F6');
+    if (bRes) { btcChartObj = bRes.chart; btcSeries = bRes.series; }
+
+    if (kospiSeries) kospiSeries.setData(generateBaseHistory(currentKospiPrice, 10));
+    if (btcSeries) btcSeries.setData(generateBaseHistory(currentBtcPrice, 200000));
 }
 
-/* 2. 미니 차트 생성 함수 */
 function createMiniChart(containerId, lineColor) {
     const container = document.getElementById(containerId);
     if (!container) return null;
@@ -30,22 +58,10 @@ function createMiniChart(containerId, lineColor) {
             textColor: 'rgba(255, 255, 255, 0.4)',
             fontFamily: 'Pretendard, sans-serif',
         },
-        grid: {
-            vertLines: { visible: false },
-            horzLines: { color: 'rgba(255,255,255,0.03)' }
-        },
-        rightPriceScale: {
-            borderVisible: false,
-            scaleMargins: { top: 0.2, bottom: 0.1 }
-        },
-        timeScale: {
-            visible: true,
-            borderVisible: false,
-            timeVisible: true,
-            secondsVisible: false
-        },
-        handleScale: false,
-        handleScroll: false,
+        grid: { vertLines: { visible: false }, horzLines: { color: 'rgba(255,255,255,0.03)' } },
+        rightPriceScale: { borderVisible: false, scaleMargins: { top: 0.2, bottom: 0.1 } },
+        timeScale: { visible: true, borderVisible: false, timeVisible: true, secondsVisible: false },
+        handleScale: false, handleScroll: false,
     });
 
     const series = chart.addSeries(LightweightCharts.AreaSeries, {
@@ -53,24 +69,12 @@ function createMiniChart(containerId, lineColor) {
         topColor: lineColor + '33',
         bottomColor: lineColor + '00',
         lineWidth: 2,
-        priceLineVisible: false,
-        lastValueVisible: false,
+        priceLineVisible: false, lastValueVisible: false,
     });
 
-    window.addEventListener('resize', () => {
-        chart.resize(container.clientWidth, 180);
-    });
-
+    window.addEventListener('resize', () => chart.resize(container.clientWidth, 180));
     return { chart, series };
 }
-
-/* 3. 전역 변수 동기화 및 백업용 데이터 생성기 */
-let kospiChartObj = null, btcChartObj = null;
-let kospiSeries = null, btcSeries = null;
-
-// 💡 [현실 지수 반영] 전역 변수 디폴트 베이스라인을 현실 스펙(7552)으로 리셋!
-currentKospiPrice = typeof currentKospiPrice !== 'undefined' ? currentKospiPrice : 7552.39;
-currentBtcPrice = typeof currentBtcPrice !== 'undefined' ? currentBtcPrice : 114000000;
 
 function generateBaseHistory(basePrice, variance) {
     const data = [];
@@ -84,270 +88,251 @@ function generateBaseHistory(basePrice, variance) {
     return data;
 }
 
-/* 4. 초기화 구동 */
-document.addEventListener("DOMContentLoaded", () => {
-    const kRes = createMiniChart('kospi-mini-chart', '#F04452');
-    if (kRes) { kospiChartObj = kRes.chart; kospiSeries = kRes.series; }
+/* 3. 데이터 패치 함수군 */
 
-    const bRes = createMiniChart('btc-mini-chart', '#3182F6');
-    if (bRes) { btcChartObj = bRes.chart; btcSeries = bRes.series; }
+async function loadGlobalTicker() {
+    const tickerContainer = document.getElementById('global-ticker');
+    if (!tickerContainer) return;
 
-    kospiSeries.setData(generateBaseHistory(currentKospiPrice, 10));
-    btcSeries.setData(generateBaseHistory(currentBtcPrice, 200000));
-
-    initDashboardData().then(() => {
-        startRealTimeEngine();
-        setInterval(startRealTimeEngine, 4000); // 4초 주기 리프레시 엔진 작동
-    });
-});
-
-/* 5. 최초 데이터 매핑 */
-async function initDashboardData() {
-    let isChartLoaded = false;
-   
-    // B. 한투 백엔드 요약 정보 수급
     try {
-        const response = await fetch('/stock/tickers/summary');
-        const resData = await response.json();
-
-        if (resData && resData.data && resData.data.length > 0) {
-            const allMarketData = resData.data;
-            const kospiItem = allMarketData.find(item => item.stock_name.includes("코스피"));
-            if (kospiItem) {
-                // 🔴 [보정 완료] 백엔드가 정제해서 준 7552.39 그대로 파싱하며 나누기 100 완전 삭제!
-                currentKospiPrice = parseFloat(kospiItem.stck_prpr);
-
-                if (!isChartLoaded) {
-                    kospiSeries.setData(generateBaseHistory(currentKospiPrice, 15));
-                    console.log("🛡️ 대체 가상 히스토리 동기화");
-                }
-
-                document.getElementById('idx-kospi-price').textContent = currentKospiPrice.toLocaleString(undefined, {minimumFractionDigits: 2});
-
-                const changeEl = document.getElementById('idx-kospi-change');
-                const rate = parseFloat(kospiItem.prdy_ctrt);
-                changeEl.textContent = (rate >= 0 ? '+' : '') + kospiItem.prdy_ctrt + '%';
-                changeEl.style.color = rate >= 0 ? '#F04452' : '#3182F6';
-                console.log("✅ 코스피 실전 현재가 초기화 성공:", currentKospiPrice);
-            }
+        const response = await fetch('/api/market-index');
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+            tickerContainer.innerHTML = data.map(idx => {
+                const isUp = idx.up;
+                const color = isUp ? '#F04452' : '#3182F6';
+                let emoji = '📈';
+                if (idx.name.includes('환율')) emoji = '💵';
+                else if (idx.name.includes('비트코인')) emoji = '₿';
+                else if (idx.name.includes('나스닥') || idx.name.includes('S&P')) emoji = '🇺🇸';
+                
+                return `
+                    <div class="ticker-item">
+                        <span class="ticker-label">${emoji} ${idx.name}</span>
+                        <span class="ticker-price">${idx.price}</span>
+                        <span class="ticker-change" style="color: ${color}">${idx.change} (${idx.rate})</span>
+                    </div>
+                `;
+            }).join('');
         }
     } catch (e) {
-        console.warn("⚠️ 네이버 기반 백엔드 요약 시세 수급 실패");
-    }
-
-    // C. 비트코인 빗썸 퍼블릭 API 로컬 프록시 호출 전개
-    try {
-        const response = await fetch('/coin/api/bithumb/ticker?order=BTC&payment=KRW');
-        const resData = await response.json();
-
-        if (resData && resData.status === "0000" && resData.data) {
-            currentBtcPrice = parseFloat(resData.data.closing_price);
-            const rate = parseFloat(resData.data.fluctate_rate_24H);
-            const changeEl = document.getElementById('idx-btc-change');
-            changeEl.textContent = (rate >= 0 ? '+' : '') + rate + '%';
-            changeEl.style.color = rate >= 0 ? '#F04452' : '#3182F6';
-
-            const newHistory = generateBaseHistory(currentBtcPrice, 400000);
-            btcSeries.setData(newHistory);
-            document.getElementById('idx-btc-price').textContent = Math.floor(currentBtcPrice).toLocaleString();
-            console.log("✅ 빗썸 비트코인 실제 현재가 싱크 완료");
-        }
-    } catch (e) {
-        console.warn("⚠️ 빗썸 API 통신 오류:", e);
+        console.warn("⚠️ 글로벌 지수 로드 실패", e);
     }
 }
 
-/* =====================================================
-   6. 실시간 동기화 엔진 (실전 시세 반영)
-   ===================================================== */
+async function loadRecentContents() {
+    // 1. 공지사항
+    const noticeDiv = document.getElementById('recent-notices');
+    if (noticeDiv) {
+        try {
+            const res = await fetch('/api/market-index/recent-notice');
+            const data = await res.json();
+            noticeDiv.innerHTML = data.length > 0 ? data.map(n => `
+                <a href="/notice/detail?noticeNo=${n.noticeNo}" class="list-item">
+                    <span class="item-title"><span class="badge badge-notice">공지</span>${n.noticeTitle}</span>
+                    <span class="item-date">${formatDate(n.noticeDate)}</span>
+                </a>
+            `).join('') : '<p style="color: var(--text-grey); font-size: 13px; text-align: center; padding: 20px;">공지사항이 없습니다.</p>';
+        } catch (e) { console.error("공지사항 패치 실패", e); }
+    }
+
+    // 2. 게시판
+    const boardDiv = document.getElementById('recent-boards');
+    if (boardDiv) {
+        try {
+            const res = await fetch('/api/market-index/recent-board');
+            const data = await res.json();
+            boardDiv.innerHTML = data.length > 0 ? data.map(b => `
+                <a href="/board/detail?boardNo=${b.boardNo}" class="list-item">
+                    <span class="item-title"><span class="badge badge-new">New</span>${b.boardTitle}</span>
+                    <span class="item-date">${formatDate(b.boardDate)}</span>
+                </a>
+            `).join('') : '<p style="color: var(--text-grey); font-size: 13px; text-align: center; padding: 20px;">게시글이 없습니다.</p>';
+        } catch (e) { console.error("게시판 패치 실패", e); }
+    }
+}
+
+function formatDate(dateObj) {
+    if (!dateObj) return "";
+    // ISO String "2023-10-27T10:00:00" 또는 Jackson Array [2023, 10, 27...] 대응
+    if (Array.isArray(dateObj)) {
+        return `${String(dateObj[1]).padStart(2, '0')}-${String(dateObj[2]).padStart(2, '0')}`;
+    }
+    if (typeof dateObj === 'string') {
+        return dateObj.substring(5, 10); // "10-27"
+    }
+    return "";
+}
+
+async function loadHeroAsset() {
+    const assetEl = document.getElementById('hero-total-asset');
+    if (!assetEl) return;
+
+    try {
+        const res = await fetch('/stock/my-asset');
+        const val = await res.json();
+        if (val !== null && val !== undefined) {
+            assetEl.textContent = Number(val).toLocaleString() + ' 원';
+        }
+    } catch (e) {
+        assetEl.textContent = '로그인이 필요합니다';
+    }
+}
+
+async function initDashboardData() {
+    // 코스피 초기화
+    try {
+        const response = await fetch('/stock/tickers/summary');
+        const resData = await response.json();
+        if (resData?.data?.length > 0) {
+            const kospiItem = resData.data.find(item => item.stock_name.includes("코스피"));
+            if (kospiItem) {
+                currentKospiPrice = parseFloat(kospiItem.stck_prpr);
+                if (kospiSeries) kospiSeries.setData(generateBaseHistory(currentKospiPrice, 15));
+                updateIndexUI('idx-kospi', currentKospiPrice, kospiItem.prdy_ctrt);
+            }
+        }
+    } catch (e) { console.warn("KOSPI 초기화 실패"); }
+
+    // 비트코인 초기화
+    try {
+        const response = await fetch('/coin/api/bithumb/ticker?order=BTC&payment=KRW');
+        const resData = await response.json();
+        if (resData?.status === "0000" && resData.data) {
+            currentBtcPrice = parseFloat(resData.data.closing_price);
+            if (btcSeries) btcSeries.setData(generateBaseHistory(currentBtcPrice, 400000));
+            updateIndexUI('idx-btc', currentBtcPrice, resData.data.fluctate_rate_24H);
+        }
+    } catch (e) { console.warn("BTC 초기화 실패"); }
+}
+
+function updateIndexUI(idPrefix, price, rate) {
+    const priceEl = document.getElementById(`${idPrefix}-price`);
+    const changeEl = document.getElementById(`${idPrefix}-change`);
+    if (priceEl) priceEl.textContent = idPrefix.includes('btc') ? Math.floor(price).toLocaleString() : price.toLocaleString(undefined, {minimumFractionDigits: 2});
+    if (changeEl) {
+        const r = parseFloat(rate);
+        changeEl.textContent = (r >= 0 ? '+' : '') + rate + '%';
+        changeEl.style.color = r >= 0 ? '#F04452' : '#3182F6';
+    }
+}
+
+/* 4. 실시간 엔진 */
 async function startRealTimeEngine() {
     const currentTime = Math.floor(Date.now() / 1000) + 32400;
 
-    // 코스피 실시간 루틴 (백엔드가 포워딩한 네이버 실전 주가 반영)
+    // KOSPI 실시간
     try {
-        const response = await fetch('/stock/tickers/summary');
-        const resData = await response.json();
-
-        if (resData && resData.data && resData.data.length > 0) {
-            const kospiItem = resData.data.find(item => item.stock_name.includes("코스피"));
-            if (kospiItem && kospiItem.stck_prpr) {
-                
-                // 🔴 [보정 완료] 실시간 동기화 루프에서도 나누기 100 완전 척결! 순정 7500선 수급!
-                currentKospiPrice = parseFloat(kospiItem.stck_prpr);
-
-                const changeEl = document.getElementById('idx-kospi-change');
-                const rate = parseFloat(kospiItem.prdy_ctrt);
-                changeEl.textContent = (rate >= 0 ? '+' : '') + kospiItem.prdy_ctrt + '%';
-                changeEl.style.color = rate >= 0 ? '#F04452' : '#3182F6';
-
-                console.log("📊 [실시간 싱크] KOSPI 현재 지수:", currentKospiPrice);
-            }
+        const res = await fetch('/stock/tickers/summary');
+        const resData = await res.json();
+        const kospiItem = resData?.data?.find(item => item.stock_name.includes("코스피"));
+        if (kospiItem) {
+            currentKospiPrice = parseFloat(kospiItem.stck_prpr);
+            updateIndexUI('idx-kospi', currentKospiPrice, kospiItem.prdy_ctrt);
         }
-    } catch (e) {
-        console.warn("⚠️ 백엔드 시세 파이프라인 통신 대기 중");
-    }
+    } catch (e) {}
+    if (kospiSeries) kospiSeries.update({ time: currentTime, value: currentKospiPrice });
 
-    // 데이터가 변환 없이 정상 공급되므로 차트 라인이 왜곡 없이 똑바로 그려집니다.
-    kospiSeries.update({ time: currentTime, value: currentKospiPrice });
-    document.getElementById('idx-kospi-price').textContent = currentKospiPrice.toLocaleString(undefined, { minimumFractionDigits: 2 });
-
-    // 비트코인 실시간 루틴 (로컬 프록시 사용)
+    // BTC 실시간
     try {
-        const response = await fetch('/coin/api/bithumb/ticker?order=BTC&payment=KRW');
-        const resData = await response.json();
-
-        if (resData && resData.status === "0000" && resData.data) {
+        const res = await fetch('/coin/api/bithumb/ticker?order=BTC&payment=KRW');
+        const resData = await res.json();
+        if (resData?.status === "0000" && resData.data) {
             currentBtcPrice = parseFloat(resData.data.closing_price);
-            const rate = parseFloat(resData.data.fluctate_rate_24H);
-            const changeEl = document.getElementById('idx-btc-change');
-            changeEl.textContent = (rate >= 0 ? '+' : '') + rate + '%';
-            changeEl.style.color = rate >= 0 ? '#F04452' : '#3182F6';
+            updateIndexUI('idx-btc', currentBtcPrice, resData.data.fluctate_rate_24H);
         }
     } catch (e) {
-        currentBtcPrice += Math.floor(Math.random() * 10000 - 5000);
+        currentBtcPrice += (Math.random() * 10000 - 5000);
     }
-    btcSeries.update({ time: currentTime, value: currentBtcPrice });
-    document.getElementById('idx-btc-price').textContent = Math.floor(currentBtcPrice).toLocaleString();
+    if (btcSeries) btcSeries.update({ time: currentTime, value: currentBtcPrice });
 }
 
-function loadStockNews(keyword) {
-    if (!keyword) keyword = "삼성전자";
-    
-    // 키워드 텍스트 변경 가드
-    const keywordSpan = document.getElementById("current-news-keyword");
-    if(keywordSpan) keywordSpan.innerText = keyword;
-    
+/* 5. 뉴스 및 랭킹 */
+async function loadStockNews(keyword) {
     const newsListDiv = document.getElementById("naver-news-list");
     if(!newsListDiv) return;
     
-    // 📡 백엔드 뉴스 API 정밀 타격
-    fetch("/news?keyword=" + encodeURIComponent(keyword))
-        .then(response => {
-            if (!response.ok) throw new Error("뉴스 서버 응답 불능");
-            return response.json();
-        })
-        .then(data => {
-            newsListDiv.innerHTML = "";
-            
-            if (!data.items || data.items.length === 0) {
-                newsListDiv.innerHTML = `<p style="color: #848e9c; text-align: center; padding: 20px 0;">관련 뉴스가 존재하지 않습니다.</p>`;
-                return;
-            }
-            
-            data.items.forEach(item => {
-                const card = document.createElement("div");
-                card.style.borderBottom = "1px solid #222634";
-                card.style.padding = "12px 0";
-                
-                card.innerHTML = `
-                    <div style="margin-bottom: 4px; text-align: left;">
-                        <a href="${item.link}" target="_blank" style="color: #e9ecf0; text-decoration: none; font-weight: bold; font-size: 13px;">
-                            ${item.title}
-                        </a>
-                    </div>
-                    <div style="color: #848e9c; font-size: 11px; line-height: 1.4; text-align: left;">
-                        ${item.description}
-                    </div>
-                `;
-                newsListDiv.appendChild(card);
-            });
-        })
-        .catch(error => {
-            console.error("❌ 뉴스 렌더링 실패:", error);
-            newsListDiv.innerHTML = `<p style="color: #f23645; text-align: center; padding: 10px 0; font-size: 12px;">⚠️ 실시간 뉴스 수급이 지연되고 있습니다.</p>`;
+    try {
+        const response = await fetch("/news?keyword=" + encodeURIComponent(keyword || "삼성전자"));
+        const data = await response.json();
+        newsListDiv.innerHTML = "";
+        
+        if (!data.items || data.items.length === 0) {
+            newsListDiv.innerHTML = `<p style="color: #848e9c; text-align: center; padding: 20px;">관련 뉴스가 없습니다.</p>`;
+            return;
+        }
+        
+        data.items.forEach(item => {
+            const div = document.createElement("div");
+            div.style.borderBottom = "1px solid #222634";
+            div.style.padding = "12px 0";
+            div.innerHTML = `
+                <a href="${item.link}" target="_blank" style="color: #e9ecf0; text-decoration: none; font-weight: bold; font-size: 13px;">${item.title}</a>
+                <div style="color: #848e9c; font-size: 11px; margin-top: 4px;">${item.description}</div>
+            `;
+            newsListDiv.appendChild(div);
         });
+    } catch (error) {
+        newsListDiv.innerHTML = `<p style="color: #f23645; text-align: center; padding: 10px;">뉴스 수급 지연 중...</p>`;
+    }
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-    // 최초 실행구동
-    loadStockNews("삼성전자");
-    if (typeof loadMarketHotTrends === "function") loadMarketHotTrends();
+async function loadMarketHotTrends() {
+    const rankListTbody = document.getElementById("market-rank-list");
+    if(!rankListTbody) return;
+    
+    const mode = typeof currentRankMode !== 'undefined' ? currentRankMode : 'UP';
+    
+    try {
+        const response = await fetch(`/stock/rank?mode=${mode}`);
+        const data = await response.json();
+        rankListTbody.innerHTML = "";
+        
+        if (!data || data.length === 0) {
+            rankListTbody.innerHTML = `<tr><td colspan="4" style="color: #848e9c; text-align: center; padding: 40px 0;">실시간 데이터를 준비 중입니다...</td></tr>`;
+            return;
+        }
+        
+        data.forEach((stock, index) => {
+            const row = document.createElement("tr");
+            row.style.borderBottom = "1px solid #222634";
+            row.style.cursor = "pointer";
+            
+            // 💡 [안전 조치] 문자열인지 숫자인지 모를 데이터를 안전하게 가공합니다.
+            const rawRate = stock.rate ? String(stock.rate).replace(/%/g, '') : "0";
+            const rawPrice = stock.price ? String(stock.price).replace(/,/g, '') : "0";
+            
+            const rate = parseFloat(rawRate);
+            const price = parseFloat(rawPrice);
+            const rateColor = rate >= 0 ? "#f23645" : "#2962ff";
+            
+            row.innerHTML = `
+                <td style="padding: 12px 4px; color: #848e9c;">${index + 1}</td>
+                <td style="padding: 12px 4px; font-weight: bold; color: #e9ecf0;">${stock.name || '알 수 없음'}</td>
+                <td style="padding: 12px 4px; text-align: right;">${isNaN(price) ? '0' : price.toLocaleString()}</td>
+                <td style="padding: 12px 4px; text-align: right; font-weight: bold; color: ${rateColor};">${rate > 0 ? '+' : ''}${rate}%</td>
+            `;
+            row.onclick = () => loadStockNews(stock.name);
+            rankListTbody.appendChild(row);
+        });
+    } catch (e) {
+        console.warn("⚠️ 랭킹 데이터 렌더링 실패", e);
+        rankListTbody.innerHTML = `<tr><td colspan="4" style="color: #f23645; text-align: center; padding: 40px 0;">데이터 가공 중 오류 발생</td></tr>`;
+    }
+}
 
-    // 🌟 [엔터 감지 엔진] 이벤트 리스너는 함수 바깥인 여기에 독립적으로 존재해야 합니다.
+function initEventListeners() {
     const mainNewsInput = document.getElementById("main-news-search");
     if (mainNewsInput) {
-        mainNewsInput.addEventListener("keypress", function(e) {
+        mainNewsInput.addEventListener("keypress", (e) => {
             if (e.key === "Enter") {
                 const keyword = mainNewsInput.value.trim();
                 if (keyword) {
-                    mainNewsInput.blur(); // 인풋창 포커스 아웃 효과
-                    
-                    // 📡 갱신된 키워드로 뉴스 페치 함수 원격 가동!
-                    console.log(`🔍 메인 대시보드 뉴스 타겟 전환: ${keyword}`);
+                    mainNewsInput.blur();
                     loadStockNews(keyword);
                 }
             }
         });
     }
-});
-
-/**
- * 📈 2. 실시간 급상승 / 급등락 종목 렌더링 (JSP EL태그 충돌 완벽 방어)
- */
-function loadMarketHotTrends() {
-    const rankListTbody = document.getElementById("market-rank-list");
-    if(!rankListTbody) return;
-    
-    // 💡 전역 변수로 관리 중인 모드('UP' 또는 'DOWN')를 동적으로 읽어옵니다.
-    // 만약 변수가 안 잡혀있다면 기본값 'UP'으로 방어합니다.
-    const mode = typeof currentRankMode !== 'undefined' ? currentRankMode : 'UP';
-    
-    // 📡 방금 컨트롤러에 새로 뚫은 따끈따끈한 실전 랭킹 API 창구를 직격합니다!
-    fetch(`/stock/rank?mode=${mode}`)
-        .then(response => {
-            if (!response.ok) throw new Error("시세 엔진 통신 대기");
-            return response.json();
-        })
-        .then(data => {
-            rankListTbody.innerHTML = "";
-            
-            // 🛡️ 백엔드 캐시가 아직 준비되지 않았거나 비어있을 때 예외 가드
-            if (!data || data.length === 0) {
-                rankListTbody.innerHTML = `<tr><td colspan="4" style="color: #848e9c; text-align: center; padding: 20px 0;">실시간 데이터를 파싱 중입니다...</td></tr>`;
-                return;
-            }
-            
-            // 백엔드 자바 스트림이 정렬해서 준 최상위 5개 종목을 그대로 순회 렌더링
-            data.forEach((stock, index) => {
-                const row = document.createElement("tr");
-                row.style.borderBottom = "1px solid #222634";
-                row.style.cursor = "pointer";
-                
-                const stockName = stock.name || "-"; 
-                const priceStr = stock.price || "0";     
-                const rateStr = stock.rate || "0";      
-                
-                // 현재가 포맷팅 (콤마 추가)
-                const price = typeof priceStr !== 'undefined' ? parseFloat(priceStr.toString().replace(/,/g, '')).toLocaleString() : '-';
-                
-                // 부호 결정을 위한 변수 치환
-                const rate = parseFloat(rateStr.toString().replace(/%/g, ''));
-                const isUp = rate >= 0;
-                const rateColor = isUp ? "#f23645" : "#2962ff";
-                const sign = isUp ? "+" : ""; 
-                
-                // 종목 클릭 시 해당 종목 실시간 네이버 뉴스 수급 링크 연동
-                row.addEventListener("click", () => {
-                    if (typeof loadStockNews === "function") loadStockNews(stockName);
-                });
-                
-                // 외부 js 파일 전용 순정 템플릿 리터럴 렌더링
-                row.innerHTML = `
-                    <td style="padding: 12px 4px; font-weight: bold; color: #848e9c;">${index + 1}</td>
-                    <td style="padding: 12px 4px; font-weight: bold; color: #e9ecf0; text-align: left;">${stockName}</td>
-                    <td style="padding: 12px 4px; text-align: right; color: #e9ecf0;">${price}</td>
-                    <td style="padding: 12px 4px; text-align: right; font-weight: bold; color: ${rateColor};">${sign}${rateStr}%</td>
-                `;
-                rankListTbody.appendChild(row);
-            });
-        })
-        .catch(error => {
-            console.warn("⚠️ 백엔드 실시간 랭킹 서블릿 통신 대기 중...", error);
-        });
 }
-
-// 최초 구동부 연동
-document.addEventListener("DOMContentLoaded", function() {
-    loadStockNews("삼성전자");
-    loadMarketHotTrends();
-});

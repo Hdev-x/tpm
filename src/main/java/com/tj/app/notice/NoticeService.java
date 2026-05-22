@@ -53,6 +53,10 @@ public class NoticeService {
 		return noticeMapper.list(noticeDTO);
 	}
 
+	public List<NoticeDTO> listRecent(int limit) throws Exception {
+		return noticeMapper.listRecent(limit);
+	}
+
 	public NoticeDTO detail(NoticeDTO noticeDTO) throws Exception {
 		
 		noticeMapper.updateViewCount(noticeDTO);

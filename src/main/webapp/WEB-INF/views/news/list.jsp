@@ -59,19 +59,19 @@
 							id="popular-keywords-box">
 							<div class="si-type-tab"
 								style="text-align: center; padding: 10px; border-radius: 8px; cursor: pointer;"
-								onclick="searchNewsByKeyword('삼성전자')">1. 삼성전자</div>
+								onclick="searchNewsByKeyword('삼성전자')">삼성전자</div>
 							<div class="si-type-tab"
 								style="text-align: center; padding: 10px; border-radius: 8px; cursor: pointer;"
-								onclick="searchNewsByKeyword('SK하이닉스')">2. SK하이닉스</div>
+								onclick="searchNewsByKeyword('SK하이닉스')">SK하이닉스</div>
 							<div class="si-type-tab"
 								style="text-align: center; padding: 10px; border-radius: 8px; cursor: pointer;"
-								onclick="searchNewsByKeyword('현대차')">3. 현대차</div>
+								onclick="searchNewsByKeyword('현대차')">현대차</div>
 							<div class="si-type-tab"
 								style="text-align: center; padding: 10px; border-radius: 8px; cursor: pointer;"
-								onclick="searchNewsByKeyword('BTC')">4. BTC</div>
+								onclick="searchNewsByKeyword('BTC')">BTC</div>
 							<div class="si-type-tab"
 								style="text-align: center; padding: 10px; border-radius: 8px; cursor: pointer;"
-								onclick="searchNewsByKeyword('도지')">5. 도지코인</div>
+								onclick="searchNewsByKeyword('도지')">도지코인</div>
 						</div>
 					</div>
 				</div>

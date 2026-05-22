@@ -4,7 +4,7 @@
   "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.tj.app.board.BoardMapper">
 
-<sql id="search_sql">
+	<sql id="search_sql">
 		WHERE
 		<choose>
 			<when test="kind == 'v2'">"BOARD_CONTENT"</when>
@@ -13,7 +13,7 @@
 		</choose>
 		LIKE concat('%', #{search}, '%')
 	</sql>
-	
+
 	<select id="getCount" resultType="Long">
 		SELECT COUNT("BOARD_NO") From "BOARD"
 		<include refid="search_sql"></include>
@@ -37,23 +37,35 @@
 
 	<insert id="create" parameterType="BoardDTO"
 		useGeneratedKeys="true" keyProperty="boardNo">
-		INSERT INTO "BOARD" ("BOARD_TITLE", 
-        "BOARD_WRITER", 
-        "BOARD_CONTENT", 
-        "BOARD_DATE", 
-        "USERNAME", 
-        "BOARD_VIEW")
+		INSERT INTO "BOARD"
+		("BOARD_TITLE",
+		"BOARD_WRITER",
+		"BOARD_CONTENT",
+		"BOARD_DATE",
+		"USERNAME",
+		"BOARD_VIEW")
 		VALUES
 		(#{boardTitle}, #{boardWriter}, #{boardContent},
-CURRENT_TIMESTAMP, #{username}, 0)
+		CURRENT_TIMESTAMP, #{username}, 0)
 	</insert>
 
 	<select id="list" resultMap="detailResult" parameterType="Pager">
-    SELECT * FROM "BOARD"
-    <include refid="search_sql"></include>
-    ORDER BY "BOARD_NO" DESC
-    LIMIT #{perPage} OFFSET #{startNum}
+		SELECT * FROM "BOARD"
+		<include refid="search_sql"></include>
+		ORDER BY "BOARD_NO" DESC
+		LIMIT #{perPage} OFFSET #{startNum}
 	</select>
+
+<select id="listRecent" parameterType="int" resultType="com.tj.app.board.BoardDTO">
+    SELECT
+        "BOARD_NO"       AS boardNo,
+        "BOARD_TITLE"    AS boardTitle,
+        "BOARD_DATE"     AS boardDate,
+        "BOARD_WRITER"   AS boardWriter
+    FROM "BOARD" 
+    ORDER BY "BOARD_NO" DESC
+    LIMIT #{limit}
+</select>
 
 	<select id="detail" resultMap="detailResult">
 		SELECT *
@@ -92,13 +104,14 @@ CURRENT_TIMESTAMP, #{username}, 0)
 
 	<delete id="deleteFiles" parameterType="BoardDTO">
 		DELETE FROM "FILE"
-		WHERE "BOARD_NO" = #{boardNo}
+		WHERE
+		"BOARD_NO" = #{boardNo}
 	</delete>
-	
+
 	<update id="updateViewCount">
-    UPDATE "BOARD"
-    SET "BOARD_VIEW" = "BOARD_VIEW" + 1
-    WHERE "BOARD_NO" = #{boardNo}
+		UPDATE "BOARD"
+		SET "BOARD_VIEW" = "BOARD_VIEW" + 1
+		WHERE "BOARD_NO" = #{boardNo}
 	</update>
 
 </mapper>

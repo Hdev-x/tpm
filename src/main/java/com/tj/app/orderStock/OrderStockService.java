@@ -203,6 +203,9 @@ public class OrderStockService {
 	@Autowired
 	private com.tj.app.market.coin.CoinService coinService;
 
+	@Autowired
+	private com.tj.app.market.coin.CoinMarketService coinMarketService;
+
 	public long calculateTotalAsset(MemberDTO member) {
 	    if (member == null) return 0;
 	    
@@ -219,7 +222,40 @@ public class OrderStockService {
 	        stockValue += (count * price);
 	    }
 
-	    return stockCash + stockValue;
+	    // 2. 코인 자산 계산 (USDT 잔고 + 보유 코인 평가액)
+	    double coinTotalUsdt = 0;
+	    try {
+	        com.tj.app.market.coin.CoinWalletDTO wallet = coinService.getWallet(member.getUsername());
+	        if (wallet != null) {
+	            coinTotalUsdt += wallet.getUsdtBalance();
+	        }
+	        
+	        List<com.tj.app.market.coin.CoinHoldingsDTO> coinHoldings = coinService.getHoldingList(member.getUsername());
+	        if (coinHoldings != null && !coinHoldings.isEmpty()) {
+	            Map<String, Double> prices = coinMarketService.getTickerPriceMap();
+	            for (com.tj.app.market.coin.CoinHoldingsDTO ch : coinHoldings) {
+	                double price = prices.getOrDefault(ch.getCoinCode(), ch.getAvgPrice());
+	                coinTotalUsdt += (ch.getCoinCount() * price);
+	            }
+	        }
+	    } catch (Exception e) {
+	        log.error("코인 자산 합산 중 오류", e);
+	    }
+
+	    // 3. 통합 (환율 적용)
+	    double exchangeRate = 1400; // 기본값
+	    try {
+	        com.tj.app.market.index.MarketIndexDTO exDTO = indexService.getMarketIndex().stream()
+	                .filter(d -> d.getName().contains("환율"))
+	                .findFirst().orElse(null);
+	        if (exDTO != null) {
+	            exchangeRate = Double.parseDouble(exDTO.getPrice().replace(",", ""));
+	        }
+	    } catch (Exception e) {
+	        log.error("환율 정보 획득 실패", e);
+	    }
+
+	    return stockCash + stockValue + (long)(coinTotalUsdt * exchangeRate);
 	}
 	
 	public List<Map<String, Object>> getAssetDetails(MemberDTO member) {
@@ -253,17 +289,16 @@ public class OrderStockService {
 	    // 2. 코인 자산 상세
 	    try {
 	        var coinHoldings = coinService.getHoldingList(member.getUsername());
+	        Map<String, Double> prices = coinMarketService.getTickerPriceMap();
+	        
 	        for (var ch : coinHoldings) {
 	            double count = ch.getCoinCount();
 	            double avgPrice = ch.getAvgPrice();
-	            
-	            // 서버측 코인 현재가 캐시가 없으므로 일단 평단가 기준 (수익률 0%) 또는 
-	            // 간단한 외부 API 연동이 필요하나, 여기서는 구조만 잡습니다.
-	            double currentPrice = avgPrice; // 실시간 연동 전까지는 평단가로 표시
+	            double currentPrice = prices.getOrDefault(ch.getCoinCode(), avgPrice);
 	            
 	            double totalBuy = avgPrice * count;
 	            double totalEval = currentPrice * count;
-	            double profitRate = 0; // 실시간가 연동 시 계산 가능
+	            double profitRate = (totalBuy == 0) ? 0 : ((totalEval - totalBuy) / totalBuy) * 100;
 
 	            Map<String, Object> map = new HashMap<>();
 	            map.put("type", "coin");

@@ -11,105 +11,86 @@
     <link rel="stylesheet" href="/css/coinCommunity.css">
     <style>
         .notice-community-page .notice-header {
-            min-height: 92px;
-            padding: 0 50px;
+            min-height: 140px;
+            padding: 40px 50px;
             display: flex;
             flex-direction: column;
             justify-content: center;
-            background: var(--sidebar);
-            border: 0;
-            box-shadow: none;
-            margin: 0;
+            background: linear-gradient(135deg, #1c2030 0%, #3d252a 100%);
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 0;
         }
 
         .notice-community-page .notice-title {
             margin: 0;
-            font-size: 28px;
+            font-size: 32px;
             font-weight: 800;
             color: var(--text);
-            letter-spacing: 0;
+            letter-spacing: -0.5px;
         }
 
         .notice-community-page .notice-subtitle {
-            margin: 8px 0 0;
-            font-size: 14px;
-            color: var(--text3);
+            margin: 12px 0 0;
+            font-size: 16px;
+            color: var(--text-grey);
+            opacity: 0.8;
         }
 
         .notice-community-page .main-layout {
             display: grid;
-            grid-template-columns: minmax(560px, 1fr) 360px;
-            gap: var(--gap);
-            padding: var(--gap) 50px 70px;
-            overflow: hidden;
+            grid-template-columns: 1fr 340px;
+            gap: 24px;
+            padding: 32px 50px 80px;
+            max-width: 1400px;
+            margin: 0 auto;
         }
 
         .notice-feed-panel {
-            min-width: 0;
+            background: var(--surface);
+            border-radius: 24px;
+            border: 1px solid var(--border);
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            border: 0;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
         }
 
         .notice-toolbar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            gap: 18px;
-            padding: 16px 28px 14px;
-            flex-shrink: 0;
+            padding: 24px 32px;
+            border-bottom: 1px solid var(--border);
         }
 
         .notice-tab {
-            font-size: 14px;
+            font-size: 15px;
             font-weight: 700;
             color: var(--text);
-            padding: 7px 10px;
-            border-radius: 7px;
-            background: rgba(255, 255, 255, 0.04);
+            padding: 8px 16px;
+            border-radius: 12px;
+            background: rgba(240, 68, 82, 0.1);
+            color: #F04452;
+            border: 1px solid rgba(240, 68, 82, 0.2);
         }
 
         .notice-write-btn {
-            height: 34px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 14px;
-            border-radius: 7px;
-            background: var(--blue);
-            color: #fff;
-            font-size: 13px;
+            height: 44px;
+            padding: 0 24px;
+            background: #F04452;
+            color: white;
+            border-radius: 12px;
             font-weight: 700;
             text-decoration: none;
-            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s;
         }
+        .notice-write-btn:hover { transform: translateY(-2px); }
 
         .notice-list-wrap {
-            position: relative;
-            padding: 0 28px 22px;
-            overflow-y: auto;
-            min-height: 0;
-            flex: 1 1 auto;
-        }
-
-        .notice-list-wrap::before,
-        .notice-list-wrap::after {
-            content: "";
-            position: absolute;
-            left: 28px;
-            right: 28px;
-            height: 1px;
-            background: var(--border);
-            pointer-events: none;
-        }
-
-        .notice-list-wrap::before {
-            top: 0;
-        }
-
-        .notice-list-wrap::after {
-            bottom: 0;
+            padding: 0;
         }
 
         .notice-table {
@@ -118,117 +99,82 @@
         }
 
         .notice-table th {
-            padding: 10px 12px;
-            color: var(--text3);
-            font-size: 12px;
-            font-weight: 500;
+            padding: 16px 24px;
+            background: rgba(255,255,255,0.02);
+            color: var(--text-grey);
+            font-size: 13px;
+            font-weight: 600;
             text-align: left;
-            border-bottom: 0;
-        }
-
-        .notice-table th:last-child,
-        .notice-table td:last-child {
-            text-align: right;
+            border-bottom: 1px solid var(--border);
         }
 
         .notice-table td {
-            height: 64px;
-            padding: 0 12px;
+            padding: 20px 24px;
             border-bottom: 1px solid var(--border);
-            color: var(--text2);
-            font-size: 13px;
-        }
-
-        .notice-table tbody tr:last-child td {
-            border-bottom: 0;
+            color: var(--text);
+            font-size: 15px;
         }
 
         .notice-row {
             cursor: pointer;
-            transition: background 0.12s;
+            transition: all 0.2s;
         }
 
         .notice-row:hover {
-            background: rgba(255, 255, 255, 0.03);
-        }
-
-        .notice-no {
-            width: 72px;
-            color: var(--text3);
+            background: rgba(240, 68, 82, 0.03);
         }
 
         .notice-post-title {
-            font-size: 15px;
             font-weight: 700;
             color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
-        .notice-writer {
-            width: 120px;
-            white-space: nowrap;
-        }
-
-        .notice-date {
-            width: 180px;
-            color: var(--text3);
-            white-space: nowrap;
+        .notice-badge {
+            background: rgba(240, 68, 82, 0.1);
+            color: #F04452;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 800;
         }
 
         .notice-view {
-            width: 88px;
-            color: var(--blue);
             font-weight: 700;
+            color: #F04452;
         }
 
-        .notice-table td.notice-empty {
-            height: 360px;
-            text-align: center;
-            color: var(--text3);
-            border-bottom: 0;
-        }
-
-        .notice-empty-inner {
-            min-height: 360px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .notice-news-panel {
-            width: auto;
-            min-width: 0;
-            max-width: none;
-            flex-basis: auto;
-        }
-
-        @media (max-width: 1080px) {
-            .notice-community-page .main-layout {
-                grid-template-columns: 1fr;
-                padding: var(--gap) 18px 28px;
-            }
-
-            .notice-community-page .notice-header {
-                padding: 0 18px;
-            }
+        .cm-news-panel {
+            background: var(--surface);
+            border-radius: 24px;
+            border: 1px solid var(--border);
+            padding: 24px;
+            height: fit-content;
         }
     </style>
 </head>
-<body class="chart-page community-page notice-community-page" data-sidebar-tab="invest" data-sidebar-invest-tab="stock">
+<body class="chart-page community-page notice-community-page">
     <div class="app-wrapper">
         <div class="page">
             <%@ include file="../common/nav.jsp" %>
 
             <div class="notice-header">
-                <h1 class="notice-title">공지사항</h1>
-                <p class="notice-subtitle">중요한 소식과 업데이트를 확인하세요</p>
+                <div style="max-width: 1400px; margin: 0 auto; width: 100%;">
+                    <h1 class="notice-title">공지사항</h1>
+                    <p class="notice-subtitle">중요한 소식과 업데이트를 확인하세요</p>
+                </div>
             </div>
 
             <div class="main-layout">
-                <div class="card notice-feed-panel">
+                <div class="notice-feed-panel">
                     <div class="notice-toolbar">
-                        <span class="notice-tab">전체 공지</span>
+                        <span class="notice-tab">📢 전체 공지</span>
                         <c:if test="${not empty member.roles && member.roles[0].roleNo eq 1}">
-                            <a href="./create" class="notice-write-btn">공지 작성</a>
+                            <a href="./create" class="notice-write-btn">
+                                <span>+</span> 공지 작성
+                            </a>
                         </c:if>
                     </div>
 
@@ -236,11 +182,11 @@
                         <table class="notice-table">
                             <thead>
                                 <tr>
-                                    <th class="notice-no">번호</th>
+                                    <th style="width: 80px; text-align: center;">번호</th>
                                     <th>제목</th>
-                                    <th class="notice-writer">작성자</th>
-                                    <th class="notice-date">날짜</th>
-                                    <th class="notice-view">조회수</th>
+                                    <th style="width: 140px;">작성자</th>
+                                    <th style="width: 120px; text-align: center;">날짜</th>
+                                    <th style="width: 100px; text-align: center;">조회수</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -248,18 +194,31 @@
                                     <c:when test="${not empty list}">
                                         <c:forEach items="${list}" var="dto">
                                             <tr class="notice-row" onclick="location.href='./detail?noticeNo=${dto.noticeNo}'">
-                                                <td class="notice-no">${dto.noticeNo}</td>
-                                                <td><div class="notice-post-title">${dto.noticeTitle}</div></td>
-                                                <td class="notice-writer">${dto.noticeWriter}</td>
-                                                <td class="notice-date">${dto.noticeDate}</td>
-                                                <td class="notice-view">${dto.noticeView}</td>
+                                                <td style="text-align: center; color: var(--text-grey); font-size: 13px;">${dto.noticeNo}</td>
+                                                <td>
+                                                    <div class="notice-post-title">
+                                                        <span class="notice-badge">공지</span>
+                                                        ${dto.noticeTitle}
+                                                    </div>
+                                                </td>
+                                                <td>
+                                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                                        <div style="width: 24px; height: 24px; background: rgba(240, 68, 82, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #F04452;">A</div>
+                                                        <span style="font-weight: 600;">관리자</span>
+                                                    </div>
+                                                </td>
+                                                <td style="text-align: center; color: var(--text-grey); font-size: 13px;">
+                                                    ${dto.noticeDate.toString().substring(0, 10)}
+                                                </td>
+                                                <td style="text-align: center;" class="notice-view">${dto.noticeView}</td>
                                             </tr>
                                         </c:forEach>
                                     </c:when>
                                     <c:otherwise>
                                         <tr>
-                                            <td colspan="5" class="notice-empty">
-                                                <div class="notice-empty-inner">등록된 공지사항이 없습니다.</div>
+                                            <td colspan="5" style="height: 400px; text-align: center; color: var(--text-grey);">
+                                                <div style="font-size: 48px; margin-bottom: 16px;">📢</div>
+                                                등록된 공지사항이 없습니다.
                                             </td>
                                         </tr>
                                     </c:otherwise>
@@ -269,34 +228,14 @@
                     </div>
                 </div>
 
-                <div class="card panel-chat cm-news-panel notice-news-panel">
-                    <div class="cm-panel-title">뉴스</div>
-                    <div class="cm-news-list">
-                        <div class="cm-news-item">
-                            <span class="cm-news-source">마켓뉴스</span>
-                            <span class="cm-news-time">5분 전</span>
-                            <p class="cm-news-text">코스피, 대형 반도체주 변동성 확대 속 약세</p>
-                        </div>
-                        <div class="cm-news-item">
-                            <span class="cm-news-source">증권가</span>
-                            <span class="cm-news-time">23분 전</span>
-                            <p class="cm-news-text">외국인 수급 방향에 따라 장중 등락 반복</p>
-                        </div>
-                        <div class="cm-news-item">
-                            <span class="cm-news-source">경제데일리</span>
-                            <span class="cm-news-time">1시간 전</span>
-                            <p class="cm-news-text">환율 상승 부담에 성장주 투자심리 둔화</p>
-                        </div>
-                        <div class="cm-news-item">
-                            <span class="cm-news-source">산업리포트</span>
-                            <span class="cm-news-time">2시간 전</span>
-                            <p class="cm-news-text">조선, 방산 업종 실적 기대감은 유지</p>
-                        </div>
-                        <div class="cm-news-item">
-                            <span class="cm-news-source">리서치센터</span>
-                            <span class="cm-news-time">3시간 전</span>
-                            <p class="cm-news-text">실적 시즌 앞두고 업종별 차별화 전망</p>
-                        </div>
+                <div class="cm-news-panel">
+                    <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 24px; display: flex; align-items: center; gap: 8px;">
+                        🔔 시스템 알림
+                    </h3>
+                    <div style="padding: 16px; background: rgba(240, 68, 82, 0.05); border-radius: 16px; border: 1px solid rgba(240, 68, 82, 0.1);">
+                        <p style="font-size: 14px; color: var(--text); line-height: 1.6;">
+                            모의투자 시스템은 <strong>매일 04:00 ~ 05:00</strong>에 정기 점검이 진행됩니다.
+                        </p>
                     </div>
                 </div>
             </div>

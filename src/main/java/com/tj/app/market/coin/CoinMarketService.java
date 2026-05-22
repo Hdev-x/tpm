@@ -79,6 +79,32 @@ public class CoinMarketService {
     }
 
     /**
+     * 실시간 코인 시세를 Map<Symbol, Price> 형태로 반환 (캐시 활용)
+     */
+    public Map<String, Double> getTickerPriceMap() {
+        Object tickersObj = getTickers();
+        if (!(tickersObj instanceof Map)) return Collections.emptyMap();
+
+        Map<String, Object> res = (Map<String, Object>) tickersObj;
+        Object dataListObj = res.get("data");
+        if (!(dataListObj instanceof java.util.List)) return Collections.emptyMap();
+
+        java.util.List<Map<String, Object>> dataList = (java.util.List<Map<String, Object>>) dataListObj;
+        Map<String, Double> priceMap = new java.util.HashMap<>();
+        
+        for (Map<String, Object> item : dataList) {
+            String symbol = (String) item.get("symbol");
+            Object lastPr = item.get("lastPr");
+            if (symbol != null && lastPr != null) {
+                try {
+                    priceMap.put(symbol, Double.parseDouble(lastPr.toString()));
+                } catch (Exception e) {}
+            }
+        }
+        return priceMap;
+    }
+
+    /**
      * Bitget Candles 정보 조회 (캐싱 미적용 - 파라미터가 너무 다양함)
      */
     public Object getCandles(String symbol, String granularity, String limit, String endTime) {

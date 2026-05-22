@@ -16,6 +16,8 @@ public interface BoardMapper {
 	
 	public List<BoardDTO> list(Pager pager) throws Exception;
 	
+	public List<BoardDTO> listRecent(int limit) throws Exception;
+	
 	public BoardDTO detail(BoardDTO boardDTO) throws Exception;
 	
 	public int update(BoardDTO boardDTO) throws Exception;

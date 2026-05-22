@@ -13,6 +13,8 @@ public interface NoticeMapper {
 	
 	public List<NoticeDTO> list(NoticeDTO noticeDTO) throws Exception;
 	
+	public List<NoticeDTO> listRecent(int limit) throws Exception;
+	
 	public NoticeDTO detail(NoticeDTO noticeDTO) throws Exception;
 	
 	public int update(NoticeDTO noticeDTO) throws Exception;

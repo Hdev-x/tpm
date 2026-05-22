@@ -3,8 +3,8 @@ package com.tj.app.market.index;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.util.List;
 
 @RestController
@@ -13,9 +13,23 @@ import java.util.List;
 public class MarketIndexController {
 
     private final MarketIndexService marketIndexService;
+    private final com.tj.app.board.BoardService boardService;
+    private final com.tj.app.notice.NoticeService noticeService;
 
     @GetMapping
     public List<MarketIndexDTO> getMarketIndex() {
         return marketIndexService.getMarketIndex();
+    }
+
+    // 💡 1. @RequestParam 안에 value = "limit" 지정
+    @GetMapping("/recent-board")
+    public List<com.tj.app.board.BoardDTO> getRecentBoard(@RequestParam(value = "limit", defaultValue = "5") int limit) throws Exception {
+        return boardService.listRecent(limit);
+    }
+
+    // 💡 2. @RequestParam 안에 value = "limit" 지정
+    @GetMapping("/recent-notice")
+    public List<com.tj.app.notice.NoticeDTO> getRecentNotice(@RequestParam(value = "limit", defaultValue = "5") int limit) throws Exception {
+        return noticeService.listRecent(limit);
     }
 }

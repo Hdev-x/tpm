@@ -56,6 +56,10 @@ public class BoardService {
 		return boardMapper.list(pager);
 	}
 	
+	public List<BoardDTO> listRecent(int limit) throws Exception {
+		return boardMapper.listRecent(limit);
+	}
+	
 	public Long getCount(Pager pager) throws Exception {
         return boardMapper.getCount(pager);
     }

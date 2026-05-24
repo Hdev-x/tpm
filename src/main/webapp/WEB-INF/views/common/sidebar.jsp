@@ -1,5 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8"%>
 <%@ taglib prefix="c" uri="jakarta.tags.core"%>
+<script data-storage-user="<c:out value='${not empty member ? member.username : "guest"}'/>">
+    window.sidebarStorageUser = document.currentScript.dataset.storageUser || 'guest';
+</script>
 <div class="sidebar-panel" id="sidebar-panel">
 
     <div class="sidebar-header">
@@ -109,7 +112,7 @@
             <div class="exchange-card">
                 <div class="ex-header" style="display:flex; justify-content:space-between; margin-bottom:20px;">
                     <span style="font-weight:700; font-size:16px;">환전하기</span>
-                    <span id="ex-current-rate" style="font-size:13px; color:var(--text3);">환율 정보 로딩중...</span>
+                    <div id="ex-current-rate" style="display:flex; align-items:center; gap:5px; background:var(--surface); padding:4px 10px; border-radius:8px; font-size:12px; color:var(--text3);">로딩중...</div>
                 </div>
 
                 <div class="ex-input-group">
@@ -159,15 +162,6 @@
 
     <!-- ② 관심 섹션 -->
     <div class="sidebar-section" id="sidebar-interest" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
-
-        <!-- AI 배너 -->
-        <div class="si-ai-banner">
-            <div class="si-ai-inner">
-                <span class="si-ai-label">✦ 토스증권 AI</span>
-                <p class="si-ai-text">엔비디아 H200 칩 판매 승인으로 2.5% 상승</p>
-            </div>
-            <span class="si-ai-arrow">›</span>
-        </div>
 
         <!-- 전체 / 주식 / 코인 탭 -->
         <div class="si-type-tabs">

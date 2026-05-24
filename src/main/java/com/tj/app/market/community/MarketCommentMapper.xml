@@ -2,13 +2,53 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- ============================================================
+     [파일 읽기] MarketCommentMapper.xml
+     namespace = MarketCommentMapper 인터페이스의 전체 경로.
+
+     [관련 테이블]
+       MARKET_COMMENT      : 댓글 본문 (COMMENT_NO, MARKET_TYPE, MARKET_CODE, CONTENT, ...)
+       PROFILE             : 작성자 프로필 이미지 (USERNAME, FILE_NAME)
+       MARKET_COMMENT_LIKE : 좋아요 (COMMENT_NO, USERNAME)
+
+     [listByCode / listByCodePopular 공통 구조]
+       MARKET_COMMENT c
+         LEFT JOIN PROFILE p    → 작성자 프로필 사진 (없어도 댓글은 표시)
+         LEFT JOIN MARKET_COMMENT_LIKE l → 좋아요 수 집계
+       GROUP BY → LEFT JOIN으로 늘어난 행을 댓글 단위로 다시 합침
+       COUNT(l.COMMENT_NO) → 해당 댓글의 좋아요 수
+     ============================================================ -->
 <mapper namespace="com.tj.app.market.community.MarketCommentMapper">
 
+    <!-- ============================================================
+         댓글 등록.
+         useGeneratedKeys="true" → DB가 생성한 COMMENT_NO를 dto.commentNo에 주입.
+         keyProperty="commentNo" → MarketCommentDTO.commentNo 필드에 PK 값이 담긴다.
+         MarketCommentService.save()에서 INSERT 후 dto를 바로 브로드캐스트할 때 사용.
+         CREATED_AT = CURRENT_TIMESTAMP → 작성 시각 자동 기록.
+         ============================================================ -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="commentNo">
         INSERT INTO "MARKET_COMMENT" ("MARKET_TYPE", "MARKET_CODE", "CONTENT", "USERNAME", "CREATED_AT")
         VALUES (#{marketType}, #{marketCode}, #{content}, #{username}, CURRENT_TIMESTAMP)
     </insert>
 
+    <!-- ============================================================
+         댓글 목록 조회 — 최신순 (CREATED_AT DESC).
+
+         [AS 별칭] 컬럼명(COMMENT_NO)과 DTO 필드명(commentNo)이 다를 때
+           AS commentNo 형태로 별칭을 지정해 resultType 자동 매핑이 동작하게 한다.
+
+         [LEFT JOIN PROFILE] 프로필 사진이 없는 사용자도 댓글이 표시돼야 하므로 LEFT JOIN.
+           p.FILE_NAME AS profileFileName → MarketCommentDTO.profileFileName에 매핑.
+
+         [LEFT JOIN MARKET_COMMENT_LIKE + GROUP BY + COUNT]
+           댓글 1개에 좋아요가 N개 있으면 JOIN 결과가 N행으로 늘어난다.
+           GROUP BY로 댓글 단위로 다시 묶고 COUNT()로 개수를 집계한다.
+           COUNT(l.COMMENT_NO) → l이 null인 행(좋아요 없음)은 카운트에 포함되지 않는다.
+
+         LIMIT 50 → 한 종목 댓글을 최대 50개까지만 조회한다.
+         ============================================================ -->
     <select id="listByCode" resultType="com.tj.app.market.community.MarketCommentDTO">
         SELECT
             c."COMMENT_NO"   AS commentNo,
@@ -24,11 +64,22 @@
         LEFT JOIN "PROFILE" p ON c."USERNAME" = p."USERNAME"
         LEFT JOIN "MARKET_COMMENT_LIKE" l ON c."COMMENT_NO" = l."COMMENT_NO"
         WHERE c."MARKET_TYPE" = #{marketType} AND c."MARKET_CODE" = #{marketCode}
-        GROUP BY c."COMMENT_NO", c."MARKET_TYPE", c."MARKET_CODE", c."CONTENT", c."USERNAME", c."CREATED_AT", c."IMAGE_URL", p."FILE_NAME"
+        GROUP BY c."COMMENT_NO", c."MARKET_TYPE", c."MARKET_CODE", c."CONTENT",
+                 c."USERNAME", c."CREATED_AT", c."IMAGE_URL", p."FILE_NAME"
         ORDER BY c."CREATED_AT" DESC
         LIMIT 50
     </select>
 
+    <!-- ============================================================
+         댓글 목록 조회 — 인기순 (likeCount DESC → CREATED_AT DESC).
+
+         listByCode와 쿼리가 동일하고 ORDER BY만 다르다.
+           listByCode        : ORDER BY c.CREATED_AT DESC  (최신 댓글이 위)
+           listByCodePopular : ORDER BY likeCount DESC, c.CREATED_AT DESC
+                               (좋아요 많은 댓글이 위, 같으면 최신 순)
+
+         MarketCommentService.listByCode()에서 sort="popular"일 때 이 쿼리를 호출한다.
+         ============================================================ -->
     <select id="listByCodePopular" resultType="com.tj.app.market.community.MarketCommentDTO">
         SELECT
             c."COMMENT_NO"   AS commentNo,
@@ -44,11 +95,17 @@
         LEFT JOIN "PROFILE" p ON c."USERNAME" = p."USERNAME"
         LEFT JOIN "MARKET_COMMENT_LIKE" l ON c."COMMENT_NO" = l."COMMENT_NO"
         WHERE c."MARKET_TYPE" = #{marketType} AND c."MARKET_CODE" = #{marketCode}
-        GROUP BY c."COMMENT_NO", c."MARKET_TYPE", c."MARKET_CODE", c."CONTENT", c."USERNAME", c."CREATED_AT", c."IMAGE_URL", p."FILE_NAME"
+        GROUP BY c."COMMENT_NO", c."MARKET_TYPE", c."MARKET_CODE", c."CONTENT",
+                 c."USERNAME", c."CREATED_AT", c."IMAGE_URL", p."FILE_NAME"
         ORDER BY likeCount DESC, c."CREATED_AT" DESC
         LIMIT 50
     </select>
 
+    <!-- ============================================================
+         댓글 내용·이미지 수정.
+         WHERE에 COMMENT_NO + USERNAME 두 조건 → DB 레벨에서 본인 댓글만 수정 보장.
+         다른 사용자가 COMMENT_NO를 알고 있어도 USERNAME 불일치로 수정 불가.
+         ============================================================ -->
     <update id="update">
         UPDATE "MARKET_COMMENT"
         SET "CONTENT"   = #{content},
@@ -56,6 +113,10 @@
         WHERE "COMMENT_NO" = #{commentNo} AND "USERNAME" = #{username}
     </update>
 
+    <!-- ============================================================
+         댓글 삭제.
+         WHERE에 COMMENT_NO + USERNAME 두 조건 → 본인 댓글만 삭제.
+         ============================================================ -->
     <delete id="delete">
         DELETE FROM "MARKET_COMMENT"
         WHERE "COMMENT_NO" = #{commentNo} AND "USERNAME" = #{username}

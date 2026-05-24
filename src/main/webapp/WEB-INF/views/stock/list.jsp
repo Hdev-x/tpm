@@ -8,7 +8,6 @@
         href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
     <link rel="stylesheet" href="/css/common.css">
     <link rel="stylesheet" href="/css/market/market-list.css">
-    <link rel="stylesheet" href="/css/market/chart.css">
     <link rel="stylesheet" href="/css/market/stock/list.css">
 </head>
 <body>

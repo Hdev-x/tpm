@@ -486,63 +486,20 @@
                     <!-- ====================================================
                          [ORDER PANEL] .panel-order-wrap #panel-order-wrap
                          ==================================================== -->
-                    <div class="card panel-order-wrap" id="panel-order-wrap">
-                        <!--
-                             위치 : .panel-middle > #panel-order-wrap.panel-order-wrap
-                             역할 : 매수/매도 탭, 주문 유형, 가격/수량 입력, 주문 버튼을 담습니다.
-                        -->
-                        <div class="order-tabs">
-                            <div class="order-tab buy active" id="tab-buy" onclick="switchOrderTab('buy')">매수</div>
-                            <div class="order-tab sell" id="tab-sell" onclick="switchOrderTab('sell')">매도</div>
-                        </div>
-
-                        <!-- ====================================================
-                             [ORDER FORM] .order-panel #panel-order
-                             ==================================================== -->
-                        <div class="order-panel" id="panel-order">
-                            <!--
-                                 위치 : .panel-order-wrap > #panel-order.order-panel
-                                 역할 : 주문 유형, 가격, 수량, 비율, 주문금액, 제출 버튼을 담는 입력 폼 영역입니다.
-                                 연결 : 사용자가 입력하거나 누르는 주문 관련 DOM이 모여 있습니다.
-                            -->
-                            <div class="order-type-row">
-                                <button class="order-type-btn sel" onclick="selectOrderType(this)">지정가</button>
-                                <button class="order-type-btn" onclick="selectOrderType(this)">시장가</button>
-                            </div>
-
-                            <div class="order-section-label">가격 (USDT)</div>
-                            <div class="order-input-row">
-                                <input class="order-input" id="trade-price-input" type="number" placeholder="0.00">
-                                <span class="order-input-unit">USDT</span>
-                            </div>
-
-                            <div class="order-section-label">수량 (BTC)</div>
-                            <div class="order-input-row">
-                                <input class="order-input" id="trade-qty" type="number" placeholder="0.000" step="0.001"
-                                    oninput="calcAmount()">
-                                <div class="pct-drop-wrap" id="pct-drop-wrap">
-                                    <div class="pct-drop-menu" id="pct-drop-menu" style="display:none;">
-                                        <div class="pct-drop-item" onclick="setPercent(25)">25%</div>
-                                        <div class="pct-drop-item" onclick="setPercent(50)">50%</div>
-                                        <div class="pct-drop-item" onclick="setPercent(75)">75%</div>
-                                        <div class="pct-drop-item" onclick="setPercent(100)">최대</div>
-                                    </div>
-                                    <button class="pct-drop-btn" onclick="togglePctDrop()">
-                                        <span id="pct-drop-label">비율</span>
-                                        <svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="order-info-row">
-                                <span class="order-avail">가용 <span>- USDT</span></span>
-                                <span class="order-amount-label">주문금액 <span id="trade-amount">0</span> USDT</span>
-                            </div>
-
-                            <button id="order-submit-btn" class="btn-buy" onclick="submitOrder(orderSide)">매수
-                                주문</button>
-                        </div><!-- /#panel-order.order-panel -->
-                    </div><!-- /.panel-order-wrap -->
+                    <%
+                        String chartOrderSymbol = String.valueOf(request.getAttribute("symbol"));
+                        chartOrderSymbol = chartOrderSymbol.replace("USDT", "").replace("USDC", "").replace("_SPBL", "");
+                        request.setAttribute("orderMarket", "coin");
+                        request.setAttribute("orderPriceUnit", "USDT");
+                        request.setAttribute("orderQtyUnit", chartOrderSymbol);
+                        request.setAttribute("orderQtyLabel", "수량 (" + chartOrderSymbol + ")");
+                        request.setAttribute("orderQtyStep", "0.001");
+                        request.setAttribute("orderPricePlaceholder", "0.00");
+                        request.setAttribute("orderQtyPlaceholder", "0.000");
+                        request.setAttribute("orderAmountUnit", "USDT");
+                        request.setAttribute("orderAvailText", "- USDT");
+                    %>
+                    <%@ include file="../common/market-order-panel.jsp" %>
 
                     <!-- ====================================================
                          [VERTICAL RESIZE HANDLE] .resize-v #rh-v

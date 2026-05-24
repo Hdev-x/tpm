@@ -18,207 +18,209 @@ import com.tj.app.member.MemberDTO;
 
 import jakarta.servlet.http.HttpSession;
 
+/** ============================================================
+ * [클래스 읽기] 주식 주문 접수·조회·취소 요청을 처리하는 컨트롤러.
+ *
+ * [@Controller + @ResponseBody] = @RestController와 동일하지만,
+ * 클래스 레벨이 아닌 메서드 레벨에 @ResponseBody를 붙여 JSON 반환을 명시한다.
+ * (일부 메서드에서 JSP를 반환할 가능성이 있을 때 이 방식을 쓰기도 한다)
+ *
+ * [로그인 체크 패턴]
+ * 모든 메서드에서 세션에 member가 없으면 인증 실패 응답 또는 빈 리스트 반환.
+ * 미로그인 상태에서 주문/취소를 막기 위한 서버 측 방어 로직이다.
+ *
+ * [주요 엔드포인트]
+ * POST /stock/order           : 매수/매도 주문 접수
+ * GET  /stock/account-balance : 예수금 + 잠긴 금액 조회
+ * GET  /stock/holding-list    : 보유 주식 목록
+ * GET  /stock/pending-list    : 미체결 주문 목록
+ * GET  /stock/history-list    : 체결 완료 거래 내역
+ * POST /stock/cancel-order    : 미체결 주문 취소
+ * ============================================================ */
 @Controller
 @RequestMapping("/stock")
 public class OrderStockController {
 
-	@Autowired
-	private OrderStockService stockOrderService;
+    @Autowired
+    private OrderStockService stockOrderService;
 
-	/**
-	 * 🖥️ [주식 주문 접수 엔드포인트]
-	 * URL: POST /stock/order
-	 */
-	@PostMapping("/order")
-	@ResponseBody
-	public ResponseEntity<Map<String, Object>> submitStockOrder(@RequestParam("side") String side,
-			@RequestBody OrderStockDTO dto, HttpSession session) {
+    /** ============================================================
+     * POST /stock/order?side={BUY|SELL}
+     * 주식 매수/매도 주문을 접수한다.
+     *
+     * [@RequestBody OrderStockDTO dto] JS에서 JSON body로 전송한 주문 데이터
+     * [@RequestParam side] 매수("BUY") 또는 매도("SELL") 구분
+     *
+     * [응답 메시지 분기]
+     * - 즉시 체결(COMPLETED): "시장가 즉시 체결" 또는 "지정가 조건 만족 즉시 체결"
+     * - 미체결(PENDING):      "주문 접수 완료 (미체결 상태)"
+     * - 실패:                 잔고/수량 부족 메시지
+     * ============================================================ */
+    @PostMapping("/order")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> submitStockOrder(
+            @RequestParam("side") String side,
+            @RequestBody OrderStockDTO dto,
+            HttpSession session) {
 
-		Map<String, Object> response = new HashMap<>();
+        Map<String, Object> response = new HashMap<>();
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
 
-		// 💡 세션에서 '실제' 로그인한 사용자의 username을 꺼내옵니다.
-		MemberDTO member = (MemberDTO) session.getAttribute("member");
+        // [실행 흐름] 미로그인 요청 차단
+        if (member == null) {
+            response.put("success", false);
+            response.put("message", "로그인 세션이 만료되었습니다. 다시 로그인 후 이용해주세요.");
+            return ResponseEntity.ok(response);
+        }
 
-		// 🔴 [수정포인트 1] 로그인하지 않은 가상 유저의 불법 요청 차단 가드 세우기
-		if (member == null) {
-			response.put("success", false);
-			response.put("message", "로그인 세션이 만료되었습니다. 다시 로그인 후 이용해주세요.");
-			return ResponseEntity.ok(response);
-		}
+        try {
+            boolean isSuccess = stockOrderService.placeOrder(member, side, dto);
 
-		try {
-			// 비즈니스 코어 엔진(Service)을 호출하여 실제 로그인한 회원의 트랜잭션을 실행합니다.
-			boolean isSuccess = stockOrderService.placeOrder(member, side, dto);
+            if (isSuccess) {
+                response.put("success", true);
+                // [실행 흐름] 즉시 체결 vs 미체결 여부에 따라 메시지 분기
+                if ("COMPLETED".equals(dto.getStatus())) {
+                    if ("MARKET".equalsIgnoreCase(dto.getOrderType()) || dto.getTargetPrice() == 0) {
+                        response.put("message", "시장가 주문이 즉시 체결되었습니다.");
+                    } else {
+                        response.put("message", "지정가 주문이 현재가 조건에 맞아 즉시 체결되었습니다.");
+                    }
+                } else {
+                    response.put("message", "주문이 접수되었습니다. (미체결 상태)");
+                }
+            } else {
+                response.put("success", false);
+                response.put("message", "주문 체결에 실패했습니다. 잔고나 보유 수량을 확인하세요.");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "서버 오류로 인해 주문을 처리하지 못했습니다.");
+        }
 
-			if (isSuccess) {
-	            response.put("success", true);
-	            // [수정] 주문 유형과 상태에 따라 정확한 메시지 반환
-	            if ("COMPLETED".equals(dto.getStatus())) {
-	                if ("MARKET".equalsIgnoreCase(dto.getOrderType()) || dto.getTargetPrice() == 0) {
-	                    response.put("message", "시장가 주문이 즉시 체결되었습니다.");
-	                } else {
-	                    response.put("message", "지정가 주문이 현재가 조건에 맞아 즉시 체결되었습니다.");
-	                }
-	            } else {
-	                response.put("message", "주문이 접수되었습니다. (미체결 상태)");
-	            }
-			} else {
-				response.put("success", false);
-				response.put("message", "주문 체결에 실패했습니다. 잔고나 보유 수량을 확인하세요.");
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			response.put("success", false);
-			response.put("message", "서버 오류로 인해 주문을 처리하지 못했습니다.");
-		}
+        return ResponseEntity.ok(response);
+    }
 
-		return ResponseEntity.ok(response);
-	}
+    /** ============================================================
+     * GET /stock/account-balance
+     * 현재 예수금(balance)과 미체결 매수에 묶인 금액(locked)을 반환한다.
+     * JS에서 주문 폼에 잔고를 표시할 때 사용한다.
+     * 미로그인 시 balance=0, locked=0 반환 (빈 화면 표시용).
+     * ============================================================ */
+    @GetMapping("/account-balance")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> getAccountBalance(HttpSession session) {
+        Map<String, Object> response = new HashMap<>();
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
 
-	/**
-	 * 💳 [가용 잔고 및 계좌 정보 조회 엔드포인트]
-	 * URL: GET /stock/account-balance
-	 */
-	@GetMapping("/account-balance")
-	@ResponseBody
-	public ResponseEntity<Map<String, Object>> getAccountBalance(HttpSession session) {
-		Map<String, Object> response = new HashMap<>();
+        if (member == null) {
+            response.put("balance", 0);
+            response.put("locked", 0);
+            return ResponseEntity.ok(response);
+        }
 
-		MemberDTO member = (MemberDTO) session.getAttribute("member");
-		
-		// 🔴 [수정포인트 2] 로그인 안 된 경우 잔고 0원 반환 및 안전 차단
-		if (member == null) {
-			response.put("balance", 0);
-			response.put("locked", 0);
-			return ResponseEntity.ok(response);
-		}
+        try {
+            long currentCash = stockOrderService.getUserBalance(member);
+            long lockedCash  = stockOrderService.getLockedPendingBuyCash(member);
+            response.put("balance", currentCash);
+            response.put("locked",  lockedCash);
+        } catch (Exception e) {
+            response.put("balance", 0);
+            response.put("locked",  0);
+        }
 
-		try {
-			long currentCash = stockOrderService.getUserBalance(member);
-			long lockedCash = stockOrderService.getLockedPendingBuyCash(member);
-			response.put("balance", currentCash);
-			response.put("locked", lockedCash);
-		} catch (Exception e) {
-			response.put("balance", 0);
-			response.put("locked", 0);
-		}
+        return ResponseEntity.ok(response);
+    }
 
-		return ResponseEntity.ok(response);
-	}
-	
-	/**
-	 * 📊 [우측 사이드바 보유 자산 목록 전체 조회 API]
-	 * URL: GET /stock/holding-list
-	 */
-	@GetMapping("/holding-list")
-	@ResponseBody
-	public ResponseEntity<List<Map<String, Object>>> getHoldingList(HttpSession session) {
-		MemberDTO member = (MemberDTO) session.getAttribute("member");
-	    
-	    // 🔴 [수정포인트 3] 로그인 안 되었으면 비어있는 리스트 리턴하여 사이드바 sb-empty 트리거 활성화
-	    if (member == null) {
-	        return ResponseEntity.ok(java.util.Collections.emptyList());
-	    }
+    /** ============================================================
+     * GET /stock/holding-list
+     * 사용자의 보유 주식 목록을 반환한다.
+     * 우측 사이드바 보유 자산 탭에서 사용한다.
+     * 미로그인 시 빈 리스트 반환 → 사이드바에 "보유 종목 없음" 표시.
+     * ============================================================ */
+    @GetMapping("/holding-list")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> getHoldingList(HttpSession session) {
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
 
-	    List<Map<String, Object>> holdingList = stockOrderService.getHoldingStockList(member);
-	    return ResponseEntity.ok(holdingList);
-	}
-	
-	/**
-	 * ⏳ [우측 사이드바 미체결 예약 주문 목록 조회 API]
-	 * URL: GET /stock/pending-list
-	 */
-	@GetMapping("/pending-list")
-	@ResponseBody
-	public ResponseEntity<List<Map<String, Object>>> getPendingList(HttpSession session) {
-		MemberDTO member = (MemberDTO) session.getAttribute("member");
-		
-		// 로그인 안 되어 있으면 비어있는 리스트 반환
-		if (member == null) {
-			return ResponseEntity.ok(java.util.Collections.emptyList());
-		}
+        if (member == null) {
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
 
-		// 서비스단 호출하여 매퍼의 getPendingOrders 결과 가져오기
-		List<Map<String, Object>> pendingList = stockOrderService.getPendingOrders(member);
-		return ResponseEntity.ok(pendingList);
-	}
+        List<Map<String, Object>> holdingList = stockOrderService.getHoldingStockList(member);
+        return ResponseEntity.ok(holdingList);
+    }
 
-	/**
-	 * 📜 [우측 사이드바 체결 완료 거래 내역 조회 API]
-	 * URL: GET /stock/history-list
-	 */
-	@GetMapping("/history-list")
-	@ResponseBody
-	public ResponseEntity<List<Map<String, Object>>> getHistoryList(HttpSession session) {
-		MemberDTO member = (MemberDTO) session.getAttribute("member");
-		
-		if (member == null) {
-			return ResponseEntity.ok(java.util.Collections.emptyList());
-		}
+    /** ============================================================
+     * GET /stock/pending-list
+     * 미체결(PENDING) 지정가 주문 목록을 반환한다.
+     * 사이드바 예약 주문 탭에서 사용한다.
+     * ============================================================ */
+    @GetMapping("/pending-list")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> getPendingList(HttpSession session) {
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
 
-		// 서비스단 호출하여 매퍼의 getOrderList 결과 가져오기
-		List<Map<String, Object>> historyList = stockOrderService.getOrderList(member);
-		return ResponseEntity.ok(historyList);
-	}
+        if (member == null) {
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
 
-	/**
-	 * ❌ [우측 사이드바 미체결 예약 주문 즉시 취소 엔드포인트]
-	 * URL: POST /stock/cancel-order
-	 * 💡 프론트엔드 stock.js의 cancelStockOrder() 함수와 매핑 완결
-	 */
-	@PostMapping("/cancel-order")
-	@ResponseBody
-	public ResponseEntity<Map<String, Object>> cancelOrder(@RequestParam("orderNo") long orderNo, HttpSession session) {
-		Map<String, Object> response = new HashMap<>();
-		MemberDTO member = (MemberDTO) session.getAttribute("member");
-		
-		if (member == null) {
-			response.put("success", false);
-			response.put("message", "로그인 세션이 만료되었습니다.");
-			return ResponseEntity.ok(response);
-		}
+        List<Map<String, Object>> pendingList = stockOrderService.getPendingOrders(member);
+        return ResponseEntity.ok(pendingList);
+    }
 
-		try {
-			// 서비스 레이어의 취소 비즈니스 트랜잭션 엔진 작동
-			boolean isCancelled = stockOrderService.cancelStockOrder(member, orderNo);
-			
-			response.put("success", isCancelled);
-			if (isCancelled) {
-				response.put("message", "주문이 정상적으로 취소되었습니다.");
-			} else {
-				response.put("success", false);
-				response.put("message", "주문 취소에 실패했거나 이미 처리된 주문입니다.");
-			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			response.put("success", false);
-			response.put("message", "서버 오류로 인해 주문을 취소하지 못했습니다.");
-		}
+    /** ============================================================
+     * GET /stock/history-list
+     * 체결 완료(DONE) 거래 내역 목록을 반환한다.
+     * 사이드바 거래 내역 탭에서 사용한다.
+     * ============================================================ */
+    @GetMapping("/history-list")
+    @ResponseBody
+    public ResponseEntity<List<Map<String, Object>>> getHistoryList(HttpSession session) {
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
 
-		return ResponseEntity.ok(response);
-	}
-	
-	@GetMapping("/asset-detail-data")
-	@ResponseBody
-	public List<Map<String, Object>> getAssetDetailData(HttpSession session) {
-	    // 1. 세션에서 로그인 정보 가져오기
-	    MemberDTO member = (MemberDTO) session.getAttribute("member");
-	    
-	    // 2. 🔴 로그인 세션이 끊겼을 때를 대비한 안전 가드
-	    if (member == null) {
-	        System.out.println("⚠️ 로그인을 해주세요");
-	        return java.util.Collections.emptyList(); // 에러 대신 빈 리스트 반환
-	    }
-	    
-	    // 3. 정상일 때만 서비스 호출
-	    return stockOrderService.getAssetDetails(member);
-	}
-	
-	@GetMapping("/asset")
-	public String assetDetailPage(HttpSession session) {
-	    MemberDTO member = (MemberDTO) session.getAttribute("member");
-	    if (member == null) return "redirect:/member/login?redirect=/stock/asset";
-	    return "member/asset";
-	}
-	
+        if (member == null) {
+            return ResponseEntity.ok(java.util.Collections.emptyList());
+        }
+
+        List<Map<String, Object>> historyList = stockOrderService.getOrderList(member);
+        return ResponseEntity.ok(historyList);
+    }
+
+    /** ============================================================
+     * POST /stock/cancel-order?orderNo={주문번호}
+     * 미체결 지정가 주문을 취소한다.
+     *
+     * [실행 흐름]
+     * Service의 cancelStockOrder() 호출 → 본인 주문 확인 → 예수금 복원 → 상태 CANCELED
+     * ============================================================ */
+    @PostMapping("/cancel-order")
+    @ResponseBody
+    public ResponseEntity<Map<String, Object>> cancelOrder(
+            @RequestParam("orderNo") long orderNo,
+            HttpSession session) {
+
+        Map<String, Object> response = new HashMap<>();
+        MemberDTO member = (MemberDTO) session.getAttribute("member");
+
+        if (member == null) {
+            response.put("success", false);
+            response.put("message", "로그인 세션이 만료되었습니다.");
+            return ResponseEntity.ok(response);
+        }
+
+        try {
+            boolean isCancelled = stockOrderService.cancelStockOrder(member, orderNo);
+            response.put("success", isCancelled);
+            response.put("message", isCancelled
+                    ? "주문이 정상적으로 취소되었습니다."
+                    : "주문 취소에 실패했거나 이미 처리된 주문입니다.");
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.put("success", false);
+            response.put("message", "서버 오류로 인해 주문을 취소하지 못했습니다.");
+        }
+
+        return ResponseEntity.ok(response);
+    }
 }

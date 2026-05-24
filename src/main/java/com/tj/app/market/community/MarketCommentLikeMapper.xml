@@ -2,23 +2,57 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- ============================================================
+     [파일 읽기] MarketCommentLikeMapper.xml
+     namespace = MarketCommentLikeMapper 인터페이스의 전체 경로.
+
+     [관련 테이블] MARKET_COMMENT_LIKE (LIKE_NO, COMMENT_NO, USERNAME)
+       (COMMENT_NO, USERNAME) 쌍이 UNIQUE → 한 사람이 같은 댓글에 중복 좋아요 불가.
+
+     [check와 count의 차이]
+       check  : USERNAME 조건 포함 → "이 사람이 눌렀는지" 확인 (0 또는 1)
+       count  : USERNAME 조건 없음 → "이 댓글의 총 좋아요 수" 집계
+     ============================================================ -->
 <mapper namespace="com.tj.app.market.community.MarketCommentLikeMapper">
 
+    <!-- ============================================================
+         좋아요 추가.
+         MarketCommentService.toggleLike()에서 check() == 0일 때 호출한다.
+         LIKE_NO는 AUTO INCREMENT이므로 INSERT 목록에 포함하지 않는다.
+         ============================================================ -->
     <insert id="insert">
         INSERT INTO "MARKET_COMMENT_LIKE" ("COMMENT_NO", "USERNAME")
         VALUES (#{commentNo}, #{username})
     </insert>
 
+    <!-- ============================================================
+         좋아요 취소.
+         COMMENT_NO + USERNAME 두 조건 → 해당 사용자의 해당 댓글 좋아요만 삭제.
+         ============================================================ -->
     <delete id="delete">
         DELETE FROM "MARKET_COMMENT_LIKE"
         WHERE "COMMENT_NO" = #{commentNo} AND "USERNAME" = #{username}
     </delete>
 
+    <!-- ============================================================
+         특정 사용자의 좋아요 여부 확인.
+         resultType="int" → COUNT(*) 결과를 int로 받는다.
+         반환값: 0 (좋아요 없음) 또는 1 (이미 눌렀음).
+         MarketCommentService.toggleLike()에서 > 0이면 delete(), == 0이면 insert().
+         MarketCommentService.listByCode()에서 likedByMe 플래그 설정에도 사용한다.
+         ============================================================ -->
     <select id="check" resultType="int">
         SELECT COUNT(*) FROM "MARKET_COMMENT_LIKE"
         WHERE "COMMENT_NO" = #{commentNo} AND "USERNAME" = #{username}
     </select>
 
+    <!-- ============================================================
+         특정 댓글의 전체 좋아요 수 집계.
+         resultType="long" → COUNT(*) 결과를 long으로 받는다 (좋아요가 많아질 수 있으므로).
+         USERNAME 조건 없이 COMMENT_NO만으로 집계 → 모든 사용자 좋아요 합산.
+         insert/delete 후 최신 카운트를 다시 JS에 내려줄 때 사용한다.
+         ============================================================ -->
     <select id="count" resultType="long">
         SELECT COUNT(*) FROM "MARKET_COMMENT_LIKE"
         WHERE "COMMENT_NO" = #{commentNo}

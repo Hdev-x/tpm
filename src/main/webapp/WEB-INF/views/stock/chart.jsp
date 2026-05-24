@@ -167,50 +167,18 @@
 
 				<!-- ② 주문/호가 패널 -->
 				<div class="panel-middle" id="panel-middle">
-					<div class="card panel-order-wrap" id="panel-order-wrap">
-						<div class="order-tabs">
-							<div class="order-tab buy active" id="tab-buy"
-								onclick="switchOrderTab('buy')">매수</div>
-							<div class="order-tab sell" id="tab-sell"
-								onclick="switchOrderTab('sell')">매도</div>
-						</div>
-						<div class="order-panel" id="panel-order">
-							<div class="order-type-row">
-								<button class="order-type-btn sel"
-									onclick="selectOrderType(this)">지정가</button>
-								<button class="order-type-btn" onclick="selectOrderType(this)">시장가</button>
-							</div>
-							<div class="order-section-label">가격 (원)</div>
-							<div class="order-input-row">
-								<input class="order-input" id="trade-price-input" type="number"
-									placeholder="가격 입력" oninput="calcAmount()"> <span
-									class="order-input-unit">원</span>
-							</div>
-							<div class="order-section-label">수량 (주)</div>
-							<div class="order-input-row">
-								<input class="order-input" id="trade-qty" type="number"
-									placeholder="0" step="1" oninput="calcAmount()">
-								<div class="pct-drop-wrap" id="pct-drop-wrap">
-									<div class="pct-drop-menu" id="pct-drop-menu" style="display:none;">
-										<div class="pct-drop-item" onclick="setPercent(25)">25%</div>
-										<div class="pct-drop-item" onclick="setPercent(50)">50%</div>
-										<div class="pct-drop-item" onclick="setPercent(75)">75%</div>
-										<div class="pct-drop-item" onclick="setPercent(100)">최대</div>
-									</div>
-									<button class="pct-drop-btn" onclick="togglePctDrop()">
-										<span id="pct-drop-label">비율</span>
-										<svg width="10" height="10" viewBox="0 0 10 10"><path d="M2 3.5l3 3 3-3" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round"/></svg>
-									</button>
-								</div>
-							</div>
-							<div class="order-info-row">
-								<span class="order-avail">가용 <span id="avail-balance">- 원</span></span>
-								<span class="order-amount-label">주문금액 <span id="trade-amount">0</span> 원</span>
-							</div>
-							<button id="order-submit-btn" class="btn-buy"
-								onclick="submitOrder(orderSide)">매수 주문</button>
-						</div>
-					</div>
+					<%
+						request.setAttribute("orderMarket", "stock");
+						request.setAttribute("orderPriceUnit", "원");
+						request.setAttribute("orderQtyUnit", "주");
+						request.setAttribute("orderQtyLabel", "수량 (주)");
+						request.setAttribute("orderQtyStep", "1");
+						request.setAttribute("orderPricePlaceholder", "가격 입력");
+						request.setAttribute("orderQtyPlaceholder", "0");
+						request.setAttribute("orderAmountUnit", "원");
+						request.setAttribute("orderAvailText", "- 원");
+					%>
+					<%@ include file="../common/market-order-panel.jsp" %>
 
 					<div class="resize-v" id="rh-v"></div>
 

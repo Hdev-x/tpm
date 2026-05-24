@@ -3,19 +3,48 @@
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
+<!-- ============================================================
+     [파일 읽기] ProfileMapper.xml
+     namespace = ProfileMapper 인터페이스의 전체 경로.
+
+     [관련 테이블] PROFILE (PROFILE_NO, USERNAME, FILE_NAME, ORI_NAME)
+       USERNAME → MEMBER.USERNAME FK. 회원당 프로필 1개만 유지한다.
+
+     [insert/update 분기 패턴 (Upsert)]
+       ProfileService에서 findByUsername()으로 존재 여부 확인 후
+         null이면 → insert() (최초 등록)
+         있으면   → update() (사진 교체)
+       DB의 ON CONFLICT 문법 대신 Java 레벨에서 분기 처리한다.
+     ============================================================ -->
 <mapper namespace="com.tj.app.member.ProfileMapper">
 
+    <!-- ============================================================
+         USERNAME으로 프로필 단건 조회.
+         없으면 null 반환 → ProfileService에서 insert/update 분기 판단에 사용.
+         필요한 컬럼만 SELECT해 응답 크기를 줄인다.
+         ============================================================ -->
     <select id="findByUsername" resultType="ProfileDTO">
         SELECT "PROFILE_NO", "USERNAME", "FILE_NAME", "ORI_NAME"
         FROM "PROFILE"
         WHERE "USERNAME" = #{username}
     </select>
 
+    <!-- ============================================================
+         최초 프로필 사진 저장 (INSERT).
+         useGeneratedKeys="true" → DB가 자동 생성한 PK를
+         keyProperty="profileNo"  → ProfileDTO.profileNo 필드에 주입한다.
+         USERNAME은 FK이므로 반드시 MEMBER에 존재하는 사용자여야 한다.
+         ============================================================ -->
     <insert id="insert" useGeneratedKeys="true" keyProperty="profileNo">
         INSERT INTO "PROFILE" ("USERNAME", "FILE_NAME", "ORI_NAME")
         VALUES (#{username}, #{fileName}, #{oriName})
     </insert>
 
+    <!-- ============================================================
+         기존 프로필 사진 교체 (UPDATE).
+         FILE_NAME (서버 저장 파일명), ORI_NAME (원본 파일명)만 변경한다.
+         USERNAME은 그대로 유지 (WHERE 조건으로만 사용).
+         ============================================================ -->
     <update id="update">
         UPDATE "PROFILE"
         SET "FILE_NAME" = #{fileName},

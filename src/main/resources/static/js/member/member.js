@@ -77,24 +77,3 @@ function showToast(msg) {
     }, 2500);
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    // 총 평가 자산 실시간 계산 및 표시
-    const totalAssetElement = document.querySelector('a[href="/member/asset-detail"] .ph-price');
-    if (totalAssetElement) {
-        fetch('/stock/asset-detail-data')
-            .then(res => res.json())
-            .then(data => {
-                // 보유 종목 평가액 합산
-                const totalEval = data.reduce((sum, item) => sum + item.eval, 0);
-                
-                // 예수금 가져오기 (혹은 별도 API 호출)
-                fetch('/stock/account-balance')
-                    .then(res => res.json())
-                    .then(balanceData => {
-                        const totalAsset = totalEval + balanceData.balance;
-                        totalAssetElement.innerHTML = `${totalAsset.toLocaleString()} <span style="font-size: 14px; color: var(--text2);">원</span>`;
-                    });
-            })
-            .catch(err => console.error("자산 총액 로드 실패:", err));
-    }
-});

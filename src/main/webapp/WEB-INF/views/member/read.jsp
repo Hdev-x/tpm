@@ -193,6 +193,7 @@
 .btn-sub-item.logout {
 	color: var(--down);
 }
+
 </style>
 </head>
 <body>
@@ -205,9 +206,18 @@
 			<div class="main-content" style="flex: 1; overflow-y: auto;">
 				<div class="member-content-wrapper">
 					<div class="profile-card">
-						<div class="logo"
-							style="font-size: 22px; margin-bottom: 30px; letter-spacing: -0.5px;">
-							<span>M</span>y Page
+						<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 30px;">
+							<div class="logo" style="font-size: 22px; letter-spacing: -0.5px;">
+								<span>M</span>y Page
+							</div>
+							<a href="./update" title="정보 수정" style="display:flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:10px; background:var(--surface2); border:1px solid var(--border); color:var(--text3); transition:all 0.2s; text-decoration:none;"
+							   onmouseover="this.style.borderColor='var(--border2)'; this.style.color='var(--text)';"
+							   onmouseout="this.style.borderColor='var(--border)'; this.style.color='var(--text3)';">
+								<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2">
+									<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+									<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+								</svg>
+							</a>
 						</div>
 
 						<input type="file" id="profileFileInput" accept="image/*"
@@ -238,7 +248,7 @@
 						</div>
 
 						<div class="asset-section">
-							<a href="/stock/asset" style="text-decoration: none; color: inherit;">
+							<a href="/asset" style="text-decoration: none; color: inherit;">
 								<div class="asset-item total-asset">
 									<div class="asset-label"
 										style="display: flex; justify-content: space-between; align-items: center;">
@@ -249,18 +259,14 @@
 				                            <polyline points="9 18 15 12 9 6"></polyline>
 				                        </svg>
 									</div>
-									<div id="totalAssetVal" class="asset-value">
-										<span style="font-size: 16px; font-weight: 500; opacity: 0.5;">계산 중...</span>
+									<div class="asset-value">
+										<fmt:formatNumber value="${totalAsset}" type="number" /> <small>원</small>
 									</div>
 								</div>
 							</a>
 						</div>
 
-						<!-- 💡 깔끔하게 정리된 버튼 컴포넌트 구조 -->
 						<div class="action-group">
-							<button class="btn-primary-block" onclick="location.href='./update'">
-								정보 수정하기
-							</button>
 							<div class="btn-sub-group">
 								<button class="btn-sub-item" onclick="location.href='/'">
 									메인으로
@@ -284,27 +290,6 @@
 	<script src="/js/common.js" defer></script>
 	<script src="/js/sidebar-data.js" defer></script>
 	<script>
-        async function fetchTotalAsset() {
-            try {
-                const [stockVal, coinWallet] = await Promise.all([
-                    fetch('/stock/my-asset').then(r => r.json()).catch(() => 0),
-                    fetch('/coin/wallet').then(r => r.json()).catch(() => ({ usdtBalance: 0 }))
-                ]);
-                const rate = (typeof usdToKrw !== 'undefined' && usdToKrw > 1) ? usdToKrw : 1400;
-                const coinKrw = Math.floor((coinWallet?.usdtBalance || 0) * rate);
-                const total = (stockVal || 0) + coinKrw;
-                const el = document.getElementById('totalAssetVal');
-                if (el) el.innerHTML = Number(total).toLocaleString() + ' <small>원</small>';
-            } catch (e) {
-                console.error("자산 정보 로드 실패", e);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchTotalAsset();
-            setInterval(fetchTotalAsset, 15000);
-        });
-
         const profileFileInput = document.getElementById('profileFileInput');
         if (profileFileInput) {
             profileFileInput.addEventListener('change', function() {

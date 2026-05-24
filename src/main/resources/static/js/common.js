@@ -7,6 +7,15 @@
 /* ====================================================
    달러 / 원 통화 토글
    ==================================================== */
+function userStorageKey(baseKey) {
+    const owner = window.sidebarStorageUser || 'guest';
+    const key = baseKey + ':' + encodeURIComponent(owner);
+    if (owner === 'guest' && localStorage.getItem(key) === null && localStorage.getItem(baseKey) !== null) {
+        localStorage.setItem(key, localStorage.getItem(baseKey));
+    }
+    return key;
+}
+
 let currencyMode = localStorage.getItem('currencyMode') || 'usd';
 let usdToKrw = 1;
 
@@ -20,7 +29,7 @@ async function fetchExchangeRate() {
         if (res && res.rates && res.rates.KRW) {
             usdToKrw = res.rates.KRW;
             const rateEl = document.getElementById('ex-current-rate');
-            if (rateEl) rateEl.textContent = `현재 환율: 1$ = ${usdToKrw.toLocaleString()}원`;
+            if (rateEl) rateEl.innerHTML = `$1 = <span style="font-weight:700; color:#3182F6;">₩${Math.round(usdToKrw).toLocaleString()}</span>`;
             // 환율 로드 완료 후 의존 함수 재실행 (defer 로딩 경쟁 조건 해소)
             if (typeof updateAsset === 'function') updateAsset();
             if (typeof updateExchangeUI === 'function') updateExchangeUI();
@@ -321,7 +330,7 @@ function updateExchangeUI() {
     const rateEl = document.getElementById('ex-current-rate');
     // usdToKrw 변수가 정의되어 있는지 안전하게 확인 후 출력
     if (rateEl && typeof usdToKrw !== 'undefined') {
-        rateEl.textContent = `현재 환율: 1$ = ${usdToKrw.toLocaleString()}원`;
+        rateEl.textContent = `현재 환율: 1$ = ${Math.round(usdToKrw).toLocaleString()}원`;
     }
 
     const availKrwEl = document.getElementById('ex-avail-krw');
@@ -365,7 +374,18 @@ function updateExchangeUI() {
 let holdingsData = [];
 let holdingsWs = null;
 let holdingsPingTimer = null;
-let cachedPrices = JSON.parse(localStorage.getItem('holdingPrices') || '{}');
+let cachedPrices = JSON.parse(localStorage.getItem(userStorageKey('holdingPrices')) || '{}');
+let commonCoinLogoMap = {};
+
+async function loadCommonCoinLogoMap() {
+    try {
+        const res = await fetch('/coin/api/logos');
+        const data = await res.json();
+        if (data && typeof data === 'object') commonCoinLogoMap = data;
+    } catch (e) {}
+}
+
+loadCommonCoinLogoMap();
 
 function skeletonCard() {
     return '<div class="holding-card hc-main skeleton-card">'
@@ -402,7 +422,8 @@ function coinLogoColor(code) {
 function coinLogoHtml(ticker) {
     const fallback = ticker.slice(0, 3);
     const color = coinLogoColor(ticker);
-    const url = 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/' + ticker.toLowerCase() + '.png';
+    const url = commonCoinLogoMap[ticker]
+        || 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/' + ticker.toLowerCase() + '.png';
     return '<div class="hc-logo hc-logo-wrap">'
         + '<img src="' + url + '" alt="' + ticker + '" class="hc-logo-img"'
         + ' onerror="this.parentElement.style.background=\'' + color + '\';this.parentElement.textContent=\'' + fallback + '\'">'
@@ -446,7 +467,7 @@ function renderHoldings(data) {
                     card.querySelector('.hc-eval-val').textContent = (evalAmt !== null ? evalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '-') + ' USDT';
                 }
             } else {
-                const ticker = coinCode.replace(/USDT$/, '').replace('_SPBL', '');
+                const ticker = coinCode.replace(/USDT$/, '').replace(/USDC$/, '').replace('_SPBL', '');
                 const div = document.createElement('div');
                 div.className = 'holding-card hc-main';
                 div.dataset.coin = coinCode;
@@ -493,7 +514,7 @@ function renderHoldings(data) {
 
 /** 개별 코인 시장가 즉시 매도 */
 async function sellCoinMarket(coinCode, coinCount) {
-    const ticker = coinCode.replace(/USDT$/, '');
+    const ticker = coinCode.replace(/USDT$/, '').replace(/USDC$/, '');
     const price = cachedPrices[coinCode] || 0;
     if (!confirm(ticker + ' ' + coinCount.toFixed(4) + '개를 시장가로 즉시 매도하시겠습니까?')) return;
 
@@ -544,7 +565,7 @@ async function loadHoldings() {
     const tbody = document.getElementById('bp-holdings-body');
     if (!tbody) return;
 
-    const cached = localStorage.getItem('holdings');
+    const cached = localStorage.getItem(userStorageKey('holdings'));
     if (cached) {
         /* 캐시 있으면 즉시 실제 데이터 표시 */
         holdingsData = JSON.parse(cached);
@@ -559,7 +580,7 @@ async function loadHoldings() {
     /* 서버에서 최신 데이터 fetch → 캐시 갱신 후 in-place 업데이트 */
     const res = await fetch('/coin/holdings').then(r => r.json());
     holdingsData = res || [];
-    localStorage.setItem('holdings', JSON.stringify(holdingsData));
+    localStorage.setItem(userStorageKey('holdings'), JSON.stringify(holdingsData));
     renderHoldings(holdingsData);
     connectHoldingsWs();
 }
@@ -585,7 +606,7 @@ async function loadOrders() {
         container.innerHTML = res.map(o => {
             // 코인 코드 안전 장치 (혹시나 코인 코드도 안 넘어올 경우를 대비)
             const coinCode = o.coinCode || 'UNKNOWN';
-            const ticker = coinCode.replace(/USDT$/, '').replace('_SPBL', '');
+            const ticker = coinCode.replace(/USDT$/, '').replace(/USDC$/, '').replace('_SPBL', '');
             
             const typeLabel = o.orderType === 'BUY' ? '매수' : '매도';
             const typeCls = o.orderType === 'BUY' ? 'up' : 'down';
@@ -711,7 +732,5 @@ function updateHoldingPrice(coinCode, price) {
     card.querySelector('.hc-eval-val').textContent = evalAmt.toLocaleString(undefined, { maximumFractionDigits: 2 }) + ' USDT';
 
     cachedPrices[coinCode] = price;
-    localStorage.setItem('holdingPrices', JSON.stringify(cachedPrices));
+    localStorage.setItem(userStorageKey('holdingPrices'), JSON.stringify(cachedPrices));
 }
-
-

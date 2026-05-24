@@ -3,6 +3,7 @@
 .claude/
 application-dev.properties
 application.properties
+build.gradle
 
 HELP.md
 .gradle

@@ -257,190 +257,126 @@
 	<script src="/js/sidebar-data.js" defer></script>
 	<script>
 async function updateAsset() {
-    const EXCHANGE_RATE = (typeof usdToKrw !== 'undefined' && usdToKrw > 1) ? usdToKrw : 1400;
     const isKrw = (typeof currencyMode !== 'undefined') && currencyMode === 'krw';
 
-    // asset-cur-switch 토글 상태 동기화
     const assetSwitch = document.getElementById('asset-cur-switch');
     if (assetSwitch) assetSwitch.classList.toggle('krw', isKrw);
     const currLabel = document.getElementById('coin-currency-label');
     if (currLabel) currLabel.textContent = isKrw ? 'KRW 기준' : 'USDT 기준';
 
     try {
-        const res = await fetch('/stock/asset-detail-data');
+        const res = await fetch('/asset/summary');
         if (!res.ok) return;
-        const data = await res.json();
-        if (!data || !Array.isArray(data)) return;
+        const d = await res.json();
+        if (!d || !d.stock || !d.coin) return;
 
-        const stockWalletRes = await fetch('/stock/account-balance').then(r => r.ok ? r.json() : { balance: 0, locked: 0 });
-        const coinWalletRes = await fetch('/coin/wallet').then(r => r.ok ? r.json() : { usdtBalance: 0 });
+        const s = d.stock;
+        const c = d.coin;
+        const rate = c.exchangeRate || 1400;
 
-        const stockCash = stockWalletRes ? (stockWalletRes.balance || 0) : 0;
-        const stockLocked = stockWalletRes ? (stockWalletRes.locked || 0) : 0;
-        const coinCash = coinWalletRes ? (coinWalletRes.usdtBalance || 0) : 0;
-
-        // 1. 코인 라이브 시세 가져오기
-        const coinItems = data.filter(item => item && item.type === 'coin');
-        const coinTickers = coinItems.map(item => (item.name || '') + 'USDT');
-        let livePrices = {};
-
-        if (coinTickers.length > 0) {
-            const tickerRes = await fetch('/coin/api/tickers').then(r => r.ok ? r.json() : null);
-            if (tickerRes && tickerRes.data && Array.isArray(tickerRes.data)) {
-                tickerRes.data.forEach(t => {
-                    if(t && coinTickers.includes(t.symbol)) {
-                        livePrices[t.symbol] = parseFloat(t.lastPr) || 0;
-                    }
-                });
-            }
-        }
-
-        // 2. 주식 렌더링 & 요약
-        const stockItems = data.filter(item => item && item.type === 'stock');
-        let sEval = 0, sBuy = 0;
-
+        // 주식 섹션
         const stockTableBody = document.getElementById('stockTableBody');
         if (stockTableBody) {
-            stockTableBody.innerHTML = stockItems.map(item => {
-                const count = parseFloat(item.count) || 0;
-                const buyPrice = parseFloat(item.buyPrice) || 0;
-                const buy = buyPrice * count;
-                const evalVal = parseFloat(item.eval) || buy;
-                sEval += evalVal;
-                sBuy += buy;
+            stockTableBody.innerHTML = (s.items || []).map(item => {
                 const r = parseFloat(item.rate) || 0;
                 return `<tr>
-                    <td><b>\${item.name || '알 수 없는 종목'}</b></td>
-                    <td style="text-align:right;">\${Number(count).toLocaleString()}주</td>
-                    <td style="text-align:right;">\${Number(buyPrice).toLocaleString()}원</td>
-                    <td style="text-align:right; font-weight:600;">\${Number(evalVal).toLocaleString()}원</td>
+                    <td><b>\${item.name}</b></td>
+                    <td style="text-align:right;">\${Number(item.count).toLocaleString()}주</td>
+                    <td style="text-align:right;">\${Number(item.buyPrice).toLocaleString()}원</td>
+                    <td style="text-align:right; font-weight:600;">\${Number(item.eval).toLocaleString()}원</td>
                     <td style="text-align:right;" class="val-rate \${r > 0 ? 'up' : r < 0 ? 'down' : ''}">\${r > 0 ? '+' : ''}\${r.toFixed(2)}%</td>
                 </tr>`;
             }).join('') || '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text3);">보유 주식이 없습니다.</td></tr>';
         }
 
-        const sPnl = sEval - sBuy;
-        const sRate = sBuy > 0 ? (sPnl / sBuy * 100) : 0;
-
-        if(document.getElementById('s-total-eval')) document.getElementById('s-total-eval').textContent = Math.floor(stockCash + stockLocked + sEval).toLocaleString() + '원';
-        if(document.getElementById('s-cash-hint')) {
-            let hintHtml = '가용잔고 ' + Math.floor(stockCash).toLocaleString() + '원<br>' +
-                           '주문 중 ' + Math.floor(stockLocked).toLocaleString() + '원';
-            
-            document.getElementById('s-cash-hint').innerHTML = hintHtml;
-        }
+        if (document.getElementById('s-total-eval')) document.getElementById('s-total-eval').textContent = Number(s.total).toLocaleString() + '원';
+        if (document.getElementById('s-cash-hint')) document.getElementById('s-cash-hint').innerHTML =
+            '가용잔고 ' + Number(s.cash).toLocaleString() + '원<br>주문 중 ' + Number(s.locked).toLocaleString() + '원';
 
         const sPnlEl = document.getElementById('s-total-pnl');
         if (sPnlEl) {
-            sPnlEl.textContent = (sPnl >= 0 ? '+' : '') + Math.floor(sPnl).toLocaleString() + '원';
-            sPnlEl.className = 'summary-value ' + (sPnl > 0 ? 'up' : sPnl < 0 ? 'down' : '');
+            sPnlEl.textContent = (s.pnl >= 0 ? '+' : '') + Math.floor(s.pnl).toLocaleString() + '원';
+            sPnlEl.className = 'summary-value ' + (s.pnl > 0 ? 'up' : s.pnl < 0 ? 'down' : '');
         }
-
         const sRateEl = document.getElementById('s-total-rate');
         if (sRateEl) {
-            sRateEl.textContent = (sRate >= 0 ? '+' : '') + sRate.toFixed(2) + '%';
-            sRateEl.className = 'summary-value ' + (sRate > 0 ? 'up' : sRate < 0 ? 'down' : '');
+            sRateEl.textContent = (s.rate >= 0 ? '+' : '') + parseFloat(s.rate).toFixed(2) + '%';
+            sRateEl.className = 'summary-value ' + (s.rate > 0 ? 'up' : s.rate < 0 ? 'down' : '');
         }
 
-        // 3. 코인 렌더링 & 요약 (currencyMode에 따라 USDT / KRW 전환)
-        let cEval = 0, cBuy = 0;
-
+        // 코인 섹션
         const coinTableBody = document.getElementById('coinTableBody');
         if (coinTableBody) {
-            coinTableBody.innerHTML = coinItems.map(item => {
-                const coinName = item.name || '';
-                const ticker = coinName + 'USDT';
-                const count = parseFloat(item.count) || 0;
-                const buyPrice = parseFloat(item.buyPrice) || 0;
-                const curPrice = livePrices[ticker] || buyPrice;
-                const buy = buyPrice * count;
-                const evalVal = curPrice * count;
-                cEval += evalVal;
-                cBuy += buy;
-                const r = buy > 0 ? ((evalVal - buy) / buy * 100) : 0;
-
+            coinTableBody.innerHTML = (c.items || []).map(item => {
+                const r = parseFloat(item.rate) || 0;
                 if (isKrw) {
                     return `<tr>
-                        <td><b>\${coinName}</b></td>
-                        <td style="text-align:right;">\${count.toFixed(4)}</td>
-                        <td style="text-align:right;">\${Math.floor(buyPrice * EXCHANGE_RATE).toLocaleString()}원</td>
-                        <td style="text-align:right; font-weight:600;">\${Math.floor(evalVal * EXCHANGE_RATE).toLocaleString()}원</td>
+                        <td><b>\${item.name}</b></td>
+                        <td style="text-align:right;">\${parseFloat(item.count).toFixed(4)}</td>
+                        <td style="text-align:right;">\${Math.floor(item.buyPrice * rate).toLocaleString()}원</td>
+                        <td style="text-align:right; font-weight:600;">\${Math.floor(item.eval * rate).toLocaleString()}원</td>
                         <td style="text-align:right;" class="val-rate \${r > 0 ? 'up' : r < 0 ? 'down' : ''}">\${r > 0 ? '+' : ''}\${r.toFixed(2)}%</td>
                     </tr>`;
                 } else {
                     return `<tr>
-                        <td><b>\${coinName}</b></td>
-                        <td style="text-align:right;">\${count.toFixed(4)}</td>
-                        <td style="text-align:right;">$\${buyPrice.toLocaleString(undefined, {maximumFractionDigits: 4})}</td>
-                        <td style="text-align:right; font-weight:600;">$\${evalVal.toLocaleString(undefined, {maximumFractionDigits:2})}</td>
+                        <td><b>\${item.name}</b></td>
+                        <td style="text-align:right;">\${parseFloat(item.count).toFixed(4)}</td>
+                        <td style="text-align:right;">$\${parseFloat(item.buyPrice).toLocaleString(undefined,{maximumFractionDigits:4})}</td>
+                        <td style="text-align:right; font-weight:600;">$\${parseFloat(item.eval).toLocaleString(undefined,{maximumFractionDigits:2})}</td>
                         <td style="text-align:right;" class="val-rate \${r > 0 ? 'up' : r < 0 ? 'down' : ''}">\${r > 0 ? '+' : ''}\${r.toFixed(2)}%</td>
                     </tr>`;
                 }
             }).join('') || '<tr><td colspan="5" style="text-align:center; padding:40px; color:var(--text3);">보유 코인이 없습니다.</td></tr>';
         }
 
-        const cPnl = cEval - cBuy;
-        const cRate = cBuy > 0 ? (cPnl / cBuy * 100) : 0;
-
         if (isKrw) {
-            if(document.getElementById('c-total-eval')) document.getElementById('c-total-eval').textContent = Math.floor((coinCash + cEval) * EXCHANGE_RATE).toLocaleString() + '원';
-            if(document.getElementById('c-cash-hint')) document.getElementById('c-cash-hint').textContent = '가용 잔고 ' + Math.floor(coinCash * EXCHANGE_RATE).toLocaleString() + '원 포함';
+            if (document.getElementById('c-total-eval')) document.getElementById('c-total-eval').textContent = Number(c.totalKrw).toLocaleString() + '원';
+            if (document.getElementById('c-cash-hint')) document.getElementById('c-cash-hint').textContent = '가용 잔고 ' + Math.floor(c.cashUsdt * rate).toLocaleString() + '원 포함';
             const cPnlEl = document.getElementById('c-total-pnl');
             if (cPnlEl) {
-                const cPnlKrw = Math.floor(cPnl * EXCHANGE_RATE);
-                cPnlEl.textContent = (cPnlKrw >= 0 ? '+' : '') + cPnlKrw.toLocaleString() + '원';
-                cPnlEl.className = 'summary-value ' + (cPnl > 0 ? 'up' : cPnl < 0 ? 'down' : '');
+                const pnlKrw = Math.floor(c.pnlUsdt * rate);
+                cPnlEl.textContent = (pnlKrw >= 0 ? '+' : '') + pnlKrw.toLocaleString() + '원';
+                cPnlEl.className = 'summary-value ' + (c.pnlUsdt > 0 ? 'up' : c.pnlUsdt < 0 ? 'down' : '');
             }
         } else {
-            if(document.getElementById('c-total-eval')) document.getElementById('c-total-eval').textContent = (coinCash + cEval).toLocaleString(undefined,{maximumFractionDigits:2}) + ' USDT';
-            if(document.getElementById('c-cash-hint')) document.getElementById('c-cash-hint').textContent = '가용 잔고 ' + Number(coinCash).toLocaleString(undefined,{maximumFractionDigits:2}) + ' USDT 포함';
+            if (document.getElementById('c-total-eval')) document.getElementById('c-total-eval').textContent = (c.cashUsdt + c.evalUsdt).toLocaleString(undefined,{maximumFractionDigits:2}) + ' USDT';
+            if (document.getElementById('c-cash-hint')) document.getElementById('c-cash-hint').textContent = '가용 잔고 ' + parseFloat(c.cashUsdt).toLocaleString(undefined,{maximumFractionDigits:2}) + ' USDT 포함';
             const cPnlEl = document.getElementById('c-total-pnl');
             if (cPnlEl) {
-                cPnlEl.textContent = (cPnl >= 0 ? '+' : '') + cPnl.toFixed(2) + ' USDT';
-                cPnlEl.className = 'summary-value ' + (cPnl > 0 ? 'up' : cPnl < 0 ? 'down' : '');
+                cPnlEl.textContent = (c.pnlUsdt >= 0 ? '+' : '') + parseFloat(c.pnlUsdt).toFixed(2) + ' USDT';
+                cPnlEl.className = 'summary-value ' + (c.pnlUsdt > 0 ? 'up' : c.pnlUsdt < 0 ? 'down' : '');
             }
         }
-
         const cRateEl = document.getElementById('c-total-rate');
         if (cRateEl) {
-            cRateEl.textContent = (cRate >= 0 ? '+' : '') + cRate.toFixed(2) + '%';
-            cRateEl.className = 'summary-value ' + (cRate > 0 ? 'up' : cRate < 0 ? 'down' : '');
+            cRateEl.textContent = (c.rate >= 0 ? '+' : '') + parseFloat(c.rate).toFixed(2) + '%';
+            cRateEl.className = 'summary-value ' + (c.rate > 0 ? 'up' : c.rate < 0 ? 'down' : '');
         }
 
-        // 4. 통합 자산 — 백엔드와 동일한 소스(/stock/my-asset)로 총액 표시
-        const myAssetRes = await fetch('/stock/my-asset').then(r => r.ok ? r.json() : null);
-        const grandTotalAsset = myAssetRes !== null ? myAssetRes
-                                                    : (stockCash + stockLocked + sEval) + ((coinCash + cEval) * EXCHANGE_RATE);
+        // 통합 자산
+        if (document.getElementById('grand-total-asset')) document.getElementById('grand-total-asset').textContent = Number(d.grandTotal).toLocaleString() + '원';
 
-        // P&L / 수익률은 실제 거래 손익만 반영 (현금·환율 차이 제외)
-        // 주식 손익: 현재 평가액 - 매입원가
-        // 코인 손익: (현재 평가액 - 매입원가) × 환율  → 동일 환율 적용이라 환율 차이 없음
-        const grandTotalPnl = (sEval - sBuy) + ((cEval - cBuy) * EXCHANGE_RATE);
-        const grandTotalPrincipal = sBuy + cBuy * EXCHANGE_RATE;
-        const grandTotalRate = grandTotalPrincipal > 0 ? (grandTotalPnl / grandTotalPrincipal) * 100 : 0;
-
-        if(document.getElementById('grand-total-asset')) document.getElementById('grand-total-asset').textContent = Math.floor(grandTotalAsset).toLocaleString() + '원';
+        const grandPnl = s.pnl + (c.pnlUsdt * rate);
+        const grandPrincipal = (s.eval - s.pnl) + ((c.evalUsdt - c.pnlUsdt) * rate);
+        const grandRate = grandPrincipal > 0 ? (grandPnl / grandPrincipal) * 100 : 0;
 
         const gPnlEl = document.getElementById('grand-total-pnl');
         if (gPnlEl) {
-            gPnlEl.textContent = (grandTotalPnl >= 0 ? '+' : '') + Math.floor(grandTotalPnl).toLocaleString() + '원';
-            gPnlEl.className = 'summary-value ' + (grandTotalPnl > 0 ? 'up' : grandTotalPnl < 0 ? 'down' : '');
+            gPnlEl.textContent = (grandPnl >= 0 ? '+' : '') + Math.floor(grandPnl).toLocaleString() + '원';
+            gPnlEl.className = 'summary-value ' + (grandPnl > 0 ? 'up' : grandPnl < 0 ? 'down' : '');
         }
-
         const gRateEl = document.getElementById('grand-total-rate');
         if (gRateEl) {
-            gRateEl.textContent = (grandTotalRate >= 0 ? '+' : '') + grandTotalRate.toFixed(2) + '%';
-            gRateEl.className = 'summary-value ' + (grandTotalRate > 0 ? 'up' : grandTotalRate < 0 ? 'down' : '');
+            gRateEl.textContent = (grandRate >= 0 ? '+' : '') + grandRate.toFixed(2) + '%';
+            gRateEl.className = 'summary-value ' + (grandRate > 0 ? 'up' : grandRate < 0 ? 'down' : '');
         }
 
     } catch (e) {
-        console.error("자산 실시간 업데이트 중 예외 발생:", e);
+        console.error("자산 업데이트 실패:", e);
     }
 }
 
-// 초기화 실행 및 10초 주기 폴링 설정
 document.addEventListener('DOMContentLoaded', () => {
-    // asset-cur-switch 초기 상태 동기화 (localStorage 기준)
     const initMode = localStorage.getItem('currencyMode') || 'usd';
     const assetSwitch = document.getElementById('asset-cur-switch');
     if (assetSwitch) assetSwitch.classList.toggle('krw', initMode === 'krw');

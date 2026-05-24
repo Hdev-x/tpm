@@ -27,7 +27,7 @@
     <a href="/board/list" class="nav-item">커뮤니티</a>
     <a href="/notice/list" class="nav-item">공지사항</a>
     <c:if test="${not empty member}">
-        <a href="/stock/asset" class="nav-item">내 계좌</a>
+        <a href="/asset" class="nav-item">내 계좌</a>
     </c:if>
 
     <!-- 오른쪽 영역: margin-left:auto 로 오른쪽 끝에 밀려남 -->

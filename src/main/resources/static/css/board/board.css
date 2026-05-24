@@ -2,6 +2,68 @@
    BOARD DETAIL - 게시판 상세보기 버튼 스타일
    ==================================================== */
 
+/* ── 페이지 헤더 ── */
+.board-community-page .board-header {
+    min-height: 140px;
+    padding: 40px 50px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: linear-gradient(135deg, #1c2030 0%, #252a3d 100%);
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+}
+
+.board-community-page .board-title {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+}
+
+.board-community-page .board-subtitle {
+    margin: 12px 0 0;
+    font-size: 16px;
+    color: var(--text-grey);
+    opacity: 0.8;
+}
+
+/* ── 배지 ── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+.badge-new {
+    background: rgba(49, 130, 246, 0.12);
+    color: var(--blue);
+    border: 1px solid rgba(49, 130, 246, 0.2);
+}
+
+.badge-notice {
+    background: rgba(240, 68, 82, 0.1);
+    color: #F04452;
+    border: 1px solid rgba(240, 68, 82, 0.2);
+}
+
+/* ── 등록/수정 완료 버튼 ── */
+.btn-submit {
+    background: var(--blue) !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+.btn-submit:hover {
+    opacity: 0.9;
+    box-shadow: 0 4px 12px rgba(49, 130, 246, 0.3);
+}
+
 /* 레이아웃 제어 */
 .detail-actions {
     display: flex;

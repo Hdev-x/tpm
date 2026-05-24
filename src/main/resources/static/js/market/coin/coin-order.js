@@ -1,6 +1,6 @@
 /* =====================================================
-   coin-order.js - 코인 차트 화면의 주문, 지갑, 미체결 주문을 담당한다.
-   chart-toss-coin.js에서 분리된 주문 관련 함수 모음이다.
+   coin-order.js - 코인 주문 패널의 주문, 지갑, 미체결 주문을 담당한다.
+   차트와 커뮤니티 화면이 같은 주문 DOM을 공유할 수 있도록 분리된 함수 모음이다.
    ===================================================== */
 
 /* =====================================================
@@ -35,7 +35,7 @@
       cancelPendingOrder()         미체결 주문 취소 요청
 
    5. 주의해서 볼 값
-      orderSide                    현재 주문 방향. chart-toss-coin.js 전역 변수
+      orderSide                    현재 주문 방향. 차트/커뮤니티 JSP가 주입하는 전역 변수
       walletBalance                주문 가능 USDT 잔고. loadWallet()이 갱신
       currentSymbol                현재 선택된 코인 심볼
       lastPrice                    현재가. 주문 금액과 지정가 체결 조건에 사용
@@ -153,6 +153,11 @@ function calcAmount() {
  * @param {string} side 'buy' 또는 'sell'
  */
 function submitOrder(side) {
+    if (typeof isLoggedIn !== 'undefined' && !isLoggedIn) {
+        location.href = '/member/login?redirect=' + encodeURIComponent(location.pathname + location.search);
+        return;
+    }
+
     const qty = document.getElementById('trade-qty').value;
 
     // [실행 흐름] 서버 요청 전에 수량이 비어 있거나 0 이하인지 먼저 검사한다.
@@ -189,8 +194,8 @@ function submitOrder(side) {
                     : (side === 'buy' ? '매수' : '매도') + ' 주문 완료!');
 
                 // [실행 흐름] 주문 성공 후 화면에 보이는 자산 관련 정보를 다시 서버 기준으로 맞춘다.
-                loadWallet();
-                loadHoldings();
+                if (typeof loadWallet === 'function') loadWallet();
+                if (typeof loadHoldings === 'function') loadHoldings();
                 if (typeof loadCoinHoldings === 'function') loadCoinHoldings();
 
                 // [실행 흐름] 지정가 주문은 등록 직후 현재가 조건을 만족할 수 있어 미체결 조회 뒤 즉시 검사한다.
@@ -296,9 +301,9 @@ function checkPendingOrders(price) {
         // [실행 흐름] 체결 후 미체결, 보유 수량, 지갑, 주문 내역을 모두 서버 기준으로 다시 불러온다.
         pendingOrders = pendingOrders.filter(o => !toExecute.includes(o));
         loadPendingOrders();
-        loadHoldings();
-        loadWallet();
-        loadOrders();
+        if (typeof loadHoldings === 'function') loadHoldings();
+        if (typeof loadWallet === 'function') loadWallet();
+        if (typeof loadOrders === 'function') loadOrders();
         if (typeof loadCoinHoldings === 'function') loadCoinHoldings();
     }).catch(() => {
         // [주의] 실패해도 다음 가격 변화 때 다시 검사할 수 있도록 플래그를 반드시 해제한다.
@@ -321,5 +326,10 @@ async function cancelPendingOrder(orderNo) {
     }).then(r => r.text());
 
     // [실행 흐름] 취소 성공 시 미체결 목록, 보유 현황, 지갑 잔고를 다시 불러온다.
-    if (res === 'success') { loadPendingOrders(); loadHoldings(); loadWallet(); if (typeof loadCoinHoldings === 'function') loadCoinHoldings(); }
+    if (res === 'success') {
+        loadPendingOrders();
+        if (typeof loadHoldings === 'function') loadHoldings();
+        if (typeof loadWallet === 'function') loadWallet();
+        if (typeof loadCoinHoldings === 'function') loadCoinHoldings();
+    }
 }

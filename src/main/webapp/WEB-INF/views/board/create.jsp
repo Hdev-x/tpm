@@ -54,8 +54,8 @@
                         </div>
 
                         <div class="create-actions" style="display: flex; gap: 16px; justify-content: flex-end;">
-                            <button type="button" class="order-type-btn" style="width: 120px; padding: 16px 0;" onclick="history.back()">취소</button>
-                            <button type="submit" class="nav-login-btn" style="width: 180px; padding: 16px 0; font-weight: 700;">등록하기</button>
+                            <button type="button" class="btn-action btn-list" onclick="history.back()">취소</button>
+                            <button type="submit" class="btn-action btn-submit">등록하기</button>
                         </div>
                     </form>
                 </div>

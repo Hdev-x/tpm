@@ -68,8 +68,8 @@
                     </div>
 
                     <div style="display: flex; gap: 16px;">
-                        <button type="submit" class="nav-login-btn" style="flex: 2; padding: 18px 0; font-weight: 700; background: #F04452; border-color: #F04452;">수정 완료</button>
-                        <button type="button" class="order-type-btn" onclick="history.back()" style="flex: 1; padding: 18px 0;">취소</button>
+                        <button type="submit" class="btn-action btn-submit" style="flex: 2; height: auto; padding: 18px 0; background: #F04452 !important;">수정 완료</button>
+                        <button type="button" class="btn-action btn-list" onclick="history.back()" style="flex: 1; height: auto; padding: 18px 0;">취소</button>
                     </div>
                 </form>
             </div>

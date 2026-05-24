@@ -68,16 +68,16 @@
                     </div>
 
                     <div class="detail-actions" style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 32px; margin-bottom: 64px;">
-                        <button type="button" class="order-type-btn" onclick="location.href='./list'" style="width: 120px; padding: 10px 0;">
+                        <button type="button" class="btn-action btn-list" onclick="location.href='./list'">
                             ← 목록으로
                         </button>
 
                         <c:if test="${member.username eq detail.boardWriter}">
                             <div style="display: flex; gap: 12px;">
-                                <button type="button" class="order-type-btn" onclick="location.href='./update?boardNo=${detail.boardNo}'" style="width: 100px; padding: 10px 0;">수정</button>
+                                <button type="button" class="btn-action btn-edit" onclick="location.href='./update?boardNo=${detail.boardNo}'">수정</button>
                                 <form action="./delete" method="post" onsubmit="return confirm('정말 삭제하시겠습니까?');" style="margin: 0;">
                                     <input type="hidden" name="boardNo" value="${detail.boardNo}">
-                                    <button type="submit" class="btn-sell" style="width: 100px; border-radius: 12px; padding: 10px 0; font-weight: 600;">삭제</button>
+                                    <button type="submit" class="btn-action btn-delete">삭제</button>
                                 </form>
                             </div>
                         </c:if>
@@ -94,7 +94,7 @@
                                 <textarea name="replyContent" placeholder="댓글을 작성해주세요" required
                                     style="width: 100%; background: transparent; border: none; color: var(--text); outline: none; resize: none; height: 100px; font-size: 16px; line-height: 1.6;"></textarea>
                                 <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
-                                    <button type="submit" class="nav-login-btn" style="width: 100px; padding: 12px 0; font-weight: 600;">등록</button>
+                                    <button type="submit" class="btn-action btn-submit" style="width: 100px;">등록</button>
                                 </div>
                             </div>
                         </form>

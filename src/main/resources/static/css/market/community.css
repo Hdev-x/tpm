@@ -118,20 +118,20 @@
 }
 
 .cm-order-panel .panel-order-wrap {
-    flex: 1;
-    min-height: 0;
+    flex: 0 0 auto;
     border: 0;
 }
 
 .cm-order-panel .order-panel {
-    flex: 1;
-    min-height: 0;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
 }
 
-.cm-order-panel .order-avail { margin-top: auto; }
+.cm-order-panel::after {
+    content: "";
+    flex: 1 1 auto;
+}
 
 /* ── 스크롤바 (뉴스/주문 패널) ── */
 .cm-news-panel::-webkit-scrollbar,

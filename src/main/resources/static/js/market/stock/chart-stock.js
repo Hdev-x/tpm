@@ -1375,13 +1375,10 @@ function submitOrder() {
 /* 1. 서버에서 예수금(현금 잔고) 가져오기 */
 async function loadWallet() {
     try {
-        // 태준님의 서버 엔드포인트에 맞춰 수정 (예: /api/account/balance)
-        const res = await fetch('/stock/wallet?username=taejun').then(r => r.json());
-        
+        const res = await fetch('/stock/account-balance').then(r => r.json());
+
         if (res && res.balance !== undefined) {
             walletBalance = res.balance;
-            
-            // UI 업데이트: "주문가능 금액" 영역
             const availSpan = document.querySelector('.order-avail span');
             if (availSpan) {
                 availSpan.textContent = Math.floor(res.balance).toLocaleString() + ' 원';
@@ -1395,43 +1392,38 @@ async function loadWallet() {
 /* 2. 서버에서 보유 주식 목록 가져와 테이블에 렌더링 */
 async function loadHoldings() {
     try {
-        const res = await fetch('/stock/holdings?username=taejun').then(r => r.json());
+        const res = await fetch('/stock/holding-list').then(r => r.json());
         const tbody = document.getElementById('bp-holdings-body');
         const emptyDiv = document.getElementById('bp-empty');
         const table = document.getElementById('bp-holdings-table');
-        
+
         if (!tbody) return;
         tbody.innerHTML = '';
 
         if (res && res.length > 0) {
             if (emptyDiv) emptyDiv.style.display = 'none';
             if (table) table.style.display = 'table';
-            
-            let rows = '';
-            res.forEach(h => {
-                // 수익금 계산: (현재가 - 평단가) * 보유수량
-                const pnl = (lastPrice - h.avgPrice) * h.stockCount;
-                // 수익률 계산
-                const pnlRate = h.avgPrice > 0 ? ((lastPrice - h.avgPrice) / h.avgPrice * 100).toFixed(2) : "0.00";
-                
-                // 한국 주식 스타일 색상 (상승 빨강, 하락 파랑)
+
+            tbody.innerHTML = res.map(h => {
+                const name = h.STOCK_NAME || h.STOCK_CODE;
+                const count = Number(h.STOCK_COUNT);
+                const avgPrice = Number(h.STOCK_PURCHASE);
+                const pnl = (lastPrice - avgPrice) * count;
+                const pnlRate = avgPrice > 0 ? ((lastPrice - avgPrice) / avgPrice * 100).toFixed(2) : "0.00";
                 const pnlColor = pnl >= 0 ? '#F04452' : '#2563EB';
                 const pnlSign = pnl >= 0 ? '+' : '';
-
-                rows += `
+                return `
                     <tr>
-                        <td><strong>${h.stockName || h.stockCode}</strong></td>
-                        <td id="holding-qty">${parseInt(h.stockCount).toLocaleString()}</td>
-                        <td>${Math.floor(h.avgPrice).toLocaleString()}</td>
-                        <td id="holding-price">${Math.floor(lastPrice).toLocaleString()}</td>
-                        <td id="holding-pnl" style="color: ${pnlColor}; font-weight: bold;">
-                            ${pnlSign}${Math.floor(pnl).toLocaleString()}원<br/>
-                            <span style="font-size: 0.85em;">(${pnlSign}${pnlRate}%)</span>
+                        <td><strong>${name}</strong></td>
+                        <td>${count.toLocaleString()}</td>
+                        <td>${avgPrice.toLocaleString()}</td>
+                        <td>${Math.floor(lastPrice).toLocaleString()}</td>
+                        <td style="color:${pnlColor}; font-weight:bold;">
+                            ${pnlSign}${Math.floor(pnl).toLocaleString()}원<br>
+                            <span style="font-size:0.85em;">(${pnlSign}${pnlRate}%)</span>
                         </td>
-                    </tr>
-                `;
-            });
-            tbody.innerHTML = rows;
+                    </tr>`;
+            }).join('');
         } else {
             if (emptyDiv) emptyDiv.style.display = 'block';
             if (table) table.style.display = 'none';

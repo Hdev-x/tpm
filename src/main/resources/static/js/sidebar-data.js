@@ -1,18 +1,36 @@
 /* ====================================================
-   관심 종목 (Watchlist) - localStorage 기반
+   관심 종목 (Watchlist) - 사용자별 localStorage 기반
    ==================================================== */
 let watchlistCoins = [];
 let watchlistWs = null;
 let watchlistPingTimer = null;
-let watchlistPrices = JSON.parse(localStorage.getItem('watchlistPrices') || '{}');
+let watchlistPrices = JSON.parse(localStorage.getItem(userStorageKey('watchlistPrices')) || '{}');
 let watchlistSort = '등록순';
+let sidebarCoinLogoMap = {};
+
+async function loadSidebarCoinLogoMap() {
+    try {
+        const res = await fetch('/coin/api/logos');
+        const data = await res.json();
+        if (data && typeof data === 'object') sidebarCoinLogoMap = data;
+    } catch (e) {}
+}
+
+function getSidebarCoinLogoUrl(ticker) {
+    return sidebarCoinLogoMap[ticker]
+        || 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/' + ticker.toLowerCase() + '.png';
+}
+
+function getSidebarCoinTicker(symbol) {
+    return symbol.replace(/USDT$/, '').replace(/USDC$/, '').replace('_SPBL', '');
+}
 
 /* ── 주식 관심종목 ── */
-let watchlistStockPrices = JSON.parse(localStorage.getItem('watchlistStockPrices') || '{}');
+let watchlistStockPrices = JSON.parse(localStorage.getItem(userStorageKey('watchlistStockPrices')) || '{}');
 let watchlistStockTimer = null;
 
 function getStockWatchlist() {
-    return JSON.parse(localStorage.getItem('stock_watchlist') || '[]');
+    return JSON.parse(localStorage.getItem(userStorageKey('stock_watchlist')) || '[]');
 }
 
 function watchlistStockItemHtml(code) {
@@ -74,7 +92,7 @@ async function loadWatchlistStocks() {
             } catch (e) {}
         }
     }
-    localStorage.setItem('watchlistStockPrices', JSON.stringify(watchlistStockPrices));
+    localStorage.setItem(userStorageKey('watchlistStockPrices'), JSON.stringify(watchlistStockPrices));
     renderWatchlistStocks();
 
     clearInterval(watchlistStockTimer);
@@ -96,7 +114,7 @@ function toggleStockWatchlistSidebar(code) {
     if (idx >= 0) {
         // 제거: 애니메이션 후 DOM 제거
         list.splice(idx, 1);
-        localStorage.setItem('stock_watchlist', JSON.stringify(list));
+        localStorage.setItem(userStorageKey('stock_watchlist'), JSON.stringify(list));
         let pending = 0;
         ['watchlist-stock-list', 'watchlist-stock-all-list'].forEach(listId => {
             const item = document.querySelector('#' + listId + ' [data-watchlist-stock="' + code + '"]');
@@ -116,12 +134,12 @@ function toggleStockWatchlistSidebar(code) {
             });
         });
         delete watchlistStockPrices[code];
-        localStorage.setItem('watchlistStockPrices', JSON.stringify(watchlistStockPrices));
+        localStorage.setItem(userStorageKey('watchlistStockPrices'), JSON.stringify(watchlistStockPrices));
         updateStockWatchlistHeartBtn(code, false);
     } else {
         // 추가: interest 탭 오픈 + DOM 즉시 append
         list.push(code);
-        localStorage.setItem('stock_watchlist', JSON.stringify(list));
+        localStorage.setItem(userStorageKey('stock_watchlist'), JSON.stringify(list));
         if (sidebarActiveTab !== 'interest') toggleSidebar('interest');
         ['watchlist-stock-list', 'watchlist-stock-all-list'].forEach(listId => {
             const el = document.getElementById(listId);
@@ -136,7 +154,7 @@ function toggleStockWatchlistSidebar(code) {
         const cached = sidebarStockMap[code];
         if (cached && cached.price !== '-') {
             watchlistStockPrices[code] = { ...cached };
-            localStorage.setItem('watchlistStockPrices', JSON.stringify(watchlistStockPrices));
+            localStorage.setItem(userStorageKey('watchlistStockPrices'), JSON.stringify(watchlistStockPrices));
             renderWatchlistStocks();
         } else {
             fetch('/stock/ticker?code=' + code).then(r => r.json()).then(res => {
@@ -147,7 +165,7 @@ function toggleStockWatchlistSidebar(code) {
                         rate: res.output.prdy_ctrt,
                         diff: res.output.prdy_vrss
                     };
-                    localStorage.setItem('watchlistStockPrices', JSON.stringify(watchlistStockPrices));
+                    localStorage.setItem(userStorageKey('watchlistStockPrices'), JSON.stringify(watchlistStockPrices));
                     renderWatchlistStocks();
                 }
             }).catch(() => {});
@@ -157,7 +175,7 @@ function toggleStockWatchlistSidebar(code) {
 }
 
 /* ── 최근 본 주식 ── */
-let recentStockPrices = JSON.parse(localStorage.getItem('recentStockPrices') || '{}');
+let recentStockPrices = JSON.parse(localStorage.getItem(userStorageKey('recentStockPrices')) || '{}');
 
 function recentStockItemHtml(code) {
     const d = recentStockPrices[code] || {};
@@ -201,7 +219,7 @@ async function loadRecentStocks(stockList) {
             } catch (e) {}
         }
     }
-    localStorage.setItem('recentStockPrices', JSON.stringify(recentStockPrices));
+    localStorage.setItem(userStorageKey('recentStockPrices'), JSON.stringify(recentStockPrices));
 }
 
 const WATCHLIST_SORT_FNS = {
@@ -216,7 +234,7 @@ const WATCHLIST_SORT_FNS = {
 const HEART_SVG = '<svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
 
 function getWatchlist() {
-    return JSON.parse(localStorage.getItem('watchlist') || '[]');
+    return JSON.parse(localStorage.getItem(userStorageKey('watchlist')) || '[]');
 }
 
 function animateRemoveItem(item, onDone) {
@@ -239,7 +257,7 @@ function toggleWatchlist(symbol) {
     const idx = list.indexOf(symbol);
     if (idx >= 0) {
         list.splice(idx, 1);
-        localStorage.setItem('watchlist', JSON.stringify(list));
+        localStorage.setItem(userStorageKey('watchlist'), JSON.stringify(list));
         watchlistCoins = list;
         updateWatchlistHeartBtn(symbol);
 
@@ -264,7 +282,7 @@ function toggleWatchlist(symbol) {
         });
     } else {
         list.push(symbol);
-        localStorage.setItem('watchlist', JSON.stringify(list));
+        localStorage.setItem(userStorageKey('watchlist'), JSON.stringify(list));
         watchlistCoins = list;
         updateWatchlistHeartBtn(symbol);
         if (sidebarActiveTab !== 'interest') toggleSidebar('interest');
@@ -331,13 +349,13 @@ function getSortedCoins(coins) {
 }
 
 function watchlistItemHtml(symbol) {
-    const ticker = symbol.replace(/USDT$/, '').replace('_SPBL', '');
+    const ticker = getSidebarCoinTicker(symbol);
     const p = watchlistPrices[symbol];
     const price = p ? p.price : null;
     const change = p ? p.change : null;
     const cls = change !== null ? (change >= 0 ? 'up' : 'down') : '';
     const color = coinLogoColor(ticker);
-    const logoUrl = 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/' + ticker.toLowerCase() + '.png';
+    const logoUrl = getSidebarCoinLogoUrl(ticker);
     return `<div class="si-stock-item" data-watchlist="${symbol}">
         <div class="si-logo" style="cursor:pointer;overflow:hidden;" onclick="location.href='/coin/chart?symbol=${symbol}'">
             <img src="${logoUrl}" alt="${ticker}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;"
@@ -385,7 +403,7 @@ async function loadWatchlist() {
                     watchlistPrices[symbol] = { price, change };
                 }
             });
-            localStorage.setItem('watchlistPrices', JSON.stringify(watchlistPrices));
+            localStorage.setItem(userStorageKey('watchlistPrices'), JSON.stringify(watchlistPrices));
         }
     } catch (e) {}
 
@@ -421,7 +439,7 @@ function connectWatchlistWs() {
         const openUtc = parseFloat(msg.data[0].openUtc);
         const change = openUtc > 0 ? (price - openUtc) / openUtc * 100 : (watchlistPrices[symbol]?.change ?? 0);
         watchlistPrices[symbol] = { price, change };
-        localStorage.setItem('watchlistPrices', JSON.stringify(watchlistPrices));
+        localStorage.setItem(userStorageKey('watchlistPrices'), JSON.stringify(watchlistPrices));
 
         ['watchlist-coin-list', 'watchlist-coin-all-list'].forEach(listId => {
             const item = document.querySelector('#' + listId + ' [data-watchlist="' + symbol + '"]');
@@ -441,13 +459,13 @@ function connectWatchlistWs() {
 
 
 /* ====================================================
-   최근 본 종목 - localStorage 기반
+   최근 본 종목 - 사용자별 localStorage 기반
    ==================================================== */
 const RECENT_MAX = 20;
 let recentCoins = [];
 let recentWs = null;
 let recentPingTimer = null;
-let recentPrices = JSON.parse(localStorage.getItem('recentPrices') || '{}');
+let recentPrices = JSON.parse(localStorage.getItem(userStorageKey('recentPrices')) || '{}');
 
 function isCoinSymbol(symbol) {
     return /USDT$/i.test(symbol) || symbol.includes('_SPBL');
@@ -462,7 +480,7 @@ function switchRecentTab(el, tab) {
 }
 
 function addToRecent(symbol) {
-    let list = JSON.parse(localStorage.getItem('recentCoins') || '[]');
+    let list = JSON.parse(localStorage.getItem(userStorageKey('recentCoins')) || '[]');
     list = list.filter(s => s !== symbol);
     list.unshift(symbol);
     // 타입별 최대 20개 제한
@@ -472,7 +490,7 @@ function addToRecent(symbol) {
         if (isCoinSymbol(s) === addedIsCoin) { typeCount++; return typeCount <= RECENT_MAX; }
         return true;
     });
-    localStorage.setItem('recentCoins', JSON.stringify(list));
+    localStorage.setItem(userStorageKey('recentCoins'), JSON.stringify(list));
     recentCoins = list;
     if (sidebarActiveTab === 'recent') loadRecent();
 }
@@ -482,9 +500,9 @@ function clearRecent(type) {
         recentCoins = [];
         recentPrices = {};
         recentStockPrices = {};
-        localStorage.removeItem('recentCoins');
-        localStorage.removeItem('recentPrices');
-        localStorage.removeItem('recentStockPrices');
+        localStorage.removeItem(userStorageKey('recentCoins'));
+        localStorage.removeItem(userStorageKey('recentPrices'));
+        localStorage.removeItem(userStorageKey('recentStockPrices'));
     } else {
         const isCoin = type === 'coin';
         recentCoins.filter(s => isCoin ? isCoinSymbol(s) : !isCoinSymbol(s)).forEach(s => {
@@ -492,9 +510,9 @@ function clearRecent(type) {
             delete recentStockPrices[s];
         });
         recentCoins = recentCoins.filter(s => isCoin ? !isCoinSymbol(s) : isCoinSymbol(s));
-        localStorage.setItem('recentCoins', JSON.stringify(recentCoins));
-        localStorage.setItem('recentPrices', JSON.stringify(recentPrices));
-        localStorage.setItem('recentStockPrices', JSON.stringify(recentStockPrices));
+        localStorage.setItem(userStorageKey('recentCoins'), JSON.stringify(recentCoins));
+        localStorage.setItem(userStorageKey('recentPrices'), JSON.stringify(recentPrices));
+        localStorage.setItem(userStorageKey('recentStockPrices'), JSON.stringify(recentStockPrices));
     }
     if (recentWs) { recentWs.close(); recentWs = null; }
     renderRecentCoins(recentCoins);
@@ -506,24 +524,24 @@ function removeFromRecent(symbol) {
     if (items.length > 0) {
         animateRemoveItem(items[0], () => {
             recentCoins = recentCoins.filter(s => s !== symbol);
-            localStorage.setItem('recentCoins', JSON.stringify(recentCoins));
+            localStorage.setItem(userStorageKey('recentCoins'), JSON.stringify(recentCoins));
             delete recentPrices[symbol];
             delete recentStockPrices[symbol];
-            localStorage.setItem('recentPrices', JSON.stringify(recentPrices));
-            localStorage.setItem('recentStockPrices', JSON.stringify(recentStockPrices));
+            localStorage.setItem(userStorageKey('recentPrices'), JSON.stringify(recentPrices));
+            localStorage.setItem(userStorageKey('recentStockPrices'), JSON.stringify(recentStockPrices));
             renderRecentCoins(recentCoins);
         });
     }
 }
 
 function recentItemHtml(symbol) {
-    const ticker = symbol.replace(/USDT$/, '').replace('_SPBL', '');
+    const ticker = getSidebarCoinTicker(symbol);
     const p = recentPrices[symbol];
     const price = p ? p.price : null;
     const change = p ? p.change : null;
     const cls = change !== null ? (change >= 0 ? 'up' : 'down') : '';
     const color = coinLogoColor(ticker);
-    const logoUrl = 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/' + ticker.toLowerCase() + '.png';
+    const logoUrl = getSidebarCoinLogoUrl(ticker);
     return `<div class="si-stock-item" data-recent="${symbol}">
         <div class="si-logo" style="overflow:hidden;cursor:pointer;" onclick="location.href='/coin/chart?symbol=${symbol}'">
             <img src="${logoUrl}" alt="${ticker}" style="width:100%;height:100%;object-fit:contain;border-radius:50%;"
@@ -578,7 +596,7 @@ function renderRecentCoins(coins) {
 }
 
 async function loadRecent() {
-    recentCoins = JSON.parse(localStorage.getItem('recentCoins') || '[]');
+    recentCoins = JSON.parse(localStorage.getItem(userStorageKey('recentCoins')) || '[]');
     if (recentCoins.length === 0) { renderRecentCoins([]); return; }
 
     renderRecentCoins(recentCoins);
@@ -600,7 +618,7 @@ async function loadRecent() {
                     recentPrices[symbol] = { price, change };
                 }
             });
-            localStorage.setItem('recentPrices', JSON.stringify(recentPrices));
+            localStorage.setItem(userStorageKey('recentPrices'), JSON.stringify(recentPrices));
         }
     } catch (e) {}
 
@@ -631,7 +649,7 @@ function connectRecentWs() {
         const openUtc = parseFloat(msg.data[0].openUtc);
         const change = openUtc > 0 ? (price - openUtc) / openUtc * 100 : (recentPrices[symbol]?.change ?? 0);
         recentPrices[symbol] = { price, change };
-        localStorage.setItem('recentPrices', JSON.stringify(recentPrices));
+        localStorage.setItem(userStorageKey('recentPrices'), JSON.stringify(recentPrices));
         ['recent-coin-all', 'recent-coin-only'].forEach(listId => {
             const item = document.querySelector('#' + listId + ' [data-recent="' + symbol + '"]');
             if (!item) return;
@@ -831,13 +849,13 @@ function getSortedLiveCoins() {
 }
 
 function liveItemHtml(symbol, rank) {
-    const ticker = symbol.replace(/USDT$/, '').replace('_SPBL', '');
+    const ticker = getSidebarCoinTicker(symbol);
     const p = livePrices[symbol];
     const price = p ? p.price : null;
     const change = p ? (liveTime === '1일' ? p.change24h : p.change) : null;
     const cls = change !== null ? (change >= 0 ? 'up' : 'down') : '';
     const color = coinLogoColor(ticker);
-    const logoUrl = 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/' + ticker.toLowerCase() + '.png';
+    const logoUrl = getSidebarCoinLogoUrl(ticker);
     return `<div class="live-item" data-live="${symbol}" onclick="location.href='/coin/chart?symbol=${symbol}'">
         <span class="live-rank">${rank}</span>
         <div class="si-logo" style="overflow:hidden;flex-shrink:0;">
@@ -858,7 +876,7 @@ function liveAllItemHtml(item, rank) {
 
     if (item.type === 'coin') {
         const color = coinLogoColor(item.name);
-        const logoUrl = 'https://raw.githubusercontent.com/spothq/cryptocurrency-icons/master/128/color/' + item.name.toLowerCase() + '.png';
+        const logoUrl = getSidebarCoinLogoUrl(item.name);
         return '<div class="live-item" data-live="' + item.id + '" onclick="location.href=\'/coin/chart?symbol=' + item.id + '\'">'
             + '<span class="live-rank">' + rank + '</span>'
             + '<div class="si-logo" style="overflow:hidden;flex-shrink:0;">'
@@ -900,7 +918,7 @@ function renderLiveAll() {
     if (!el) return;
 
     const coinItems = liveCoins.map(symbol => {
-        const ticker = symbol.replace(/USDT$/, '').replace('_SPBL', '');
+        const ticker = getSidebarCoinTicker(symbol);
         const p = livePrices[symbol];
         return {
             type: 'coin',
@@ -1012,6 +1030,14 @@ function connectLiveWs() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
+    loadSidebarCoinLogoMap().then(() => {
+        renderWatchlistCoins('watchlist-coin-list', watchlistCoins);
+        renderWatchlistCoins('watchlist-coin-all-list', watchlistCoins);
+        renderRecentCoins(recentCoins || []);
+        renderLiveCoins();
+        renderLiveAll();
+    });
+
     const animate = document.body.dataset.sidebarAnimate === 'true';
     const fixedTab = document.body.dataset.sidebarTab;
 
@@ -1115,7 +1141,7 @@ async function loadCoinHoldings() {
             h.avgPrice = h.avgprice;
         });
 
-        localStorage.setItem('holdings', JSON.stringify(holdingsData));
+        localStorage.setItem(userStorageKey('holdings'), JSON.stringify(holdingsData));
         renderHoldings(holdingsData);
         connectHoldingsWs();
     } catch (e) { console.error("코인 보유내역 로드 실패", e); }
@@ -1142,7 +1168,7 @@ async function loadCoinPending() {
 
         tbody.innerHTML = res.map(o_raw => {
             const o = Object.keys(o_raw).reduce((acc, k) => { acc[k.toLowerCase().replace(/_/g, '')] = o_raw[k]; return acc; }, {});
-            const ticker = (o.coincode || "").replace(/USDT$/, '').replace('_SPBL', '');
+            const ticker = getSidebarCoinTicker(o.coincode || "");
             return `
                 <tr>
                     <td><b>${ticker}</b></td>
@@ -1172,7 +1198,7 @@ async function loadCoinHistory() {
         container.className = 'history-list';
         container.innerHTML = res.map(o_raw => {
             const o = Object.keys(o_raw).reduce((acc, k) => { acc[k.toLowerCase().replace(/_/g, '')] = o_raw[k]; return acc; }, {});
-            const ticker = (o.coincode || "").replace(/USDT$/, '').replace('_SPBL', '');
+            const ticker = getSidebarCoinTicker(o.coincode || "");
             const typeLabel = o.ordertype === 'BUY' ? '매수' : '매도';
             const typeCls = o.ordertype === 'BUY' ? 'up' : 'down';
             const total = (o.orderprice * o.ordercount).toLocaleString(undefined, { maximumFractionDigits: 2 });

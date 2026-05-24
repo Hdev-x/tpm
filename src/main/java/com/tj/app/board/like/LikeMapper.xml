@@ -2,28 +2,61 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
-  <mapper namespace="com.tj.app.board.like.LikeMapper">
-  
-  <insert id="create">
-  	INSERT INTO "LIKE" ("USERNAME", "BOARD_NO")
-  	VALUES (#{username}, #{boardNo})
-  </insert>
-  
-<delete id="delete">
-    DELETE FROM "LIKE"
-    WHERE "USERNAME" = #{username} 
-      AND "BOARD_NO" = #{boardNo}
-</delete>
-    
-<select id="checkLike" resultType="LikeDTO">
+
+<!-- ============================================================
+     [파일 읽기] LikeMapper.xml
+     namespace = LikeMapper 인터페이스의 전체 경로.
+
+     [관련 테이블] LIKE (LIKE_NO, USERNAME, BOARD_NO)
+       (USERNAME, BOARD_NO) 쌍이 UNIQUE → 한 사람이 같은 게시글에 중복 좋아요 불가.
+
+     [좋아요 토글 흐름]
+       1. checkLike() → null이면 좋아요 없음 → create()
+       2. checkLike() → LikeDTO 반환이면 이미 눌렀음 → delete()
+       3. countLike() → 최신 좋아요 수 반환
+     ============================================================ -->
+<mapper namespace="com.tj.app.board.like.LikeMapper">
+
+    <!-- ============================================================
+         좋아요 추가.
+         LIKE_NO는 AUTO INCREMENT이므로 INSERT 목록에 포함하지 않는다.
+         (USERNAME, BOARD_NO) 쌍만 저장하면 된다.
+         ============================================================ -->
+    <insert id="create">
+        INSERT INTO "LIKE" ("USERNAME", "BOARD_NO")
+        VALUES (#{username}, #{boardNo})
+    </insert>
+
+    <!-- ============================================================
+         좋아요 취소.
+         WHERE에 USERNAME과 BOARD_NO를 모두 지정해 해당 사용자의 좋아요만 삭제한다.
+         ============================================================ -->
+    <delete id="delete">
+        DELETE FROM "LIKE"
+        WHERE "USERNAME" = #{username}
+          AND "BOARD_NO" = #{boardNo}
+    </delete>
+
+    <!-- ============================================================
+         특정 사용자의 좋아요 여부 확인.
+         resultType="LikeDTO" → 행이 있으면 LikeDTO 반환, 없으면 null 반환.
+         LikeService.toggleLike()에서 null 여부로 create/delete를 분기한다.
+         (countLike와 달리 null 반환을 활용하는 패턴이다.)
+         ============================================================ -->
+    <select id="checkLike" resultType="LikeDTO">
         SELECT * FROM "LIKE"
-        WHERE "USERNAME" = #{username} 
+        WHERE "USERNAME" = #{username}
           AND "BOARD_NO" = #{boardNo}
     </select>
 
+    <!-- ============================================================
+         특정 게시글의 전체 좋아요 수 반환.
+         resultType="Long" → COUNT(*) 결과를 Long으로 받는다.
+         USERNAME 조건 없이 BOARD_NO만으로 집계 → 모든 사용자 좋아요 합산.
+         ============================================================ -->
     <select id="countLike" resultType="Long">
         SELECT COUNT(*) FROM "LIKE"
         WHERE "BOARD_NO" = #{boardNo}
     </select>
-  
-  </mapper>
+
+</mapper>

@@ -2,34 +2,71 @@
 <!DOCTYPE mapper
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<!-- ============================================================
+     [파일 읽기] ReplyMapper.xml
+     namespace = ReplyMapper 인터페이스의 전체 경로.
+
+     [관련 테이블] REPLY (REPLY_NO, REPLY_CONTENT, REPLY_DATE, USERNAME, BOARD_NO)
+       BOARD_NO → 어떤 게시글의 댓글인지 연결하는 FK.
+       REPLY_NO → AUTO INCREMENT PK.
+
+     [resultType="ReplyDTO"] 컬럼명과 필드명이 동일하면(또는 AS 별칭을 쓰면)
+       resultMap 없이 자동 매핑된다. REPLY 테이블은 컬럼이 단순하므로 resultType 사용.
+     ============================================================ -->
 <mapper namespace="com.tj.app.board.reply.ReplyMapper">
 
-<insert id="create"  useGeneratedKeys="true" keyProperty="replyNo">
-	INSERT INTO "REPLY" ("REPLY_CONTENT", "REPLY_DATE", "USERNAME", "BOARD_NO")
+    <!-- ============================================================
+         댓글 등록.
+         useGeneratedKeys="true" → DB가 생성한 REPLY_NO를 replyDTO.replyNo에 주입.
+         REPLY_DATE = CURRENT_TIMESTAMP → 작성 시각을 DB 서버 기준으로 자동 기록.
+         ============================================================ -->
+    <insert id="create" useGeneratedKeys="true" keyProperty="replyNo">
+        INSERT INTO "REPLY" ("REPLY_CONTENT", "REPLY_DATE", "USERNAME", "BOARD_NO")
         VALUES (#{replyContent}, CURRENT_TIMESTAMP, #{username}, #{boardNo})
-</insert>
+    </insert>
 
-<select id="list" resultType="ReplyDTO">
-	SELECT * FROM "REPLY"
-	WHERE "BOARD_NO" = #{boardNo}
-</select>
+    <!-- ============================================================
+         특정 게시글의 댓글 목록 조회.
+         WHERE BOARD_NO → 해당 게시글의 댓글만 필터링.
+         ORDER BY 없음 → DB 기본 순서(삽입 순, 대체로 오래된 순).
+         ============================================================ -->
+    <select id="list" resultType="ReplyDTO">
+        SELECT * FROM "REPLY"
+        WHERE "BOARD_NO" = #{boardNo}
+    </select>
 
-<select id="detail" resultType="ReplyDTO">
-	SELECT * FROM "REPLY"
-	WHERE "REPLY_NO" = #{replyNo}
-</select>
+    <!-- ============================================================
+         댓글 단건 조회.
+         REPLY_NO(PK)로 특정 댓글 한 건을 가져온다.
+         수정 전 기존 내용 확인 등에 사용한다.
+         ============================================================ -->
+    <select id="detail" resultType="ReplyDTO">
+        SELECT * FROM "REPLY"
+        WHERE "REPLY_NO" = #{replyNo}
+    </select>
 
-<update id="update">
-	UPDATE "REPLY"
-	SET
-		"REPLY_CONTENT" = #{replyContent},
-		"REPLY_DATE" = #{replyDate}
-	WHERE "REPLY_NO" = #{replyNo}
-</update>
+    <!-- ============================================================
+         댓글 내용·일시 수정.
+         REPLY_CONTENT와 REPLY_DATE(수정 시각)를 함께 갱신한다.
+         WHERE REPLY_NO → 특정 댓글만 수정.
+         ============================================================ -->
+    <update id="update">
+        UPDATE "REPLY"
+        SET
+            "REPLY_CONTENT" = #{replyContent},
+            "REPLY_DATE"    = #{replyDate}
+        WHERE "REPLY_NO" = #{replyNo}
+    </update>
 
-<delete id="delete">
-	DELETE FROM "REPLY"
-	WHERE "REPLY_NO" = #{replyNo}
-</delete>
+    <!-- ============================================================
+         댓글 삭제.
+         WHERE REPLY_NO → 특정 댓글만 삭제.
+         소유권 확인(username 조건)이 없으므로 Service·Controller 레벨에서 검증해야 한다.
+         ============================================================ -->
+    <delete id="delete">
+        DELETE FROM "REPLY"
+        WHERE "REPLY_NO" = #{replyNo}
+    </delete>
 
 </mapper>

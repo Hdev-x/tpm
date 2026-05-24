@@ -5,48 +5,105 @@ import java.util.Map;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+/** ============================================================
+ * [클래스 읽기] 주식 주문·보유 자산·예수금 관련 DB 작업을 담당하는 MyBatis Mapper.
+ *
+ * SQL은 OrderStockMapper.xml에 정의되어 있으며,
+ * 이 인터페이스는 메서드 시그니처만 선언한다.
+ * MyBatis가 XML의 id와 메서드명을 자동 매핑해 구현체를 생성한다.
+ *
+ * [관련 테이블]
+ * WALLET        : 주식 예수금 (현금 잔고)
+ * STOCK_HOLDINGS: 보유 주식 목록 (종목코드, 수량, 평단가)
+ * ORDER         : 주문 이력 (매수/매도, PENDING/DONE/CANCELED)
+ * ============================================================ */
 @Mapper
 public interface OrderStockMapper {
 
-	// 1. 가용 잔고 조회
-	long getWallet(@Param("username") String username);
+    /** ============================================================
+     * 1. 주식 예수금(현금 잔고) 조회.
+     * ExchangeService에서도 호출해 KRW↔USDT 환전 시 잔고를 확인한다.
+     * ============================================================ */
+    long getWallet(@Param("username") String username);
 
-	// 2. 가용 잔고 업데이트
-	int updateWallet(@Param("username") String username, @Param("cash") long cash);
+    /** ============================================================
+     * 2. 주식 예수금 갱신.
+     * 매수 시 차감, 매도 시 증가, 환전 시 차감/증가에 사용한다.
+     * ============================================================ */
+    int updateWallet(@Param("username") String username, @Param("cash") long cash);
 
-	// 3. 보유 주식 단건 조회 (★ 서비스단의 getHolding(username, stockNoStr) 호출과 100% 일치)
-	Map<String, Object> getHolding(@Param("username") String username, @Param("stockCode") String stockCode);
+    /** ============================================================
+     * 3. 특정 종목 보유 현황 단건 조회.
+     * 매수 시 이미 보유 중인지 확인(insert vs update 분기),
+     * 매도 시 보유 수량 확인에 사용한다.
+     * ============================================================ */
+    Map<String, Object> getHolding(@Param("username") String username, @Param("stockCode") String stockCode);
 
-	// 4. 우측 사이드바 보유 자산 목록 조회
-	List<Map<String, Object>> getHoldingList(@Param("username") String username);
+    /** ============================================================
+     * 4. 사용자의 전체 보유 주식 목록 조회.
+     * 우측 사이드바의 보유 자산 리스트, 자산 계산 등에 사용한다.
+     * ============================================================ */
+    List<Map<String, Object>> getHoldingList(@Param("username") String username);
 
-	// 5. 보유 자산 최초 추가
-	int insertHolding(OrderStockDTO dto);
+    /** ============================================================
+     * 5. 보유 주식 최초 추가 (INSERT).
+     * 해당 종목을 처음 매수할 때 STOCK_HOLDINGS에 새 행을 삽입한다.
+     * ============================================================ */
+    int insertHolding(OrderStockDTO dto);
 
-	// 6. 보유 자산 수량 및 평단가 업데이트
-	int updateHolding(OrderStockDTO dto);
+    /** ============================================================
+     * 6. 보유 주식 수량·평단가 업데이트 (UPDATE).
+     * 추가 매수 시 수량 합산·평단가 재계산,
+     * 일부 매도 시 수량 차감에 사용한다.
+     * ============================================================ */
+    int updateHolding(OrderStockDTO dto);
 
-	// 7. 보유 자산 전량 매도 시 행 삭제
-	int deleteHolding(@Param("username") String username, @Param("stockCode") String stockCode);
+    /** ============================================================
+     * 7. 보유 주식 전량 매도 후 행 삭제 (DELETE).
+     * 수량이 0이 되면 STOCK_HOLDINGS에서 해당 종목 행을 제거한다.
+     * ============================================================ */
+    int deleteHolding(@Param("username") String username, @Param("stockCode") String stockCode);
 
-	// 8. 주식 트레이딩 거래 주문 이력 생성
-	int insertOrder(OrderStockDTO dto);
+    /** ============================================================
+     * 8. 주문 이력 생성 (INSERT).
+     * 매수/매도 주문 실행 시 ORDER 테이블에 새 행을 삽입한다.
+     * status = "DONE"(시장가) 또는 "PENDING"(지정가)으로 시작한다.
+     * ============================================================ */
+    int insertOrder(OrderStockDTO dto);
 
-	// 9. 체결 완료 거래 내역 리스트 조회
-	List<Map<String, Object>> getOrderList(@Param("username") String username);
+    /** ============================================================
+     * 9. 체결 완료 거래 내역 목록 조회 (status = "DONE").
+     * 사이드바·거래 내역 페이지에서 완료된 주문 이력을 표시할 때 사용한다.
+     * ============================================================ */
+    List<Map<String, Object>> getOrderList(@Param("username") String username);
 
-	// 10. 미체결 지정가 예약 주문 리스트 조회
-	List<Map<String, Object>> getPendingOrders(@Param("username") String username);
+    /** ============================================================
+     * 10. 미체결 지정가 주문 목록 조회 (status = "PENDING").
+     * 사용자가 등록한 지정가 예약 주문 리스트를 표시할 때 사용한다.
+     * ============================================================ */
+    List<Map<String, Object>> getPendingOrders(@Param("username") String username);
 
-	// 11. 특정 주식 미체결 예약 주문 일괄 취소
-	int cancelPendingByStock(@Param("orderNo") long orderNo);
+    /** ============================================================
+     * 11. 특정 주문 번호의 미체결 주문 취소 (status = "CANCELED").
+     * 사용자가 지정가 주문을 직접 취소하거나, 전량 매도 시 관련 미체결 주문을 일괄 취소할 때 사용한다.
+     * ============================================================ */
+    int cancelPendingByStock(@Param("orderNo") long orderNo);
 
-	// 12. [스케줄러용] 전체 미체결 주문 목록 조회
-	List<OrderStockDTO> getAllPendingOrders();
+    /** ============================================================
+     * 12. [스케줄러용] 전체 미체결 주문 목록 조회.
+     * OrderScheduler가 주기적으로 호출해 현재가와 targetPrice를 비교한다.
+     * ============================================================ */
+    List<OrderStockDTO> getAllPendingOrders();
 
-	// 13. [스케줄러용] 주문 상태 업데이트 (PENDING -> COMPLETED)
-	int updateOrderStatus(OrderStockDTO dto);
+    /** ============================================================
+     * 13. [스케줄러용] 주문 상태를 PENDING → DONE으로 변경.
+     * 지정가 조건이 충족되어 체결 처리 후 상태를 업데이트한다.
+     * ============================================================ */
+    int updateOrderStatus(OrderStockDTO dto);
 
-	// 14. [주문 취소용] 주문 번호로 주문 상세 조회
-	OrderStockDTO getOrderById(@Param("orderId") long orderNo);
+    /** ============================================================
+     * 14. 주문 번호로 주문 상세 단건 조회.
+     * 주문 취소 시 해당 주문의 타입·금액·수량을 확인해 예수금을 복원한다.
+     * ============================================================ */
+    OrderStockDTO getOrderById(@Param("orderId") long orderNo);
 }

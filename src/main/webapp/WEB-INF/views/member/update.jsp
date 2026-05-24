@@ -7,7 +7,8 @@
 <meta charset="UTF-8">
 <title>Insert title here</title>
 <link rel="stylesheet" href="/css/common.css">
-    <link rel="stylesheet" href="/css/member/member.css">
+<link rel="stylesheet" href="/css/member/member.css">
+<link rel="stylesheet" href="/css/board/board.css">
 <style>
 .member-container {
 	display: flex;
@@ -87,13 +88,12 @@
 
 			<div
 				style="display: flex; flex-direction: column; gap: 10px; margin-top: 30px;">
-				<button type="submit" class="btn-buy"
-					style="background: var(--blue); border: none;">수정 완료</button>
+				<button type="submit" class="btn-action btn-submit"
+					style="width: 100%; height: auto; padding: 14px 0;">수정 완료</button>
 
-				<button type="button" class="tf-btn"
+				<button type="button" class="btn-action btn-list"
 					onclick="location.href='./read'"
-					style="padding: 12px; border: 1px solid var(--border2); font-weight: 600;">취소하고
-					돌아가기</button>
+					style="width: 100%; height: auto; padding: 14px 0;">취소</button>
 			</div>
 		</form>
 	</div>

@@ -8,14 +8,14 @@ let currentDetailCode = null;
 let detailChartTimer = null;
 let miniChartsLoaded = false;
 
-/* ── 관심종목 (로컬스토리지) ── */
+/* ── 관심종목 (사용자별 로컬스토리지) ── */
 function toggleStockWatchlistRow(code) {
     const list = getStockWatchlist();
     const idx = list.indexOf(code);
     const isAdding = idx < 0;
     if (idx >= 0) list.splice(idx, 1);
     else list.push(code);
-    localStorage.setItem('stock_watchlist', JSON.stringify(list));
+    localStorage.setItem(userStorageKey('stock_watchlist'), JSON.stringify(list));
 
     if (typeof updateStockWatchlistHeartBtn === 'function') updateStockWatchlistHeartBtn(code, isAdding);
     if (isAdding) {

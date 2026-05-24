@@ -404,47 +404,21 @@
                 <div class="resize-h" id="rh-2"></div>
 
                 <div class="panel-middle cm-order-panel" id="panel-middle">
-                    <div class="card panel-order-wrap" id="panel-order-wrap">
-                        <div class="order-tabs">
-                            <div class="order-tab buy active" id="tab-buy" onclick="switchOrderTab('buy')">매수</div>
-                            <div class="order-tab sell" id="tab-sell" onclick="switchOrderTab('sell')">매도</div>
-                        </div>
-
-                        <div class="order-panel" id="panel-order">
-                            <div class="order-type-row">
-                                <button class="order-type-btn sel" onclick="selectOrderType(this)">지정가</button>
-                                <button class="order-type-btn" onclick="selectOrderType(this)">시장가</button>
-                            </div>
-
-                            <div class="order-section-label">가격 (USDT)</div>
-                            <div class="order-input-row">
-                                <input class="order-input" id="trade-price-input" type="number" placeholder="0.00" oninput="calcAmount()">
-                                <span class="order-input-unit">USDT</span>
-                            </div>
-
-                            <div class="order-section-label">수량</div>
-                            <div class="order-input-row">
-                                <input class="order-input" id="trade-qty" type="number" placeholder="0.000" step="0.001" oninput="calcAmount()">
-                                <span class="order-input-unit" id="cm-qty-unit">${symbol}</span>
-                            </div>
-
-                            <div class="pct-row">
-                                <button class="pct-btn" onclick="setPercent(25)">25%</button>
-                                <button class="pct-btn" onclick="setPercent(50)">50%</button>
-                                <button class="pct-btn" onclick="setPercent(75)">75%</button>
-                                <button class="pct-btn" onclick="setPercent(100)">최대</button>
-                            </div>
-
-                            <div class="order-section-label">주문금액 (USDT)</div>
-                            <div class="order-input-row" style="margin-bottom:14px">
-                                <input class="order-input" id="trade-amount" type="number" readonly style="background:var(--bg)">
-                                <span class="order-input-unit">USDT</span>
-                            </div>
-
-                            <div class="order-avail">가용 잔고 <span>- USDT</span></div>
-                            <button id="order-submit-btn" class="btn-buy" onclick="submitCommunityOrder()">매수 주문</button>
-                        </div><!-- /#panel-order.order-panel -->
-                    </div><!-- /.panel-order-wrap -->
+                    <%
+                        String communityOrderSymbol = String.valueOf(request.getAttribute("symbol"));
+                        communityOrderSymbol = communityOrderSymbol.replace("USDT", "").replace("USDC", "").replace("_SPBL", "");
+                        request.setAttribute("orderMarket", "coin");
+                        request.setAttribute("orderPriceUnit", "USDT");
+                        request.setAttribute("orderQtyUnit", communityOrderSymbol);
+                        request.setAttribute("orderQtyLabel", "수량");
+                        request.setAttribute("orderQtyStep", "0.001");
+                        request.setAttribute("orderPricePlaceholder", "0.00");
+                        request.setAttribute("orderQtyPlaceholder", "0.000");
+                        request.setAttribute("orderAmountUnit", "USDT");
+                        request.setAttribute("orderAvailText", "- USDT");
+                        request.setAttribute("orderQtyUnitId", "cm-qty-unit");
+                    %>
+                    <%@ include file="../common/market-order-panel.jsp" %>
                 </div><!-- /.panel-middle -->
 
             </div><!-- /.main-layout -->
@@ -496,6 +470,9 @@
     const isLoggedIn = ${not empty member};
     const currentUser = "${not empty member ? member.username : ''}";
     let orderSide = 'buy';
+    let lastPrice = 0;
+    let walletBalance = 0;
+    window.currentSymbol = currentSymbol;
 
     if (isLoggedIn && currentUser) {
         const avatar = document.getElementById('cm-my-avatar');
@@ -522,50 +499,6 @@
         }
     }
 
-
-    function switchOrderTab(side) {
-        orderSide = side;
-        const isBuy = side === 'buy';
-        document.getElementById('tab-buy').classList.toggle('active', isBuy);
-        document.getElementById('tab-sell').classList.toggle('active', !isBuy);
-        const submitBtn = document.getElementById('order-submit-btn');
-        submitBtn.textContent = isBuy ? '매수 주문' : '매도 주문';
-        submitBtn.className = isBuy ? 'btn-buy' : 'btn-sell';
-    }
-
-    function selectOrderType(btn) {
-        document.querySelectorAll('.order-type-btn').forEach(el => el.classList.remove('sel'));
-        btn.classList.add('sel');
-        const priceInput = document.getElementById('trade-price-input');
-        const isLimit = btn.textContent.trim() === '지정가';
-        priceInput.readOnly = !isLimit;
-        if (!isLimit && !priceInput.value) priceInput.value = document.getElementById('ph-price').textContent.replace(/[^0-9.]/g, '');
-        calcAmount();
-    }
-
-    function setPercent(pct) {
-        const price = parseFloat(document.getElementById('trade-price-input').value) || 0;
-        if (price <= 0) return;
-        const mockBalance = 10000;
-        document.getElementById('trade-qty').value = (mockBalance * pct / 100 / price).toFixed(6);
-        calcAmount();
-    }
-
-    function calcAmount() {
-        const price = parseFloat(document.getElementById('trade-price-input').value) || 0;
-        const qty = parseFloat(document.getElementById('trade-qty').value) || 0;
-        document.getElementById('trade-amount').value = (price * qty).toFixed(2);
-    }
-
-    function submitCommunityOrder() {
-        const qty = document.getElementById('trade-qty').value;
-        if (!qty || parseFloat(qty) <= 0) {
-            alert('수량을 입력하세요');
-            return;
-        }
-        alert((orderSide === 'buy' ? '매수' : '매도') + ' 주문 기능은 준비 중입니다.');
-    }
-
     async function loadCmMarketCap() {
         const ticker = currentSymbol.replace(/USDT$/, '').replace(/USDC$/, '').replace(/_SPBL$/, '').toLowerCase();
         try {
@@ -586,6 +519,7 @@
             const d = res && res.data && res.data[0];
             if (!d) return;
             const price = parseFloat(d.lastPr);
+            lastPrice = Number.isFinite(price) ? price : 0;
             const candleRes = await fetch('/coin/api/candles?symbol=' + encodeURIComponent(currentSymbol) + '&granularity=1Dutc&limit=2').then(r => r.json());
             cmPrevClose = parseFloat(candleRes.data[0][4]);
             const todayOpen = parseFloat(candleRes.data[1][1]);
@@ -632,7 +566,13 @@
             const msg = JSON.parse(event.data);
             if (!msg.data || !msg.arg || msg.arg.channel !== 'ticker') return;
             const price = parseFloat(msg.data[0].lastPr);
-            if (price) updateCmPriceHeader(price);
+            if (price) {
+                lastPrice = price;
+                document.getElementById('trade-price-input').value = price;
+                updateCmPriceHeader(price);
+                calcAmount();
+                if (typeof checkPendingOrders === 'function') checkPendingOrders(price);
+            }
         };
         cmPriceWs.onclose = () => setTimeout(connectCmPriceWs, 3000);
     }
@@ -1116,6 +1056,16 @@
     }
 
     connectCommunityFeed(currentSymbol);
+</script>
+<script src="/js/market/coin/coin-order.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        if (isLoggedIn) {
+            loadWallet();
+            if (typeof loadHoldings === 'function') loadHoldings();
+            loadPendingOrders();
+        }
+    });
 </script>
 
 </body>

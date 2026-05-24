@@ -226,41 +226,18 @@
 
                 <!-- 주문 패널 -->
                 <div class="panel-middle cm-order-panel" id="panel-middle">
-                    <div class="card panel-order-wrap" id="panel-order-wrap">
-                        <div class="order-tabs">
-                            <div class="order-tab buy active" id="tab-buy" onclick="switchOrderTab('buy')">매수</div>
-                            <div class="order-tab sell" id="tab-sell" onclick="switchOrderTab('sell')">매도</div>
-                        </div>
-                        <div class="order-panel" id="panel-order">
-                            <div class="order-type-row">
-                                <button class="order-type-btn sel" onclick="selectOrderType(this)">지정가</button>
-                                <button class="order-type-btn" onclick="selectOrderType(this)">시장가</button>
-                            </div>
-                            <div class="order-section-label">가격 (원)</div>
-                            <div class="order-input-row">
-                                <input class="order-input" id="trade-price-input" type="number" placeholder="0" oninput="calcAmount()">
-                                <span class="order-input-unit">원</span>
-                            </div>
-                            <div class="order-section-label">수량 (주)</div>
-                            <div class="order-input-row">
-                                <input class="order-input" id="trade-qty" type="number" placeholder="0" step="1" oninput="calcAmount()">
-                                <span class="order-input-unit">주</span>
-                            </div>
-                            <div class="pct-row">
-                                <button class="pct-btn" onclick="setPercent(25)">25%</button>
-                                <button class="pct-btn" onclick="setPercent(50)">50%</button>
-                                <button class="pct-btn" onclick="setPercent(75)">75%</button>
-                                <button class="pct-btn" onclick="setPercent(100)">최대</button>
-                            </div>
-                            <div class="order-section-label">주문금액</div>
-                            <div class="order-input-row" style="margin-bottom:14px">
-                                <input class="order-input" id="trade-amount" type="number" readonly style="background:var(--bg)">
-                                <span class="order-input-unit">원</span>
-                            </div>
-                            <div class="order-avail">가용 잔고 <span id="avail-balance">- 원</span></div>
-                            <button id="order-submit-btn" class="btn-buy" onclick="submitStockOrder()">매수 주문</button>
-                        </div>
-                    </div>
+                    <%
+                        request.setAttribute("orderMarket", "stock");
+                        request.setAttribute("orderPriceUnit", "원");
+                        request.setAttribute("orderQtyUnit", "주");
+                        request.setAttribute("orderQtyLabel", "수량 (주)");
+                        request.setAttribute("orderQtyStep", "1");
+                        request.setAttribute("orderPricePlaceholder", "0");
+                        request.setAttribute("orderQtyPlaceholder", "0");
+                        request.setAttribute("orderAmountUnit", "원");
+                        request.setAttribute("orderAvailText", "- 원");
+                    %>
+                    <%@ include file="../common/market-order-panel.jsp" %>
                 </div>
 
             </div><!-- /.main-layout -->
@@ -289,6 +266,8 @@
     const isLoggedIn    = ${not empty member};
     const currentUser   = "${not empty member ? member.username : ''}";
     let orderSide = 'buy';
+    window.currentSymbol = currentCode;
+    window.lastPrice = 0;
 
     /* ── 아바타 초기화 ── */
     if (isLoggedIn && currentUser) {
@@ -332,6 +311,7 @@
             if (absEl) { absEl.textContent = sign + diff.toLocaleString(); absEl.className = 'ph-change ' + cls; }
             if (pctEl) { pctEl.textContent = '(' + sign + rate.toFixed(2) + '%)'; pctEl.className = 'ph-change ' + cls; }
 
+            window.lastPrice = price;
             document.getElementById('trade-price-input').value = price;
             calcAmount();
         } catch (e) {}
@@ -364,10 +344,27 @@
     function selectOrderType(btn) {
         document.querySelectorAll('.order-type-btn').forEach(el => el.classList.remove('sel'));
         btn.classList.add('sel');
+        const isMarket = btn.textContent.trim() === '시장가';
+        const priceInput = document.getElementById('trade-price-input');
+        priceInput.disabled = isMarket;
+        priceInput.placeholder = isMarket ? '시장가' : '0';
+        if (isMarket) priceInput.value = '';
+        calcAmount();
+    }
+
+    function togglePctDrop() {
+        const menu = document.getElementById('pct-drop-menu');
+        if (menu) menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
     }
 
     function setPercent(pct) {
-        const price = parseFloat(document.getElementById('trade-price-input').value) || 0;
+        const label = document.getElementById('pct-drop-label');
+        if (label) label.textContent = pct === 100 ? '최대' : pct + '%';
+        const menu = document.getElementById('pct-drop-menu');
+        if (menu) menu.style.display = 'none';
+
+        const priceInput = document.getElementById('trade-price-input');
+        const price = priceInput.disabled ? window.lastPrice : (parseFloat(priceInput.value) || window.lastPrice);
         const balText = document.getElementById('avail-balance').textContent.replace(/[^0-9]/g, '');
         const bal = parseInt(balText) || 0;
         if (price <= 0 || bal <= 0) return;
@@ -376,13 +373,70 @@
     }
 
     function calcAmount() {
-        const price = parseFloat(document.getElementById('trade-price-input').value) || 0;
+        const priceInput = document.getElementById('trade-price-input');
+        const price = priceInput.disabled ? window.lastPrice : (parseFloat(priceInput.value) || window.lastPrice);
         const qty   = parseFloat(document.getElementById('trade-qty').value) || 0;
-        document.getElementById('trade-amount').value = Math.floor(price * qty);
+        document.getElementById('trade-amount').textContent = Math.floor(price * qty).toLocaleString();
     }
 
-    function submitStockOrder() {
-        alert('주문 기능은 차트 페이지에서 이용해주세요.');
+    function submitOrder(side) {
+        if (!isLoggedIn) {
+            location.href = '/member/login?redirect=' + encodeURIComponent(location.pathname + location.search);
+            return;
+        }
+
+        const qtyInput = document.getElementById('trade-qty');
+        const orderCount = parseInt(qtyInput.value);
+        if (!orderCount || orderCount <= 0) {
+            alert('수량을 정확히 입력하세요.');
+            return;
+        }
+
+        const priceInput = document.getElementById('trade-price-input');
+        const isMarket = priceInput.disabled;
+        let orderPrice = isMarket ? window.lastPrice : parseInt((priceInput.value || '').replace(/[^0-9]/g, ''));
+        if (!orderPrice || orderPrice <= 0) orderPrice = window.lastPrice;
+        if (!orderPrice || orderPrice <= 0) {
+            alert('현재 가격 또는 입력된 가격 정보를 가져오지 못했습니다.');
+            return;
+        }
+
+        const sideText = side === 'sell' ? 'SELL' : 'BUY';
+        const orderData = {
+            orderType: sideText,
+            orderPrice: orderPrice,
+            orderCount: orderCount,
+            stockNo: parseInt(window.currentSymbol) || 0,
+            stockCode: String(window.currentSymbol || '').padStart(6, '0'),
+            status: isMarket ? 'COMPLETED' : 'PENDING',
+            targetPrice: isMarket ? 0 : orderPrice
+        };
+
+        if (!confirm('[주문 접수]\n구분: ' + (sideText === 'BUY' ? '매수' : '매도') + '\n가격: ' + orderPrice.toLocaleString() + '원\n수량: ' + orderCount + '주\n진행하시겠습니까?')) return;
+
+        fetch('/stock/order?side=' + sideText, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        })
+            .then(response => {
+                if (!response.ok) throw new Error('서버 응답 오류');
+                return response.json();
+            })
+            .then(data => {
+                if (data.success === true || data.success === 'true') {
+                    alert(data.message || '주문이 성공적으로 처리되었습니다.');
+                    loadBalance();
+                    if (typeof loadMyInvestmentStatus === 'function') loadMyInvestmentStatus();
+                    if (typeof updateAccountBalanceUI === 'function') updateAccountBalanceUI();
+                } else {
+                    alert('주문 실패: ' + (data.message || '알 수 없는 오류'));
+                }
+            })
+            .catch(err => {
+                console.error('주식 커뮤니티 주문 전송 오류:', err);
+                alert('주문 처리 중 통신 오류가 발생했습니다.');
+            });
     }
 
     /* ── 종목 검색 드롭다운 ── */

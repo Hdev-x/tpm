@@ -57,6 +57,8 @@ public class CoinMarketService {
     public CoinMarketService() {
         this.bitgetClient = WebClient.builder()
                 .baseUrl("https://api.bitget.com")
+                // 전체 티커 응답이 기본 버퍼(256KB)를 넘어 실패하므로 상한을 5MB로 확장
+                .codecs(c -> c.defaultCodecs().maxInMemorySize(5 * 1024 * 1024))
                 .build();
         this.geckoClient = WebClient.builder()
                 .baseUrl("https://api.coingecko.com")

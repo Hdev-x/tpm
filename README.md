@@ -6,26 +6,17 @@ KOSMO 개발 과정 2인 팀 프로젝트. 토스증권 UI를 참고하여 주�
 - 본 저장소: 팀 저장소 fork. `main`은 팀 저장소 `sub_main` 최종 상태와 동일
 - 개발 기간: 2026.05.11 ~ 2026.05.24
 
-![홈](docs/images/readme/01-home.png)
-
 ## 화면
 
-다크 테마 기준. 상단 내비게이션·시장 지표 띠·우측 실시간 사이드바는 모든 화면에서 공통
+<p align="center">
+  <a href="docs/images/readme/01-home.jpg"><img src="docs/images/readme/01-home.jpg" width="19%" alt="홈"></a>
+  <a href="docs/images/readme/02-coin-list.jpg"><img src="docs/images/readme/02-coin-list.jpg" width="19%" alt="코인 목록"></a>
+  <a href="docs/images/readme/03-coin-chart.jpg"><img src="docs/images/readme/03-coin-chart.jpg" width="19%" alt="코인 차트·주문"></a>
+  <a href="docs/images/readme/04-community.jpg"><img src="docs/images/readme/04-community.jpg" width="19%" alt="종목 커뮤니티"></a>
+  <a href="docs/images/readme/05-board.jpg"><img src="docs/images/readme/05-board.jpg" width="19%" alt="자유게시판"></a>
+</p>
 
-| 코인 목록 | 코인 차트·주문 |
-| --- | --- |
-| ![코인 목록](docs/images/readme/02-coin-list.png) | ![코인 차트](docs/images/readme/03-coin-chart.png) |
-| Bitget 시세, 거래대금·급등락 정렬, USDT/USDC 필터 | 캔들 차트, 지정가·시장가 모의 주문, 호가, 실시간 댓글 |
-
-| 코인 커뮤니티 | 주식 목록 |
-| --- | --- |
-| ![코인 커뮤니티](docs/images/readme/04-coin-community.png) | ![주식 목록](docs/images/readme/05-stock-list.png) |
-| 종목별 뉴스·댓글·주문 패널 | 종목 시세, 1년 차트, 실시간 댓글 |
-
-| 주식 커뮤니티 | 자유게시판 |
-| --- | --- |
-| ![주식 커뮤니티](docs/images/readme/06-stock-community.png) | ![자유게시판](docs/images/readme/07-board.png) |
-| 종목별 뉴스·댓글·주문 패널 | 게시글 목록·검색, 실시간 마켓 뉴스 |
+홈 · 코인 목록 · 코인 차트·주문 · 종목 커뮤니티 · 자유게시판 (클릭 시 원본 1920×1080)
 
 ## 주요 기능
 
